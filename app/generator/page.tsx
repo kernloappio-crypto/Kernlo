@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { generatePDF } from "@/lib/pdf-generator";
 
 interface ReportInput {
   childName: string;
@@ -8,6 +9,11 @@ interface ReportInput {
   activity: string;
   duration: string;
   notes: string;
+}
+
+interface GeneratedReport {
+  content: string;
+  input: ReportInput;
 }
 
 export default function Generator() {
@@ -19,7 +25,7 @@ export default function Generator() {
     notes: "",
   });
   const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState<string | null>(null);
+  const [report, setReport] = useState<GeneratedReport | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,12 +40,48 @@ export default function Generator() {
 
       const data = await res.json();
       if (data.report) {
-        setReport(data.report);
+        setReport({
+          content: data.report,
+          input,
+        });
       }
     } catch {
       alert("Error generating report");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDownloadPDF() {
+    if (!report) return;
+
+    try {
+      const blob = await generatePDF({
+        childName: report.input.childName,
+        subject: report.input.subject,
+        activity: report.input.activity,
+        duration: report.input.duration,
+        notes: report.input.notes,
+        reportContent: report.content,
+        generatedDate: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+      });
+
+      // Download the PDF
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${report.input.childName}-progress-report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      alert("Error downloading PDF");
     }
   }
 
@@ -191,14 +233,12 @@ export default function Generator() {
               </h2>
               <div className="bg-white rounded-lg p-6 border border-gray-200 mb-6 max-h-96 overflow-y-auto">
                 <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {report}
+                  {report.content}
                 </div>
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    /* PDF download logic */
-                  }}
+                  onClick={handleDownloadPDF}
                   className="flex-1 px-4 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-gray-900 transition-colors"
                 >
                   Download PDF
