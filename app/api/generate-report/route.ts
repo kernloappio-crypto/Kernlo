@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface SubjectEntry {
+  id: string;
+  subject: string;
+  platform: string;
+  topics: string;
+  duration: string;
+}
+
 interface ReportRequest {
   childName: string;
   reportType: "daily" | "weekly";
-  subject: string;
-  activity: string;
-  specificTopics: string;
-  duration: string;
+  subjects: SubjectEntry[];
   notes: string;
 }
 
@@ -15,17 +20,28 @@ export async function POST(req: NextRequest) {
     const body: ReportRequest = await req.json();
 
     // Validate input
-    if (!body.childName || !body.subject || !body.activity || !body.duration || !body.specificTopics) {
+    if (!body.childName || !body.subjects || body.subjects.length === 0) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Call OpenAI to generate report
-    const durationText = body.reportType === "weekly" 
-      ? `${body.duration} hours`
-      : `${body.duration} minutes`;
+    // Validate each subject has required fields
+    for (const subject of body.subjects) {
+      if (!subject.subject || !subject.platform || !subject.topics || !subject.duration) {
+        return NextResponse.json(
+          { error: "All subject fields are required" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Format subjects for the prompt
+    const subjectsText = body.subjects.map((s) => {
+      const duration = body.reportType === "weekly" ? `${s.duration} hours` : `${s.duration} minutes`;
+      return `Subject: ${s.subject}\nPlatform: ${s.platform}\nTopics: ${s.topics}\nDuration: ${duration}`;
+    }).join("\n\n");
 
     const reportPeriod = body.reportType === "weekly" ? "this week" : "today";
 
@@ -33,20 +49,20 @@ export async function POST(req: NextRequest) {
     
 Child's Name: ${body.childName}
 Report Type: ${body.reportType === "weekly" ? "Weekly" : "Daily"}
-Subject: ${body.subject}
-Platform/Resource: ${body.activity}
-Specific Topics Covered: ${body.specificTopics}
-Duration: ${durationText}
+
+Learning Activities:
+${subjectsText}
+
 Additional Notes: ${body.notes || "None"}
 
 Format the report professionally with:
-1. A comprehensive summary of what was covered (specifically mention the topics listed above)
-2. Specific skills developed or reinforced
-3. Time spent and engagement level
-4. Assessment/observations about understanding and performance
-5. Recommendations for building on this learning
+1. An overall summary of learning activities covered ${reportPeriod} (include all subjects and specific topics)
+2. Skills developed and concepts mastered across all subjects
+3. Engagement, effort, and progress observations
+4. Strengths demonstrated
+5. Areas for continued focus and recommendations for next steps
 
-Keep it concise but detailed (3-4 paragraphs). Make it suitable for school district submission.`;
+The report should synthesize all subjects into a cohesive narrative suitable for school district submission. Keep it detailed but concise (4-5 paragraphs).`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",

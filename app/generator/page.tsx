@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 
+interface SubjectEntry {
+  id: string;
+  subject: string;
+  platform: string;
+  topics: string;
+  duration: string;
+}
+
 interface ReportInput {
   childName: string;
   reportType: "daily" | "weekly";
-  subject: string;
-  activity: string;
-  specificTopics: string;
-  duration: string;
+  subjects: SubjectEntry[];
   notes: string;
 }
 
@@ -21,14 +26,54 @@ export default function Generator() {
   const [input, setInput] = useState<ReportInput>({
     childName: "",
     reportType: "daily",
-    subject: "",
-    activity: "",
-    specificTopics: "",
-    duration: "",
+    subjects: [
+      {
+        id: "1",
+        subject: "",
+        platform: "",
+        topics: "",
+        duration: "",
+      },
+    ],
     notes: "",
   });
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<GeneratedReport | null>(null);
+
+  const addSubject = () => {
+    const newId = Math.random().toString(36).substr(2, 9);
+    setInput({
+      ...input,
+      subjects: [
+        ...input.subjects,
+        {
+          id: newId,
+          subject: "",
+          platform: "",
+          topics: "",
+          duration: "",
+        },
+      ],
+    });
+  };
+
+  const removeSubject = (id: string) => {
+    if (input.subjects.length > 1) {
+      setInput({
+        ...input,
+        subjects: input.subjects.filter((s) => s.id !== id),
+      });
+    }
+  };
+
+  const updateSubject = (id: string, field: keyof SubjectEntry, value: string) => {
+    setInput({
+      ...input,
+      subjects: input.subjects.map((s) =>
+        s.id === id ? { ...s, [field]: value } : s
+      ),
+    });
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,11 +83,7 @@ export default function Generator() {
       const res = await fetch("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...input,
-          reportType: input.reportType,
-          specificTopics: input.specificTopics,
-        }),
+        body: JSON.stringify(input),
       });
 
       const data = await res.json();
@@ -68,10 +109,7 @@ export default function Generator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           childName: report.input.childName,
-          subject: report.input.subject,
-          activity: report.input.activity,
-          specificTopics: report.input.specificTopics,
-          duration: report.input.duration,
+          subjects: report.input.subjects,
           notes: report.input.notes,
           reportContent: report.content,
           generatedDate: new Date().toLocaleDateString("en-US", {
@@ -178,83 +216,116 @@ export default function Generator() {
                 </div>
               </div>
 
-              {/* Subject */}
-              <div>
-                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
-                  Subject
-                </label>
-                <select
-                  value={input.subject}
-                  onChange={(e) =>
-                    setInput({ ...input, subject: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
-                  required
-                >
-                  <option value="">Select a subject</option>
-                  <option value="Math">Math</option>
-                  <option value="Reading">Reading</option>
-                  <option value="Science">Science</option>
-                  <option value="History">History</option>
-                  <option value="Language Arts">Language Arts</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
+              {/* Subjects List */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Subjects Studied</h3>
+                  <button
+                    type="button"
+                    onClick={addSubject}
+                    className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    + Add Subject
+                  </button>
+                </div>
 
-              {/* Activity */}
-              <div>
-                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
-                  Platform/Resource
-                </label>
-                <input
-                  type="text"
-                  value={input.activity}
-                  onChange={(e) =>
-                    setInput({ ...input, activity: e.target.value })
-                  }
-                  placeholder="e.g., Khan Academy, IXL, Textbook, Worksheet"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
-                  required
-                />
-              </div>
+                <div className="space-y-6">
+                  {input.subjects.map((subject, idx) => (
+                    <div key={subject.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-xs font-medium text-gray-600">Subject {idx + 1}</span>
+                        {input.subjects.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeSubject(subject.id)}
+                            className="text-xs text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
 
-              {/* Specific Topics */}
-              <div>
-                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
-                  What specific topics were covered?
-                </label>
-                <textarea
-                  value={input.specificTopics}
-                  onChange={(e) =>
-                    setInput({ ...input, specificTopics: e.target.value })
-                  }
-                  placeholder="e.g., Fractions: adding, subtracting, converting improper to mixed numbers"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors resize-none bg-white"
-                  required
-                />
-              </div>
+                      {/* Subject Dropdown */}
+                      <div className="mb-3">
+                        <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-1">
+                          Subject
+                        </label>
+                        <select
+                          value={subject.subject}
+                          onChange={(e) =>
+                            updateSubject(subject.id, "subject", e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
+                          required
+                        >
+                          <option value="">Select a subject</option>
+                          <option value="Math">Math</option>
+                          <option value="Reading">Reading</option>
+                          <option value="Science">Science</option>
+                          <option value="History">History</option>
+                          <option value="Language Arts">Language Arts</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
 
-              {/* Duration */}
-              <div>
-                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
-                  Duration
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={input.duration}
-                    onChange={(e) =>
-                      setInput({ ...input, duration: e.target.value })
-                    }
-                    placeholder="45"
-                    min="1"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
-                    required
-                  />
-                  <div className="flex items-center text-sm text-gray-900 px-3">
-                    {input.reportType === "weekly" ? "hours" : "minutes"}
-                  </div>
+                      {/* Platform */}
+                      <div className="mb-3">
+                        <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-1">
+                          Platform/Resource
+                        </label>
+                        <input
+                          type="text"
+                          value={subject.platform}
+                          onChange={(e) =>
+                            updateSubject(subject.id, "platform", e.target.value)
+                          }
+                          placeholder="e.g., Khan Academy, IXL, Textbook"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
+                          required
+                        />
+                      </div>
+
+                      {/* Topics */}
+                      <div className="mb-3">
+                        <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-1">
+                          Specific Topics Covered
+                        </label>
+                        <textarea
+                          value={subject.topics}
+                          onChange={(e) =>
+                            updateSubject(subject.id, "topics", e.target.value)
+                          }
+                          placeholder="e.g., Fractions: adding, subtracting, converting"
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors resize-none bg-white"
+                          required
+                        />
+                      </div>
+
+                      {/* Duration */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-1">
+                          Duration
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={subject.duration}
+                            onChange={(e) =>
+                              updateSubject(subject.id, "duration", e.target.value)
+                            }
+                            placeholder={input.reportType === "weekly" ? "3" : "45"}
+                            min="1"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
+                            required
+                          />
+                          <div className="flex items-center text-xs text-gray-700 px-2">
+                            {input.reportType === "weekly" ? "hrs" : "min"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
