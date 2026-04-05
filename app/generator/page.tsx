@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface SubjectEntry {
   id: string;
+  date: string;
   subject: string;
   platform: string;
   topics: string;
@@ -23,12 +24,15 @@ interface GeneratedReport {
 }
 
 export default function Generator() {
+  const getDefaultDate = () => new Date().toISOString().split("T")[0];
+
   const [input, setInput] = useState<ReportInput>({
     childName: "",
     reportType: "daily",
     subjects: [
       {
         id: "1",
+        date: getDefaultDate(),
         subject: "",
         platform: "",
         topics: "",
@@ -42,12 +46,15 @@ export default function Generator() {
 
   const addSubject = () => {
     const newId = Math.random().toString(36).substr(2, 9);
+    // Use last subject's date if available, otherwise today
+    const lastDate = input.subjects[input.subjects.length - 1]?.date || getDefaultDate();
     setInput({
       ...input,
       subjects: [
         ...input.subjects,
         {
           id: newId,
+          date: lastDate,
           subject: "",
           platform: "",
           topics: "",
@@ -109,6 +116,7 @@ export default function Generator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           childName: report.input.childName,
+          reportType: report.input.reportType,
           subjects: report.input.subjects,
           notes: report.input.notes,
           reportContent: report.content,
@@ -219,13 +227,15 @@ export default function Generator() {
               {/* Subjects List */}
               <div className="border-t border-gray-200 pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Subjects Studied</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    {input.reportType === "weekly" ? "Learning by Day" : "Subjects Studied"}
+                  </h3>
                   <button
                     type="button"
                     onClick={addSubject}
                     className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition"
                   >
-                    + Add Subject
+                    + Add {input.reportType === "weekly" ? "Entry" : "Subject"}
                   </button>
                 </div>
 
@@ -233,7 +243,9 @@ export default function Generator() {
                   {input.subjects.map((subject, idx) => (
                     <div key={subject.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                       <div className="flex items-start justify-between mb-3">
-                        <span className="text-xs font-medium text-gray-600">Subject {idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-600">
+                          {input.reportType === "weekly" ? "Entry" : "Subject"} {idx + 1}
+                        </span>
                         {input.subjects.length > 1 && (
                           <button
                             type="button"
@@ -243,6 +255,22 @@ export default function Generator() {
                             Remove
                           </button>
                         )}
+                      </div>
+
+                      {/* Date Field - only for daily, show for weekly too */}
+                      <div className="mb-3">
+                        <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-1">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={subject.date}
+                          onChange={(e) =>
+                            updateSubject(subject.id, "date", e.target.value)
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
+                          required
+                        />
                       </div>
 
                       {/* Subject Dropdown */}
@@ -314,8 +342,9 @@ export default function Generator() {
                             onChange={(e) =>
                               updateSubject(subject.id, "duration", e.target.value)
                             }
-                            placeholder={input.reportType === "weekly" ? "3" : "45"}
-                            min="1"
+                            placeholder={input.reportType === "weekly" ? "1.5" : "45"}
+                            min="0.25"
+                            step="0.25"
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
                             required
                           />

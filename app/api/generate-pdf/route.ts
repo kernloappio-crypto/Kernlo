@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 interface SubjectEntry {
   id: string;
+  date: string;
   subject: string;
   platform: string;
   topics: string;
@@ -10,6 +11,7 @@ interface SubjectEntry {
 
 interface PDFRequest {
   childName: string;
+  reportType: "daily" | "weekly";
   subjects: SubjectEntry[];
   notes: string;
   reportContent: string;
@@ -116,16 +118,63 @@ export async function POST(req: NextRequest) {
             </div>
 
             <div class="section">
-              <div class="section-title">Learning Activities</div>
+              <div class="section-title">${body.reportType === "weekly" ? "Learning by Day" : "Learning Activities"}</div>
               <div class="activity-box">
-                ${body.subjects.map((subject: SubjectEntry) => `
-                  <div class="activity-item" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
-                    <div><span class="label">Subject:</span> <span class="value">${subject.subject}</span></div>
-                    <div><span class="label">Platform:</span> <span class="value">${subject.platform}</span></div>
-                    <div><span class="label">Topics:</span> <span class="value">${subject.topics}</span></div>
-                    <div><span class="label">Duration:</span> <span class="value">${subject.duration} min</span></div>
-                  </div>
-                `).join("")}
+                ${(() => {
+                  if (body.reportType === "weekly") {
+                    // Group by date
+                    const byDate: { [key: string]: SubjectEntry[] } = {};
+                    body.subjects.forEach((subject: SubjectEntry) => {
+                      if (!byDate[subject.date]) byDate[subject.date] = [];
+                      byDate[subject.date].push(subject);
+                    });
+
+                    return Object.keys(byDate)
+                      .sort()
+                      .map((date: string) => {
+                        const dateObj = new Date(date);
+                        const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+                        const formattedDate = dateObj.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+
+                        return \`
+                          <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+                            <div style="font-weight: 600; color: #000; margin-bottom: 10px;">\${dayName}, \${formattedDate}</div>
+                            \${byDate[date].map((subject: SubjectEntry) => \`
+                              <div style="margin-bottom: 8px; margin-left: 10px;">
+                                <div><span class="label">Subject:</span> <span class="value">\${subject.subject}</span></div>
+                                <div><span class="label">Platform:</span> <span class="value">\${subject.platform}</span></div>
+                                <div><span class="label">Topics:</span> <span class="value">\${subject.topics}</span></div>
+                                <div><span class="label">Duration:</span> <span class="value">\${subject.duration} hrs</span></div>
+                              </div>
+                            \`).join("")}
+                          </div>
+                        \`;
+                      })
+                      .join("");
+                  } else {
+                    // Daily format
+                    return body.subjects.map((subject: SubjectEntry) => {
+                      const dateObj = new Date(subject.date);
+                      const formattedDate = dateObj.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
+                      return \`
+                        <div class="activity-item" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
+                          <div><span class="label">Date:</span> <span class="value">\${formattedDate}</span></div>
+                          <div><span class="label">Subject:</span> <span class="value">\${subject.subject}</span></div>
+                          <div><span class="label">Platform:</span> <span class="value">\${subject.platform}</span></div>
+                          <div><span class="label">Topics:</span> <span class="value">\${subject.topics}</span></div>
+                          <div><span class="label">Duration:</span> <span class="value">\${subject.duration} min</span></div>
+                        </div>
+                      \`;
+                    }).join("");
+                  }
+                })()}
                 ${body.notes ? `<div class="activity-item" style="margin-top: 12px;"><span class="label">Notes:</span> <span class="value">${body.notes}</span></div>` : ""}
               </div>
             </div>

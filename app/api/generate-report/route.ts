@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 interface SubjectEntry {
   id: string;
+  date: string;
   subject: string;
   platform: string;
   topics: string;
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // Validate each subject has required fields
     for (const subject of body.subjects) {
-      if (!subject.subject || !subject.platform || !subject.topics || !subject.duration) {
+      if (!subject.date || !subject.subject || !subject.platform || !subject.topics || !subject.duration) {
         return NextResponse.json(
           { error: "All subject fields are required" },
           { status: 400 }
@@ -38,10 +39,49 @@ export async function POST(req: NextRequest) {
     }
 
     // Format subjects for the prompt
-    const subjectsText = body.subjects.map((s) => {
-      const duration = body.reportType === "weekly" ? `${s.duration} hours` : `${s.duration} minutes`;
-      return `Subject: ${s.subject}\nPlatform: ${s.platform}\nTopics: ${s.topics}\nDuration: ${duration}`;
-    }).join("\n\n");
+    let subjectsText = "";
+
+    if (body.reportType === "weekly") {
+      // Group by date for weekly reports
+      const byDate: { [key: string]: SubjectEntry[] } = {};
+      for (const subject of body.subjects) {
+        if (!byDate[subject.date]) {
+          byDate[subject.date] = [];
+        }
+        byDate[subject.date].push(subject);
+      }
+
+      // Format as day-by-day sections
+      subjectsText = Object.keys(byDate)
+        .sort()
+        .map((date) => {
+          const dateObj = new Date(date);
+          const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+          const formattedDate = dateObj.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+
+          const dayActivities = byDate[date]
+            .map((s) => `- ${s.subject} (${s.platform}): ${s.topics} (${s.duration} hours)`)
+            .join("\n");
+
+          return `${dayName}, ${formattedDate}:\n${dayActivities}`;
+        })
+        .join("\n\n");
+    } else {
+      // For daily, just list all subjects
+      subjectsText = body.subjects
+        .map((s) => {
+          const date = new Date(s.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          return `Date: ${date}\nSubject: ${s.subject}\nPlatform: ${s.platform}\nTopics: ${s.topics}\nDuration: ${s.duration} minutes`;
+        })
+        .join("\n\n");
+    }
 
     const reportPeriod = body.reportType === "weekly" ? "this week" : "today";
 
