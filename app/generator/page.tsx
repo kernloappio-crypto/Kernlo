@@ -4,8 +4,10 @@ import { useState } from "react";
 
 interface ReportInput {
   childName: string;
+  reportType: "daily" | "weekly";
   subject: string;
   activity: string;
+  specificTopics: string;
   duration: string;
   notes: string;
 }
@@ -18,8 +20,10 @@ interface GeneratedReport {
 export default function Generator() {
   const [input, setInput] = useState<ReportInput>({
     childName: "",
+    reportType: "daily",
     subject: "",
     activity: "",
+    specificTopics: "",
     duration: "",
     notes: "",
   });
@@ -34,7 +38,11 @@ export default function Generator() {
       const res = await fetch("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify({
+          ...input,
+          reportType: input.reportType,
+          specificTopics: input.specificTopics,
+        }),
       });
 
       const data = await res.json();
@@ -62,6 +70,7 @@ export default function Generator() {
           childName: report.input.childName,
           subject: report.input.subject,
           activity: report.input.activity,
+          specificTopics: report.input.specificTopics,
           duration: report.input.duration,
           notes: report.input.notes,
           reportContent: report.content,
@@ -119,7 +128,7 @@ export default function Generator() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Child Name */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
                   Child's Name
                 </label>
                 <input
@@ -129,14 +138,49 @@ export default function Generator() {
                     setInput({ ...input, childName: e.target.value })
                   }
                   placeholder="e.g., Emma"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
                   required
                 />
               </div>
 
+              {/* Report Type */}
+              <div>
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
+                  Report Type
+                </label>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value="daily"
+                      checked={input.reportType === "daily"}
+                      onChange={(e) =>
+                        setInput({ ...input, reportType: "daily" })
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-900">Daily</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value="weekly"
+                      checked={input.reportType === "weekly"}
+                      onChange={(e) =>
+                        setInput({ ...input, reportType: "weekly" })
+                      }
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-gray-900">Weekly</span>
+                  </label>
+                </div>
+              </div>
+
               {/* Subject */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
                   Subject
                 </label>
                 <select
@@ -144,7 +188,7 @@ export default function Generator() {
                   onChange={(e) =>
                     setInput({ ...input, subject: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
                   required
                 >
                   <option value="">Select a subject</option>
@@ -159,8 +203,8 @@ export default function Generator() {
 
               {/* Activity */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
-                  Activity
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
+                  Platform/Resource
                 </label>
                 <input
                   type="text"
@@ -168,15 +212,32 @@ export default function Generator() {
                   onChange={(e) =>
                     setInput({ ...input, activity: e.target.value })
                   }
-                  placeholder="e.g., Khan Academy lessons on fractions"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors bg-white"
+                  placeholder="e.g., Khan Academy, IXL, Textbook, Worksheet"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
+                  required
+                />
+              </div>
+
+              {/* Specific Topics */}
+              <div>
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
+                  What specific topics were covered?
+                </label>
+                <textarea
+                  value={input.specificTopics}
+                  onChange={(e) =>
+                    setInput({ ...input, specificTopics: e.target.value })
+                  }
+                  placeholder="e.g., Fractions: adding, subtracting, converting improper to mixed numbers"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors resize-none bg-white"
                   required
                 />
               </div>
 
               {/* Duration */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
                   Duration
                 </label>
                 <div className="flex gap-2">
@@ -188,28 +249,28 @@ export default function Generator() {
                     }
                     placeholder="45"
                     min="1"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors bg-white"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors bg-white"
                     required
                   />
-                  <div className="flex items-center text-sm text-gray-700 px-3">
-                    minutes
+                  <div className="flex items-center text-sm text-gray-900 px-3">
+                    {input.reportType === "weekly" ? "hours" : "minutes"}
                   </div>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
-                  Additional Notes
+                <label className="text-xs font-medium text-gray-900 uppercase tracking-wide block mb-2">
+                  Additional Notes (Optional)
                 </label>
                 <textarea
                   value={input.notes}
                   onChange={(e) =>
                     setInput({ ...input, notes: e.target.value })
                   }
-                  placeholder="Any additional details about the lesson..."
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-600 transition-colors resize-none bg-white"
+                  placeholder="Any additional details about performance, challenges, or achievements..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-300 transition-colors resize-none bg-white"
                 />
               </div>
 

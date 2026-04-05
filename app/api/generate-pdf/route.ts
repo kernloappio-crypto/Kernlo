@@ -4,6 +4,7 @@ interface PDFRequest {
   childName: string;
   subject: string;
   activity: string;
+  specificTopics: string;
   duration: string;
   notes: string;
   reportContent: string;
@@ -113,7 +114,8 @@ export async function POST(req: NextRequest) {
               <div class="section-title">Activity Summary</div>
               <div class="activity-box">
                 <div class="activity-item"><span class="label">Subject:</span> <span class="value">${body.subject}</span></div>
-                <div class="activity-item"><span class="label">Activity:</span> <span class="value">${body.activity}</span></div>
+                <div class="activity-item"><span class="label">Platform:</span> <span class="value">${body.activity}</span></div>
+                <div class="activity-item"><span class="label">Topics:</span> <span class="value">${body.specificTopics}</span></div>
                 <div class="activity-item"><span class="label">Duration:</span> <span class="value">${body.duration} minutes</span></div>
                 ${body.notes ? `<div class="activity-item"><span class="label">Notes:</span> <span class="value">${body.notes}</span></div>` : ""}
               </div>
