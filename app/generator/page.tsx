@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { generatePDF } from "@/lib/pdf-generator";
 
 interface ReportInput {
   childName: string;
@@ -56,21 +55,27 @@ export default function Generator() {
     if (!report) return;
 
     try {
-      const blob = await generatePDF({
-        childName: report.input.childName,
-        subject: report.input.subject,
-        activity: report.input.activity,
-        duration: report.input.duration,
-        notes: report.input.notes,
-        reportContent: report.content,
-        generatedDate: new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+      const res = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          childName: report.input.childName,
+          subject: report.input.subject,
+          activity: report.input.activity,
+          duration: report.input.duration,
+          notes: report.input.notes,
+          reportContent: report.content,
+          generatedDate: new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
         }),
       });
 
-      // Download the PDF
+      if (!res.ok) throw new Error("PDF generation failed");
+
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -80,7 +85,7 @@ export default function Generator() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("PDF generation error:", error);
+      console.error("PDF download error:", error);
       alert("Error downloading PDF");
     }
   }
