@@ -70,6 +70,62 @@ export default function DashboardPage() {
 
   const freeReportsLeft = Math.max(0, 3 - usageCount);
 
+  async function handleDownloadReport(reportId: string, childName: string) {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const userId = localStorage.getItem("user_id");
+
+      if (!token || !userId) {
+        router.push("/auth/login");
+        return;
+      }
+
+      // Fetch the report data
+      const res = await fetch(`/api/reports/${reportId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-User-ID": userId,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch report");
+
+      const data = await res.json();
+
+      // Generate PDF from saved data
+      const pdfRes = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          childName: data.report.child_name,
+          reportType: data.report.report_type,
+          subjects: data.report.subjects,
+          notes: data.report.notes,
+          reportContent: data.report.report_content,
+          generatedDate: new Date(data.report.generated_date).toLocaleDateString(
+            "en-US",
+            { year: "numeric", month: "long", day: "numeric" }
+          ),
+        }),
+      });
+
+      if (!pdfRes.ok) throw new Error("PDF generation failed");
+
+      const blob = await pdfRes.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${childName}-progress-report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Error downloading report");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -178,14 +234,12 @@ export default function DashboardPage() {
                         )}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 text-sm text-black border border-gray-300 rounded hover:bg-gray-50 transition font-medium">
-                        View
-                      </button>
-                      <button className="px-3 py-1 text-sm bg-black text-white rounded hover:bg-gray-900 transition font-medium">
-                        Download
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => handleDownloadReport(report.id, report.child_name)}
+                      className="px-3 py-1 text-sm bg-black text-white rounded hover:bg-gray-900 transition font-medium"
+                    >
+                      Download
+                    </button>
                   </div>
                 </div>
               ))}

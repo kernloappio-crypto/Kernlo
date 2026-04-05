@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface SubjectEntry {
   id: string;
@@ -24,6 +25,22 @@ interface GeneratedReport {
 }
 
 export default function Generator() {
+  const router = useRouter();
+  const [authenticated, setAuthenticated] = useState(false);
+  const [userId, setUserId] = useState("");
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    const uid = localStorage.getItem("user_id");
+
+    if (!token || !uid) {
+      router.push("/auth/login");
+      return;
+    }
+
+    setAuthenticated(true);
+    setUserId(uid);
+  }, [router]);
+
   const getDefaultDate = () => new Date().toISOString().split("T")[0];
 
   const [input, setInput] = useState<ReportInput>({
@@ -143,6 +160,47 @@ export default function Generator() {
       console.error("PDF download error:", error);
       alert("Error downloading PDF");
     }
+  }
+
+  async function handleSaveReport() {
+    if (!report || !userId) return;
+
+    try {
+      const res = await fetch("/api/reports/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          "X-User-ID": userId,
+        },
+        body: JSON.stringify({
+          childName: report.input.childName,
+          reportType: report.input.reportType,
+          subjects: report.input.subjects,
+          notes: report.input.notes,
+          reportContent: report.content,
+          generatedDate: new Date().toISOString().split("T")[0],
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save report");
+
+      alert("Report saved to your dashboard!");
+      setReport(null);
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Error saving report");
+    }
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -404,8 +462,14 @@ export default function Generator() {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={handleDownloadPDF}
+                  onClick={handleSaveReport}
                   className="flex-1 px-4 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-gray-900 transition-colors"
+                >
+                  Save to Dashboard
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-black rounded-lg font-medium text-sm hover:bg-gray-100 transition-colors"
                 >
                   Download PDF
                 </button>
