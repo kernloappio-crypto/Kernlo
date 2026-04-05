@@ -12,8 +12,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const userId = req.headers.get("X-User-ID");
     const token = req.headers.get("Authorization")?.split(" ")[1];
@@ -39,7 +40,7 @@ export async function GET(
     const { data: report, error: fetchError } = await supabase
       .from("reports")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId)
       .single();
 
