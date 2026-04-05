@@ -23,23 +23,32 @@ export default function SignupPage() {
       return;
     }
 
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // Simple localStorage auth (MVP only)
+      const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Signup failed");
+      if (users[email]) {
+        setError("Email already registered");
         return;
       }
 
-      // Store auth token
-      localStorage.setItem("auth_token", data.session.access_token);
-      localStorage.setItem("user_id", data.user.id);
+      // Store user
+      users[email] = {
+        email,
+        password, // NOT secure for production
+        createdAt: new Date().toISOString(),
+      };
+
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("auth_token", "token_" + btoa(email));
+      localStorage.setItem("user_id", email);
+      localStorage.setItem("user_email", email);
 
       router.push("/dashboard");
     } catch (err) {

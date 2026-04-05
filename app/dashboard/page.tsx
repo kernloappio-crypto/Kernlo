@@ -10,99 +10,65 @@ interface Report {
   report_type: string;
   generated_date: string;
   subjects: any[];
+  report_content: string;
+  notes?: string;
 }
 
 export default function DashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usageCount, setUsageCount] = useState(0);
   const [email, setEmail] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem("auth_token");
-      const userId = localStorage.getItem("user_id");
+    const checkAuth = () => {
+      const userEmail = localStorage.getItem("user_email");
 
-      if (!token || !userId) {
+      if (!userEmail) {
         router.push("/auth/login");
         return;
       }
 
-      await fetchReports(userId, token);
+      setEmail(userEmail);
+      loadReports(userEmail);
     };
 
     checkAuth();
   }, [router]);
 
-  async function fetchReports(userId: string, token: string) {
-    try {
-      const res = await fetch("/api/dashboard/reports", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-User-ID": userId,
-        },
-      });
+  function loadReports(userEmail: string) {
+    const allReports = JSON.parse(
+      localStorage.getItem("reports") || "{}"
+    );
+    const userReports = (allReports[userEmail] || []).sort(
+      (a: Report, b: Report) =>
+        new Date(b.generated_date).getTime() -
+        new Date(a.generated_date).getTime()
+    );
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          router.push("/auth/login");
-        }
-        return;
-      }
-
-      const data = await res.json();
-      setReports(data.reports || []);
-      setUsageCount(data.usageCount || 0);
-      setEmail(data.email || "");
-    } catch (err) {
-      console.error("Failed to fetch reports:", err);
-    } finally {
-      setLoading(false);
-    }
+    setReports(userReports);
+    setLoading(false);
   }
 
   function handleLogout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_id");
+    localStorage.removeItem("user_email");
     router.push("/");
   }
 
-  const freeReportsLeft = Math.max(0, 3 - usageCount);
-
-  async function handleDownloadReport(reportId: string, childName: string) {
+  async function handleDownloadReport(report: Report) {
     try {
-      const token = localStorage.getItem("auth_token");
-      const userId = localStorage.getItem("user_id");
-
-      if (!token || !userId) {
-        router.push("/auth/login");
-        return;
-      }
-
-      // Fetch the report data
-      const res = await fetch(`/api/reports/${reportId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-User-ID": userId,
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch report");
-
-      const data = await res.json();
-
-      // Generate PDF from saved data
       const pdfRes = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          childName: data.report.child_name,
-          reportType: data.report.report_type,
-          subjects: data.report.subjects,
-          notes: data.report.notes,
-          reportContent: data.report.report_content,
-          generatedDate: new Date(data.report.generated_date).toLocaleDateString(
+          childName: report.child_name,
+          reportType: report.report_type,
+          subjects: report.subjects,
+          notes: report.notes,
+          reportContent: report.report_content,
+          generatedDate: new Date(report.generated_date).toLocaleDateString(
             "en-US",
             { year: "numeric", month: "long", day: "numeric" }
           ),
@@ -115,7 +81,7 @@ export default function DashboardPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${childName}-progress-report.pdf`;
+      link.download = `${report.child_name}-progress-report.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -125,6 +91,9 @@ export default function DashboardPage() {
       alert("Error downloading report");
     }
   }
+
+  const usageCount = reports.length;
+  const freeReportsLeft = Math.max(0, 3 - usageCount);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -235,7 +204,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <button 
-                      onClick={() => handleDownloadReport(report.id, report.child_name)}
+                      onClick={() => handleDownloadReport(report)}
                       className="px-3 py-1 text-sm bg-black text-white rounded hover:bg-gray-900 transition font-medium"
                     >
                       Download

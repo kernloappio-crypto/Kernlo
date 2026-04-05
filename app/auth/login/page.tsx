@@ -17,22 +17,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // Simple localStorage auth (MVP only)
+      const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed");
+      const user = users[email];
+      if (!user || user.password !== password) {
+        setError("Invalid email or password");
         return;
       }
 
-      // Store auth token
-      localStorage.setItem("auth_token", data.session.access_token);
-      localStorage.setItem("user_id", data.user.id);
+      // Set session
+      localStorage.setItem("auth_token", "token_" + btoa(email));
+      localStorage.setItem("user_id", email);
+      localStorage.setItem("user_email", email);
 
       router.push("/dashboard");
     } catch (err) {

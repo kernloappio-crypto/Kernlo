@@ -166,24 +166,25 @@ export default function Generator() {
     if (!report || !userId) return;
 
     try {
-      const res = await fetch("/api/reports/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-          "X-User-ID": userId,
-        },
-        body: JSON.stringify({
-          childName: report.input.childName,
-          reportType: report.input.reportType,
-          subjects: report.input.subjects,
-          notes: report.input.notes,
-          reportContent: report.content,
-          generatedDate: new Date().toISOString().split("T")[0],
-        }),
-      });
+      // Save to localStorage
+      const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
+      
+      if (!allReports[userId]) {
+        allReports[userId] = [];
+      }
 
-      if (!res.ok) throw new Error("Failed to save report");
+      const newReport = {
+        id: Math.random().toString(36).substr(2, 9),
+        child_name: report.input.childName,
+        report_type: report.input.reportType,
+        subjects: report.input.subjects,
+        notes: report.input.notes,
+        report_content: report.content,
+        generated_date: new Date().toISOString().split("T")[0],
+      };
+
+      allReports[userId].push(newReport);
+      localStorage.setItem("reports", JSON.stringify(allReports));
 
       alert("Report saved to your dashboard!");
       setReport(null);
