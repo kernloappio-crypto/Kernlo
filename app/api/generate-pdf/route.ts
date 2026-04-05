@@ -22,6 +22,73 @@ export async function POST(req: NextRequest) {
   try {
     const body: PDFRequest = await req.json();
 
+    // Build the activities section HTML
+    let activitiesHTML = "";
+
+    if (body.reportType === "weekly") {
+      // Group by date
+      const byDate: { [key: string]: SubjectEntry[] } = {};
+      body.subjects.forEach((subject: SubjectEntry) => {
+        if (!byDate[subject.date]) byDate[subject.date] = [];
+        byDate[subject.date].push(subject);
+      });
+
+      Object.keys(byDate)
+        .sort()
+        .forEach((date: string) => {
+          const dateObj = new Date(date);
+          const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+          const formattedDate = dateObj.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+
+          activitiesHTML += `
+            <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+              <div style="font-weight: 600; color: #000; margin-bottom: 10px;">${dayName}, ${formattedDate}</div>
+          `;
+
+          byDate[date].forEach((subject: SubjectEntry) => {
+            activitiesHTML += `
+              <div style="margin-bottom: 8px; margin-left: 10px;">
+                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Subject:</span> <span style="color: #1a1a1a;">${subject.subject}</span></div>
+                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Platform:</span> <span style="color: #1a1a1a;">${subject.platform}</span></div>
+                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Topics:</span> <span style="color: #1a1a1a;">${subject.topics}</span></div>
+                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Duration:</span> <span style="color: #1a1a1a;">${subject.duration} hrs</span></div>
+              </div>
+            `;
+          });
+
+          activitiesHTML += `</div>`;
+        });
+    } else {
+      // Daily format
+      body.subjects.forEach((subject: SubjectEntry) => {
+        const dateObj = new Date(subject.date);
+        const formattedDate = dateObj.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+
+        activitiesHTML += `
+          <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
+            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Date:</span> <span style="color: #1a1a1a;">${formattedDate}</span></div>
+            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Subject:</span> <span style="color: #1a1a1a;">${subject.subject}</span></div>
+            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Platform:</span> <span style="color: #1a1a1a;">${subject.platform}</span></div>
+            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Topics:</span> <span style="color: #1a1a1a;">${subject.topics}</span></div>
+            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Duration:</span> <span style="color: #1a1a1a;">${subject.duration} min</span></div>
+          </div>
+        `;
+      });
+    }
+
+    if (body.notes) {
+      activitiesHTML += `
+        <div style="margin-top: 12px;"><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Notes:</span> <span style="color: #1a1a1a;">${body.notes}</span></div>
+      `;
+    }
+
     // Create HTML content for PDF
     const htmlContent = `
       <!DOCTYPE html>
@@ -120,62 +187,7 @@ export async function POST(req: NextRequest) {
             <div class="section">
               <div class="section-title">${body.reportType === "weekly" ? "Learning by Day" : "Learning Activities"}</div>
               <div class="activity-box">
-                ${(() => {
-                  if (body.reportType === "weekly") {
-                    // Group by date
-                    const byDate: { [key: string]: SubjectEntry[] } = {};
-                    body.subjects.forEach((subject: SubjectEntry) => {
-                      if (!byDate[subject.date]) byDate[subject.date] = [];
-                      byDate[subject.date].push(subject);
-                    });
-
-                    return Object.keys(byDate)
-                      .sort()
-                      .map((date: string) => {
-                        const dateObj = new Date(date);
-                        const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
-                        const formattedDate = dateObj.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
-
-                        return \`
-                          <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
-                            <div style="font-weight: 600; color: #000; margin-bottom: 10px;">\${dayName}, \${formattedDate}</div>
-                            \${byDate[date].map((subject: SubjectEntry) => \`
-                              <div style="margin-bottom: 8px; margin-left: 10px;">
-                                <div><span class="label">Subject:</span> <span class="value">\${subject.subject}</span></div>
-                                <div><span class="label">Platform:</span> <span class="value">\${subject.platform}</span></div>
-                                <div><span class="label">Topics:</span> <span class="value">\${subject.topics}</span></div>
-                                <div><span class="label">Duration:</span> <span class="value">\${subject.duration} hrs</span></div>
-                              </div>
-                            \`).join("")}
-                          </div>
-                        \`;
-                      })
-                      .join("");
-                  } else {
-                    // Daily format
-                    return body.subjects.map((subject: SubjectEntry) => {
-                      const dateObj = new Date(subject.date);
-                      const formattedDate = dateObj.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      });
-                      return \`
-                        <div class="activity-item" style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
-                          <div><span class="label">Date:</span> <span class="value">\${formattedDate}</span></div>
-                          <div><span class="label">Subject:</span> <span class="value">\${subject.subject}</span></div>
-                          <div><span class="label">Platform:</span> <span class="value">\${subject.platform}</span></div>
-                          <div><span class="label">Topics:</span> <span class="value">\${subject.topics}</span></div>
-                          <div><span class="label">Duration:</span> <span class="value">\${subject.duration} min</span></div>
-                        </div>
-                      \`;
-                    }).join("");
-                  }
-                })()}
-                ${body.notes ? `<div class="activity-item" style="margin-top: 12px;"><span class="label">Notes:</span> <span class="value">${body.notes}</span></div>` : ""}
+                ${activitiesHTML}
               </div>
             </div>
 
