@@ -1,149 +1,250 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      setSubmitted(true);
-    } catch {
-      setSubmitted(true); // fail silently for now
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
-    <main className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto w-full">
-        <span className="text-xl font-bold tracking-tight text-white">
-          kernlo<span className="text-indigo-400">.</span>
-        </span>
-        <a
-          href="#waitlist"
-          className="text-sm bg-indigo-600 hover:bg-indigo-500 transition-colors px-4 py-2 rounded-full font-medium"
-        >
-          Join waitlist
-        </a>
+    <main className="min-h-screen bg-white text-gray-900">
+      {/* Navigation */}
+      <nav className="border-b border-gray-200 sticky top-0 z-50 bg-white/95 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="text-2xl font-bold text-black">kernlo</div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/generator"
+              className="text-sm text-gray-700 hover:text-black transition"
+            >
+              Generator
+            </Link>
+            <Link
+              href="/auth/login"
+              className="px-4 py-2 text-sm text-gray-700 hover:text-black transition"
+            >
+              Log In
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </div>
       </nav>
 
-      {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-20 max-w-3xl mx-auto w-full">
-        <div className="inline-block text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 rounded-full px-4 py-1 mb-6">
-          Built for homeschool families
+      {/* Hero Section */}
+      <section className="max-w-6xl mx-auto px-6 py-20 md:py-32 text-center">
+        <div className="inline-block text-xs font-semibold uppercase tracking-widest text-gray-600 bg-gray-100 rounded-full px-4 py-2 mb-6">
+          Progress Reports, Reimagined
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight mb-6 tracking-tight">
-          Stop drowning in{" "}
-          <span className="text-indigo-400">progress tracking.</span>
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+          Turn learning into{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-black to-gray-700">
+            professional reports
+          </span>
         </h1>
 
-        <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-xl leading-relaxed">
-          Kernlo turns what your child learned today into professional progress
-          reports — in minutes, not hours. No spreadsheets. No stress.
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+          Kernlo uses AI to transform a few details about what your child
+          learned into beautiful, school-ready progress reports. No spreadsheets.
+          No templates. Just done.
         </p>
 
-        {/* Waitlist Form */}
-        <div id="waitlist" className="w-full max-w-md">
-          {submitted ? (
-            <div className="bg-indigo-600/20 border border-indigo-500/30 rounded-2xl px-6 py-5 text-center">
-              <div className="text-2xl mb-2">🎉</div>
-              <p className="font-semibold text-white">You&apos;re on the list!</p>
-              <p className="text-zinc-400 text-sm mt-1">
-                We&apos;ll email you when Kernlo is ready.
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <Link
+            href="/generator"
+            className="px-8 py-4 bg-black text-white rounded-lg font-semibold text-lg hover:bg-gray-900 transition shadow-lg"
+          >
+            Start Free
+          </Link>
+          <Link
+            href="/auth/signup"
+            className="px-8 py-4 bg-gray-100 text-black rounded-lg font-semibold text-lg hover:bg-gray-200 transition"
+          >
+            Create Account
+          </Link>
+        </div>
+
+        {/* Feature Preview */}
+        <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
+          <img
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 600'%3E%3Crect fill='%23f3f4f6' width='1000' height='600'/%3E%3Crect fill='%23fff' x='50' y='50' width='900' height='500' rx='8'/%3E%3Ctext x='100' y='120' font-size='24' font-weight='bold' fill='%23000'%3EYour Report%3C/text%3E%3Crect fill='%23f0f0f0' x='100' y='150' width='800' height='300' rx='4'/%3E%3Ctext x='120' y='200' font-size='14' fill='%23666'%3EEmma engaged in Math today, exploring fractions...%3C/text%3E%3C/svg%3E"
+            alt="Report Preview"
+            className="w-full h-auto"
+          />
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <h2 className="text-4xl font-bold text-center mb-16">How it works</h2>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="text-center">
+            <div className="text-5xl mb-4">📝</div>
+            <h3 className="text-xl font-semibold mb-3">Log what happened</h3>
+            <p className="text-gray-600">
+              Tell us what your child studied — the subject, resource, topics,
+              and time spent.
+            </p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className="text-center">
+            <div className="text-5xl mb-4">✨</div>
+            <h3 className="text-xl font-semibold mb-3">AI writes the report</h3>
+            <p className="text-gray-600">
+              Our AI instantly transforms your notes into a professional,
+              school-ready assessment.
+            </p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className="text-center">
+            <div className="text-5xl mb-4">📥</div>
+            <h3 className="text-xl font-semibold mb-3">Download & submit</h3>
+            <p className="text-gray-600">
+              Export a polished PDF ready for your school district. That's it.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-16">Features</h2>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-xl border border-gray-200">
+              <div className="text-3xl mb-3">🎓</div>
+              <h3 className="text-lg font-semibold mb-2">Daily & Weekly</h3>
+              <p className="text-gray-600">
+                Log one day at a time or summarize your whole week in one
+                polished report.
               </p>
             </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-3"
-            >
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 transition-colors px-6 py-3 rounded-xl font-semibold whitespace-nowrap"
-              >
-                {loading ? "Joining..." : "Join waitlist"}
-              </button>
-            </form>
-          )}
-          <p className="text-zinc-600 text-xs mt-3">
-            Free to join. No spam. Ever.
-          </p>
-        </div>
-      </section>
 
-      {/* Features */}
-      <section className="px-6 py-16 max-w-5xl mx-auto w-full">
-        <div className="grid sm:grid-cols-3 gap-6">
-          {[
-            {
-              icon: "⚡",
-              title: "Reports in minutes",
-              desc: "Tell Kernlo what your child studied. AI does the rest — formatted, professional, ready to submit.",
-            },
-            {
-              icon: "📋",
-              title: "Compliance-ready",
-              desc: "Designed around real homeschool requirements. No more guessing what to include.",
-            },
-            {
-              icon: "📈",
-              title: "Track growth over time",
-              desc: "See your child's progress at a glance. Milestones, streaks, and subjects — all in one place.",
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
-            >
-              <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="font-semibold text-white mb-2">{f.title}</h3>
-              <p className="text-zinc-400 text-sm leading-relaxed">{f.desc}</p>
+            <div className="bg-white p-8 rounded-xl border border-gray-200">
+              <div className="text-3xl mb-3">📚</div>
+              <h3 className="text-lg font-semibold mb-2">Multi-Subject</h3>
+              <p className="text-gray-600">
+                Add multiple subjects in one report. Kernlo synthesizes them
+                into a cohesive narrative.
+              </p>
             </div>
-          ))}
+
+            <div className="bg-white p-8 rounded-xl border border-gray-200">
+              <div className="text-3xl mb-3">🔐</div>
+              <h3 className="text-lg font-semibold mb-2">Secure & Private</h3>
+              <p className="text-gray-600">
+                Your reports are encrypted and stored securely. Only you can
+                access them.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-xl border border-gray-200">
+              <div className="text-3xl mb-3">💾</div>
+              <h3 className="text-lg font-semibold mb-2">Save & Download</h3>
+              <p className="text-gray-600">
+                Keep a record of every report and re-download PDFs anytime.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-6 py-16 max-w-3xl mx-auto w-full text-center">
-        <h2 className="text-3xl font-bold mb-4">
-          Ready to reclaim your time?
-        </h2>
-        <p className="text-zinc-400 mb-8">
-          Join families already on the waitlist. Kernlo launches soon.
-        </p>
-        <a
-          href="#waitlist"
-          className="inline-block bg-indigo-600 hover:bg-indigo-500 transition-colors px-8 py-4 rounded-xl font-semibold text-lg"
-        >
-          Get early access →
-        </a>
+      {/* Pricing */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <h2 className="text-4xl font-bold text-center mb-16">Simple Pricing</h2>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Free Tier */}
+          <div className="border border-gray-200 rounded-xl p-10">
+            <h3 className="text-2xl font-bold mb-2">Free</h3>
+            <p className="text-gray-600 mb-6">Perfect to get started</p>
+            <div className="text-4xl font-bold mb-6">
+              $0<span className="text-lg text-gray-600">/month</span>
+            </div>
+            <ul className="space-y-3 mb-8 text-gray-700">
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> 3 reports per month
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Daily & weekly reports
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Multi-subject support
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> PDF export
+              </li>
+            </ul>
+            <Link
+              href="/auth/signup"
+              className="w-full block text-center px-6 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition"
+            >
+              Get Started
+            </Link>
+          </div>
+
+          {/* Premium Tier */}
+          <div className="border-2 border-black rounded-xl p-10 relative">
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-1 rounded-full text-sm font-semibold">
+              Coming Soon
+            </div>
+            <h3 className="text-2xl font-bold mb-2">Premium</h3>
+            <p className="text-gray-600 mb-6">For serious homeschoolers</p>
+            <div className="text-4xl font-bold mb-6">
+              $7<span className="text-lg text-gray-600">/month</span>
+            </div>
+            <ul className="space-y-3 mb-8 text-gray-700">
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Unlimited reports
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Everything in Free
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Activity templates
+              </li>
+              <li className="flex items-center gap-3">
+                <span className="text-lg">✓</span> Priority support
+              </li>
+            </ul>
+            <button
+              disabled
+              className="w-full px-6 py-3 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-black text-white py-20">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold mb-6">Ready to save time?</h2>
+          <p className="text-xl text-gray-300 mb-10">
+            Start generating professional reports in seconds.
+          </p>
+          <Link
+            href="/generator"
+            className="inline-block px-8 py-4 bg-white text-black rounded-lg font-semibold text-lg hover:bg-gray-200 transition"
+          >
+            Create Your First Report
+          </Link>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800 px-6 py-6 text-center text-zinc-600 text-sm">
-        © {new Date().getFullYear()} Kernlo. All rights reserved.
+      <footer className="border-t border-gray-200 py-10">
+        <div className="max-w-6xl mx-auto px-6 text-center text-gray-600 text-sm">
+          <p>© 2026 Kernlo. All rights reserved.</p>
+        </div>
       </footer>
     </main>
   );
