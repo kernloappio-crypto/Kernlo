@@ -42,45 +42,33 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkAuth = () => {
       const userEmail = localStorage.getItem("user_email");
-
       if (!userEmail) {
         router.push("/auth/login");
         return;
       }
-
       setEmail(userEmail);
       loadReports(userEmail);
     };
-
     checkAuth();
   }, [router]);
 
   function loadReports(userEmail: string) {
-    const allReports = JSON.parse(
-      localStorage.getItem("reports") || "{}"
-    );
+    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
     const userReports = (allReports[userEmail] || []) as Report[];
 
-    // Organize by child → subject → platform
     const organized: DashboardData = {};
-
     userReports.forEach((report) => {
       const childName = report.child_name;
-
       if (!organized[childName]) {
         organized[childName] = {};
       }
-
-      // Group subjects from this report
       report.subjects.forEach((subject) => {
         if (!organized[childName][subject.subject]) {
           organized[childName][subject.subject] = {};
         }
-
         if (!organized[childName][subject.subject][subject.platform]) {
           organized[childName][subject.subject][subject.platform] = [];
         }
-
         organized[childName][subject.subject][subject.platform].push(report);
       });
     });
@@ -91,7 +79,6 @@ export default function DashboardPage() {
     if (childrenList.length > 0) {
       setActiveChild(childrenList[0]);
     }
-
     setLoading(false);
   }
 
@@ -121,7 +108,6 @@ export default function DashboardPage() {
       });
 
       if (!pdfRes.ok) throw new Error("PDF generation failed");
-
       const blob = await pdfRes.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -132,170 +118,241 @@ export default function DashboardPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Download error:", error);
       alert("Error downloading report");
     }
   }
 
+  const activeChildData = dashboardData[activeChild] || {};
+  const allReports = Object.values(dashboardData)
+    .flatMap((child) =>
+      Object.values(child).flatMap((subject) =>
+        Object.values(subject).flat()
+      )
+    )
+    .sort((a, b) => new Date(b.generated_date).getTime() - new Date(a.generated_date).getTime());
+
+  const totalReports = allReports.length;
+  const totalHours = allReports.reduce(
+    (sum, report) =>
+      sum +
+      report.subjects.reduce(
+        (subSum, subject) => subSum + (parseInt(subject.duration) || 0),
+        0
+      ),
+    0
+  );
+
+  const subjectsTracked = new Set(
+    allReports.flatMap((r) => r.subjects.map((s) => s.subject))
+  ).size;
+
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <main className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-gray-600">Loading dashboard...</div>
+          <div className="text-gray-600">Loading...</div>
         </div>
       </main>
     );
   }
 
-  const activeChildData = dashboardData[activeChild] || {};
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-black">kernlo</h1>
-            <p className="text-xs text-gray-600 mt-1">{email}</p>
+    <main className="min-h-screen bg-gray-50">
+      <div className="flex">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-white border-r border-gray-200 min-h-screen p-6">
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-black">kernlo</h2>
           </div>
-          <div className="flex items-center gap-4">
+
+          <nav className="space-y-2">
             <Link
               href="/generator"
-              className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
+              className="block px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
             >
               New Report
             </Link>
+            <Link
+              href="/dashboard"
+              className="block px-4 py-2 rounded-lg text-sm font-medium bg-black text-white"
+            >
+              Dashboard
+            </Link>
+          </nav>
+
+          <div className="mt-12 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-600 mb-4">{email}</p>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+              className="w-full px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
             >
               Log Out
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {children.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-5xl mb-4">📄</div>
-            <h3 className="text-lg font-semibold text-black mb-2">
-              No reports yet
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Create your first progress report to get started
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Welcome Banner */}
+          <div className="bg-gradient-to-r from-black to-gray-900 text-white p-8 mb-8">
+            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
+            <p className="text-gray-300">
+              Here's your learning progress at a glance
             </p>
-            <Link
-              href="/generator"
-              className="inline-block px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition"
-            >
-              Create Report
-            </Link>
           </div>
-        ) : (
-          <>
-            {/* Child Tabs */}
-            <div className="mb-8 border-b border-gray-200">
-              <div className="flex gap-2 overflow-x-auto">
-                {children.map((child) => (
-                  <button
-                    key={child}
-                    onClick={() => setActiveChild(child)}
-                    className={`px-6 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
-                      activeChild === child
-                        ? "border-black text-black"
-                        : "border-transparent text-gray-600 hover:text-black"
-                    }`}
-                  >
-                    {child}
-                  </button>
-                ))}
+
+          <div className="px-8 pb-12">
+            {children.length === 0 ? (
+              <div className="bg-white rounded-lg p-12 text-center border border-gray-200">
+                <div className="text-5xl mb-4">📚</div>
+                <h3 className="text-lg font-semibold text-black mb-2">
+                  No reports yet
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Create your first progress report
+                </p>
+                <Link
+                  href="/generator"
+                  className="inline-block px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition"
+                >
+                  Create Report
+                </Link>
               </div>
-            </div>
-
-            {/* Subject Sections */}
-            <div className="space-y-8">
-              {Object.entries(activeChildData).map(([subject, platforms]) => (
-                <div key={subject} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Subject Header */}
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-black">{subject}</h2>
+            ) : (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="text-gray-600 text-sm font-medium mb-2">
+                      Total Reports
+                    </div>
+                    <div className="text-4xl font-bold text-black">
+                      {totalReports}
+                    </div>
                   </div>
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="text-gray-600 text-sm font-medium mb-2">
+                      Total Hours
+                    </div>
+                    <div className="text-4xl font-bold text-black">
+                      {totalHours}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="text-gray-600 text-sm font-medium mb-2">
+                      Subjects
+                    </div>
+                    <div className="text-4xl font-bold text-black">
+                      {subjectsTracked}
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Platform Subsections */}
-                  <div className="divide-y divide-gray-200">
-                    {Object.entries(platforms).map(([platform, reports]) => (
-                      <div key={platform} className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h3 className="font-medium text-gray-900">
+                {/* Child Tabs */}
+                <div className="mb-8 border-b border-gray-200">
+                  <div className="flex gap-2">
+                    {children.map((child) => (
+                      <button
+                        key={child}
+                        onClick={() => setActiveChild(child)}
+                        className={`px-6 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                          activeChild === child
+                            ? "border-black text-black"
+                            : "border-transparent text-gray-600 hover:text-black"
+                        }`}
+                      >
+                        {child}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subject Cards Grid */}
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  {Object.entries(activeChildData).map(([subject, platforms]) => {
+                    const reports = Object.values(platforms).flat();
+                    const subjectHours = reports.reduce(
+                      (sum, r) =>
+                        sum +
+                        r.subjects.reduce(
+                          (s, sub) => s + (parseInt(sub.duration) || 0),
+                          0
+                        ),
+                      0
+                    );
+
+                    return (
+                      <div
+                        key={subject}
+                        className="bg-white rounded-lg p-6 border border-gray-200"
+                      >
+                        <h3 className="font-semibold text-black mb-2">
+                          {subject}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          {reports.length} report{reports.length > 1 ? "s" : ""} •{" "}
+                          {subjectHours} hours
+                        </p>
+
+                        {/* Platforms */}
+                        <div className="space-y-2 mb-4">
+                          {Object.entries(platforms).map(([platform]) => (
+                            <div
+                              key={platform}
+                              className="text-xs text-gray-700 bg-gray-50 px-3 py-2 rounded"
+                            >
                               {platform}
-                            </h3>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {reports.length} report{reports.length > 1 ? "s" : ""} • Last updated{" "}
-                              {new Date(
-                                Math.max(
-                                  ...reports.map((r) =>
-                                    new Date(r.generated_date).getTime()
-                                  )
-                                )
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </p>
-                          </div>
+                            </div>
+                          ))}
                         </div>
 
-                        {/* Reports List for this Platform */}
-                        <div className="space-y-2">
-                          {reports
-                            .sort(
-                              (a, b) =>
-                                new Date(b.generated_date).getTime() -
-                                new Date(a.generated_date).getTime()
-                            )
-                            .map((report) => (
-                              <div
-                                key={report.id}
-                                className="flex items-center justify-between bg-gray-50 rounded p-3"
-                              >
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {report.report_type === "weekly"
-                                      ? "Weekly"
-                                      : "Daily"}{" "}
-                                    Report
-                                  </p>
-                                  <p className="text-xs text-gray-600">
-                                    {new Date(report.generated_date).toLocaleDateString(
-                                      "en-US",
-                                      {
-                                        weekday: "short",
-                                        month: "short",
-                                        day: "numeric",
-                                      }
-                                    )}
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => handleDownloadReport(report)}
-                                  className="px-3 py-1 text-xs bg-black text-white rounded hover:bg-gray-900 transition font-medium"
-                                >
-                                  Download
-                                </button>
-                              </div>
-                            ))}
+                        <button
+                          className="text-sm text-black font-medium hover:underline"
+                        >
+                          View Details →
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Recent Reports */}
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h3 className="font-semibold text-black">Recent Reports</h3>
+                  </div>
+                  <div className="divide-y divide-gray-200">
+                    {allReports.slice(0, 10).map((report) => (
+                      <div
+                        key={report.id}
+                        className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+                      >
+                        <div>
+                          <p className="font-medium text-black">
+                            {report.child_name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {report.subjects.map((s) => s.subject).join(", ")} •{" "}
+                            {new Date(report.generated_date).toLocaleDateString(
+                              "en-US",
+                              { month: "short", day: "numeric" }
+                            )}
+                          </p>
                         </div>
+                        <button
+                          onClick={() => handleDownloadReport(report)}
+                          className="text-sm px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition"
+                        >
+                          Download
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -212,8 +212,11 @@ export default function Generator() {
           kernlo
         </a>
         <div className="flex gap-4">
+          <a href="/dashboard" className="text-sm text-gray-600 hover:text-black transition">
+            Dashboard
+          </a>
           <a href="/" className="text-sm text-gray-600 hover:text-black transition">
-            Back
+            Home
           </a>
         </div>
       </nav>
