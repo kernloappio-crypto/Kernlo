@@ -43,6 +43,11 @@ export default function Generator() {
 
   const getDefaultDate = () => new Date().toISOString().split("T")[0];
 
+  const capitalizeFirstLetter = (str: string) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
   const [input, setInput] = useState<ReportInput>({
     childName: "",
     reportType: "daily",
@@ -175,7 +180,7 @@ export default function Generator() {
 
       const newReport = {
         id: Math.random().toString(36).substr(2, 9),
-        child_name: report.input.childName,
+        child_name: capitalizeFirstLetter(report.input.childName),
         report_type: report.input.reportType,
         subjects: report.input.subjects,
         notes: report.input.notes,

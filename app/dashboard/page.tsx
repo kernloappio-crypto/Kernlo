@@ -306,11 +306,7 @@ export default function DashboardPage() {
                           ))}
                         </div>
 
-                        <button
-                          className="text-sm text-black font-medium hover:underline"
-                        >
-                          View Details →
-                        </button>
+
                       </div>
                     );
                   })}
