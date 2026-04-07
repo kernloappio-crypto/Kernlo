@@ -31,6 +31,26 @@ interface DashboardData {
   };
 }
 
+const COLORS = {
+  primary: "#0066cc",
+  secondary: "#00d4ff",
+  accent1: "#ff6b6b",
+  accent2: "#ffd93d",
+  accent3: "#6bcf7f",
+  accent4: "#a78bfa",
+  dark: "#1a1a2e",
+  light: "#f0f7ff",
+};
+
+const SUBJECT_COLORS: { [key: string]: string } = {
+  Math: "#ff6b6b",
+  Reading: "#ffd93d",
+  Science: "#6bcf7f",
+  History: "#a78bfa",
+  "Language Arts": "#00d4ff",
+  Other: "#ff9999",
+};
+
 export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData>({});
   const [children, setChildren] = useState<string[]>([]);
@@ -89,39 +109,6 @@ export default function DashboardPage() {
     router.push("/");
   }
 
-  async function handleDownloadReport(report: Report) {
-    try {
-      const pdfRes = await fetch("/api/generate-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          childName: report.child_name,
-          reportType: report.report_type,
-          subjects: report.subjects,
-          notes: report.notes,
-          reportContent: report.report_content,
-          generatedDate: new Date(report.generated_date).toLocaleDateString(
-            "en-US",
-            { year: "numeric", month: "long", day: "numeric" }
-          ),
-        }),
-      });
-
-      if (!pdfRes.ok) throw new Error("PDF generation failed");
-      const blob = await pdfRes.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${report.child_name}-progress-report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      alert("Error downloading report");
-    }
-  }
-
   const activeChildData = dashboardData[activeChild] || {};
   const allReports = Object.values(dashboardData)
     .flatMap((child) =>
@@ -136,219 +123,239 @@ export default function DashboardPage() {
     (sum, report) =>
       sum +
       report.subjects.reduce(
-        (subSum, subject) => subSum + (parseInt(subject.duration) || 0),
+        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
         0
       ),
     0
   );
 
-  const subjectsTracked = new Set(
-    allReports.flatMap((r) => r.subjects.map((s) => s.subject))
-  ).size;
+  const getWeeklyData = () => {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const weekData = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+
+    allReports.forEach((report) => {
+      const reportDate = new Date(report.generated_date);
+      const dayOfWeek = reportDate.getDay();
+      const dayName = days[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+
+      report.subjects.forEach((subject) => {
+        weekData[dayName as keyof typeof weekData] += parseInt(subject.duration) || 0;
+      });
+    });
+
+    return days.map((day) => ({
+      day,
+      hours: Number((weekData[day as keyof typeof weekData] / 60).toFixed(1)),
+    }));
+  };
+
+  const weeklyData = getWeeklyData();
+  const maxHours = Math.max(...weeklyData.map((d) => d.hours), 1);
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-gray-600">Loading...</div>
+          <div style={{ color: COLORS.primary }}>Loading...</div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="flex">
-        {/* Left Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 min-h-screen p-6">
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-black">kernlo</h2>
-          </div>
+    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
+      {/* Sidebar */}
+      <div style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6 flex flex-col">
+        <div className="mb-8">
+          <h2 style={{ color: COLORS.primary }} className="text-2xl font-bold">
+            kernlo
+          </h2>
+        </div>
 
-          <nav className="space-y-2">
+        <nav className="space-y-2 mb-8">
+          <Link
+            href="/generator"
+            style={{ color: COLORS.dark }}
+            className="block px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
+          >
+            📝 New Report
+          </Link>
+        </nav>
+
+        <div className="mb-8">
+          <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-3">
+            Kids
+          </p>
+          <div className="space-y-2">
+            {children.map((child) => (
+              <button
+                key={child}
+                onClick={() => setActiveChild(child)}
+                style={{
+                  backgroundColor: activeChild === child ? COLORS.primary : "transparent",
+                  color: activeChild === child ? "white" : COLORS.dark,
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition hover:opacity-80"
+              >
+                {child}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-auto pt-6 border-t border-gray-200">
+          <p style={{ color: "#999" }} className="text-xs mb-4">
+            {email}
+          </p>
+          <button
+            onClick={handleLogout}
+            style={{ color: COLORS.primary, borderColor: COLORS.primary }}
+            className="w-full px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 transition font-medium"
+          >
+            Log Out
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        {children.length === 0 ? (
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-12 text-center border border-gray-200">
+            <div className="text-5xl mb-4">📚</div>
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-semibold mb-2">
+              No reports yet
+            </h3>
+            <p className="text-gray-600 mb-6">Create your first progress report</p>
             <Link
               href="/generator"
-              className="block px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              style={{ backgroundColor: COLORS.primary }}
+              className="inline-block px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition"
             >
-              New Report
+              Create Report
             </Link>
-            <Link
-              href="/dashboard"
-              className="block px-4 py-2 rounded-lg text-sm font-medium bg-black text-white"
-            >
-              Dashboard
-            </Link>
-          </nav>
-
-          <div className="mt-12 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-600 mb-4">{email}</p>
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              Log Out
-            </button>
           </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-black to-gray-900 text-white p-8 mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
-            <p className="text-gray-300">
-              Here's your learning progress at a glance
-            </p>
-          </div>
-
-          <div className="px-8 pb-12">
-            {children.length === 0 ? (
-              <div className="bg-white rounded-lg p-12 text-center border border-gray-200">
-                <div className="text-5xl mb-4">📚</div>
-                <h3 className="text-lg font-semibold text-black mb-2">
-                  No reports yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Create your first progress report
+        ) : (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-4">
+                  Total Courses
                 </p>
-                <Link
-                  href="/generator"
-                  className="inline-block px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition"
-                >
-                  Create Report
-                </Link>
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl font-bold" style={{ color: COLORS.primary }}>
+                    {Object.keys(activeChildData).length}
+                  </div>
+                  <div style={{ width: "80px", height: "80px" }} className="rounded-full flex items-center justify-center" style={{ backgroundColor: `${COLORS.primary}20` }}>
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                      <circle cx="30" cy="30" r="25" fill="none" stroke={COLORS.primary} strokeWidth="3" opacity="0.3" />
+                      <circle
+                        cx="30"
+                        cy="30"
+                        r="25"
+                        fill="none"
+                        stroke={COLORS.primary}
+                        strokeWidth="3"
+                        strokeDasharray={`${(Object.keys(activeChildData).length / 10) * 157} 157`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <>
-                {/* Stats Cards */}
-                <div className="grid grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
-                    <div className="text-gray-600 text-sm font-medium mb-2">
-                      Total Reports
-                    </div>
-                    <div className="text-4xl font-bold text-black">
-                      {totalReports}
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
-                    <div className="text-gray-600 text-sm font-medium mb-2">
-                      Total Hours
-                    </div>
-                    <div className="text-4xl font-bold text-black">
-                      {totalHours}
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
-                    <div className="text-gray-600 text-sm font-medium mb-2">
-                      Subjects
-                    </div>
-                    <div className="text-4xl font-bold text-black">
-                      {subjectsTracked}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Child Tabs */}
-                <div className="mb-8 border-b border-gray-200">
-                  <div className="flex gap-2">
-                    {children.map((child) => (
-                      <button
-                        key={child}
-                        onClick={() => setActiveChild(child)}
-                        className={`px-6 py-3 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
-                          activeChild === child
-                            ? "border-black text-black"
-                            : "border-transparent text-gray-600 hover:text-black"
-                        }`}
-                      >
-                        {child}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-4">
+                  Time Spent
+                </p>
+                <p className="text-4xl font-bold mb-2" style={{ color: COLORS.secondary }}>
+                  {totalHours.toFixed(1)}h
+                </p>
+                <p style={{ color: "#999" }} className="text-xs">
+                  This week
+                </p>
+              </div>
+            </div>
 
-                {/* Subject Cards Grid */}
-                <div className="grid grid-cols-2 gap-6 mb-8">
-                  {Object.entries(activeChildData).map(([subject, platforms]) => {
-                    const reports = Object.values(platforms).flat();
-                    const subjectHours = reports.reduce(
-                      (sum, r) =>
-                        sum +
-                        r.subjects.reduce(
-                          (s, sub) => s + (parseInt(sub.duration) || 0),
-                          0
-                        ),
+            {/* Weekly Graph */}
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
+              <h3 style={{ color: COLORS.dark }} className="font-semibold mb-6">
+                Weekly Progress
+              </h3>
+              <div className="flex items-end gap-3 h-40">
+                {weeklyData.map((data, idx) => (
+                  <div key={data.day} className="flex-1 flex flex-col items-center">
+                    <div className="w-full flex items-end justify-center" style={{ height: "120px" }}>
+                      <div
+                        style={{
+                          backgroundColor: [COLORS.accent1, COLORS.accent2, COLORS.accent3, COLORS.accent4, COLORS.secondary, COLORS.primary, COLORS.accent1][idx],
+                          height: `${(data.hours / maxHours) * 100}%`,
+                          width: "24px",
+                          borderRadius: "6px",
+                          minHeight: data.hours > 0 ? "8px" : "0px",
+                        }}
+                      />
+                    </div>
+                    <p style={{ color: "#666" }} className="text-xs mt-2 font-medium">
+                      {data.day}
+                    </p>
+                    <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
+                      {data.hours}h
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject Cards Grid */}
+            <div className="grid grid-cols-2 gap-6">
+              {Object.entries(activeChildData).map(([subject]) => {
+                const reports = Object.values(activeChildData[subject]).flat();
+                const subjectHours = reports.reduce(
+                  (sum, r) =>
+                    sum +
+                    r.subjects.reduce(
+                      (s, sub) => s + (parseInt(sub.duration) || 0) / 60,
                       0
-                    );
+                    ),
+                  0
+                );
+                const bgColor = SUBJECT_COLORS[subject] || COLORS.primary;
 
-                    return (
+                return (
+                  <Link
+                    key={subject}
+                    href={`/dashboard/subject?child=${activeChild}&subject=${subject}`}
+                    style={{ backgroundColor: "white", borderRadius: "12px" }}
+                    className="p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-4">
                       <div
-                        key={subject}
-                        className="bg-white rounded-lg p-6 border border-gray-200"
+                        style={{ backgroundColor: bgColor, width: "40px", height: "40px" }}
+                        className="rounded-lg flex items-center justify-center text-white font-bold"
                       >
-                        <h3 className="font-semibold text-black mb-2">
-                          {subject}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                          {reports.length} report{reports.length > 1 ? "s" : ""} •{" "}
-                          {subjectHours} hours
-                        </p>
-
-                        {/* Platforms */}
-                        <div className="space-y-2 mb-4">
-                          {Object.entries(platforms).map(([platform]) => (
-                            <div
-                              key={platform}
-                              className="text-xs text-gray-700 bg-gray-50 px-3 py-2 rounded"
-                            >
-                              {platform}
-                            </div>
-                          ))}
-                        </div>
-
-
+                        {subject.charAt(0)}
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Recent Reports */}
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <h3 className="font-semibold text-black">Recent Reports</h3>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {allReports.slice(0, 10).map((report) => (
-                      <div
-                        key={report.id}
-                        className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                      >
-                        <div>
-                          <p className="font-medium text-black">
-                            {report.child_name}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {report.subjects.map((s) => s.subject).join(", ")} •{" "}
-                            {new Date(report.generated_date).toLocaleDateString(
-                              "en-US",
-                              { month: "short", day: "numeric" }
-                            )}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDownloadReport(report)}
-                          className="text-sm px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 transition"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+                    </div>
+                    <h3 style={{ color: COLORS.dark }} className="font-semibold mb-1">
+                      {subject}
+                    </h3>
+                    <p style={{ color: "#999" }} className="text-sm mb-4">
+                      {reports.length} report{reports.length > 1 ? "s" : ""} • {subjectHours.toFixed(1)}h
+                    </p>
+                    <p style={{ color: bgColor }} className="text-sm font-medium">
+                      View Details →
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
