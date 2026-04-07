@@ -250,7 +250,7 @@ export default function DashboardPage() {
                   <div className="text-4xl font-bold" style={{ color: COLORS.primary }}>
                     {Object.keys(activeChildData).length}
                   </div>
-                  <div style={{ width: "80px", height: "80px" }} className="rounded-full flex items-center justify-center" style={{ backgroundColor: `${COLORS.primary}20` }}>
+                  <div style={{ width: "80px", height: "80px", backgroundColor: `${COLORS.primary}20` }} className="rounded-full flex items-center justify-center">
                     <svg width="60" height="60" viewBox="0 0 60 60">
                       <circle cx="30" cy="30" r="25" fill="none" stroke={COLORS.primary} strokeWidth="3" opacity="0.3" />
                       <circle

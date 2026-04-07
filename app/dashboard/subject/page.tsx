@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 
 interface Subject {
@@ -50,6 +52,8 @@ export default function SubjectDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!childName || !subjectName) return;
+
     const userEmail = localStorage.getItem("user_email");
     if (!userEmail) {
       router.push("/auth/login");
