@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jsPDF } from "jspdf";
 
 interface SubjectEntry {
   id: string;
@@ -22,20 +23,54 @@ export async function POST(req: NextRequest) {
   try {
     const body: PDFRequest = await req.json();
 
-    // Build the activities section HTML
-    let activitiesHTML = "";
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    let yPos = 20;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentWidth = pageWidth - margin * 2;
+
+    // Header
+    pdf.setFontSize(24);
+    pdf.setTextColor(0, 102, 204); // primary color
+    pdf.text("Learning Progress Report", margin, yPos);
+
+    yPos += 15;
+    pdf.setFontSize(10);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Student: ${body.childName}`, margin, yPos);
+    yPos += 6;
+    pdf.text(`Date: ${body.generatedDate}`, margin, yPos);
+
+    yPos += 12;
+    pdf.setDrawColor(0, 102, 204);
+    pdf.line(margin, yPos, pageWidth - margin, yPos);
+
+    yPos += 8;
+
+    // Activities Section
+    pdf.setFontSize(14);
+    pdf.setTextColor(26, 26, 46);
+    pdf.text(body.reportType === "weekly" ? "Learning by Day" : "Learning Activities", margin, yPos);
+
+    yPos += 10;
+    pdf.setFontSize(10);
+    pdf.setTextColor(60, 60, 60);
 
     if (body.reportType === "weekly") {
-      // Group by date
       const byDate: { [key: string]: SubjectEntry[] } = {};
-      body.subjects.forEach((subject: SubjectEntry) => {
+      body.subjects.forEach((subject) => {
         if (!byDate[subject.date]) byDate[subject.date] = [];
         byDate[subject.date].push(subject);
       });
 
       Object.keys(byDate)
         .sort()
-        .forEach((date: string) => {
+        .forEach((date) => {
           const dateObj = new Date(date);
           const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
           const formattedDate = dateObj.toLocaleDateString("en-US", {
@@ -43,170 +78,112 @@ export async function POST(req: NextRequest) {
             day: "numeric",
           });
 
-          activitiesHTML += `
-            <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
-              <div style="font-weight: 600; color: #000; margin-bottom: 10px;">${dayName}, ${formattedDate}</div>
-          `;
+          if (yPos > 250) {
+            pdf.addPage();
+            yPos = 20;
+          }
 
-          byDate[date].forEach((subject: SubjectEntry) => {
-            activitiesHTML += `
-              <div style="margin-bottom: 8px; margin-left: 10px;">
-                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Subject:</span> <span style="color: #1a1a1a;">${subject.subject}</span></div>
-                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Platform:</span> <span style="color: #1a1a1a;">${subject.platform}</span></div>
-                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Topics:</span> <span style="color: #1a1a1a;">${subject.topics}</span></div>
-                <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Duration:</span> <span style="color: #1a1a1a;">${subject.duration} hrs</span></div>
-              </div>
-            `;
+          pdf.setTextColor(0, 102, 204);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(`${dayName}, ${formattedDate}`, margin + 2, yPos);
+          yPos += 6;
+
+          byDate[date].forEach((subject) => {
+            if (yPos > 270) {
+              pdf.addPage();
+              yPos = 20;
+            }
+
+            pdf.setTextColor(26, 26, 46);
+            pdf.setFont("helvetica", "bold");
+            pdf.text(`• ${subject.subject}`, margin + 5, yPos);
+            yPos += 5;
+
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(`Platform: ${subject.platform} | Duration: ${subject.duration} min`, margin + 8, yPos);
+            yPos += 5;
+            pdf.text(`Topics: ${subject.topics}`, margin + 8, yPos);
+            yPos += 6;
           });
-
-          activitiesHTML += `</div>`;
         });
     } else {
-      // Daily format
-      body.subjects.forEach((subject: SubjectEntry) => {
-        const dateObj = new Date(subject.date);
-        const formattedDate = dateObj.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
+      body.subjects.forEach((subject) => {
+        if (yPos > 270) {
+          pdf.addPage();
+          yPos = 20;
+        }
 
-        activitiesHTML += `
-          <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ddd;">
-            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Date:</span> <span style="color: #1a1a1a;">${formattedDate}</span></div>
-            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Subject:</span> <span style="color: #1a1a1a;">${subject.subject}</span></div>
-            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Platform:</span> <span style="color: #1a1a1a;">${subject.platform}</span></div>
-            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Topics:</span> <span style="color: #1a1a1a;">${subject.topics}</span></div>
-            <div><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Duration:</span> <span style="color: #1a1a1a;">${subject.duration} min</span></div>
-          </div>
-        `;
+        pdf.setTextColor(26, 26, 46);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`• ${subject.subject}`, margin + 5, yPos);
+        yPos += 5;
+
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Platform: ${subject.platform} | Duration: ${subject.duration} min`, margin + 8, yPos);
+        yPos += 5;
+        pdf.text(`Topics: ${subject.topics}`, margin + 8, yPos);
+        yPos += 6;
       });
     }
 
-    if (body.notes) {
-      activitiesHTML += `
-        <div style="margin-top: 12px;"><span style="font-weight: 600; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; width: 80px;">Notes:</span> <span style="color: #1a1a1a;">${body.notes}</span></div>
-      `;
+    yPos += 8;
+
+    // Assessment Section
+    if (yPos > 250) {
+      pdf.addPage();
+      yPos = 20;
     }
 
-    // Create HTML content for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              color: #1a1a1a;
-              line-height: 1.6;
-              padding: 0;
-              margin: 0;
-            }
-            .container {
-              width: 100%;
-              max-width: 850px;
-              padding: 40px;
-              box-sizing: border-box;
-              background: white;
-            }
-            .header {
-              border-bottom: 2px solid #000;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
-            }
-            .header h1 {
-              margin: 0;
-              font-size: 24px;
-              font-weight: 600;
-            }
-            .metadata {
-              display: flex;
-              justify-content: space-between;
-              margin-top: 15px;
-              font-size: 12px;
-              color: #555;
-            }
-            .section {
-              margin-bottom: 30px;
-            }
-            .section-title {
-              font-size: 14px;
-              font-weight: 600;
-              margin-bottom: 12px;
-              color: #000;
-            }
-            .activity-box {
-              background: #f9f9f9;
-              padding: 15px;
-              border-radius: 4px;
-              border: 1px solid #e5e5e5;
-              font-size: 12px;
-            }
-            .activity-item {
-              margin-bottom: 8px;
-            }
-            .label {
-              font-weight: 600;
-              color: #666;
-              font-size: 11px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              display: inline-block;
-              width: 80px;
-            }
-            .value {
-              color: #1a1a1a;
-            }
-            .section-content {
-              font-size: 12px;
-              color: #333;
-              line-height: 1.6;
-              text-align: justify;
-              white-space: pre-wrap;
-              word-break: break-word;
-            }
-            .footer {
-              margin-top: 40px;
-              padding-top: 15px;
-              border-top: 1px solid #ddd;
-              font-size: 10px;
-              color: #999;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Learning Progress Report</h1>
-              <div class="metadata">
-                <div><span class="label">Student:</span> <span class="value">${body.childName}</span></div>
-                <div><span class="label">Date:</span> <span class="value">${body.generatedDate}</span></div>
-              </div>
-            </div>
+    pdf.setFontSize(14);
+    pdf.setTextColor(26, 26, 46);
+    pdf.text("Learning Assessment", margin, yPos);
+    yPos += 10;
 
-            <div class="section">
-              <div class="section-title">${body.reportType === "weekly" ? "Learning by Day" : "Learning Activities"}</div>
-              <div class="activity-box">
-                ${activitiesHTML}
-              </div>
-            </div>
+    pdf.setFontSize(10);
+    pdf.setTextColor(60, 60, 60);
+    pdf.setFont("helvetica", "normal");
 
-            <div class="section">
-              <div class="section-title">Learning Assessment</div>
-              <div class="section-content">${body.reportContent}</div>
-            </div>
+    const splitText = pdf.splitTextToSize(body.reportContent, contentWidth);
+    pdf.text(splitText, margin, yPos);
+    yPos += splitText.length * 5 + 5;
 
-            <div class="footer">
-              Generated by Kernlo • kernlo.app
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    // Notes Section
+    if (body.notes) {
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
 
-    // For now, return HTML as downloadable file
-    // In production, use a PDF library like puppeteer or similar
-    return new NextResponse(htmlContent, {
+      pdf.setFontSize(14);
+      pdf.setTextColor(26, 26, 46);
+      pdf.text("Additional Notes", margin, yPos);
+      yPos += 10;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(60, 60, 60);
+      const notesSplit = pdf.splitTextToSize(body.notes, contentWidth);
+      pdf.text(notesSplit, margin, yPos);
+    }
+
+    // Footer
+    const pageCount = pdf.internal.pages.length - 1;
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(
+        `Generated by Kernlo • kernlo.app`,
+        pageWidth / 2,
+        pdf.internal.pageSize.getHeight() - 8,
+        { align: "center" }
+      );
+    }
+
+    const pdfBuffer = Buffer.from(pdf.output("arraybuffer"));
+
+    return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${body.childName}-progress-report.pdf"`,
@@ -215,7 +192,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("PDF generation error:", error);
     return NextResponse.json(
-      { error: "Failed to generate PDF" },
+      { error: "Failed to generate PDF", details: String(error) },
       { status: 500 }
     );
   }
