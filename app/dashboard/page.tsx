@@ -57,6 +57,9 @@ export default function DashboardPage() {
   const [activeChild, setActiveChild] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [showComprehensiveModal, setShowComprehensiveModal] = useState(false);
+  const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const router = useRouter();
 
   useEffect(() => {
@@ -107,6 +110,86 @@ export default function DashboardPage() {
     localStorage.removeItem("user_id");
     localStorage.removeItem("user_email");
     router.push("/");
+  }
+
+  const toggleSubjectSelect = (subject: string) => {
+    const newSelected = new Set(selectedSubjects);
+    if (newSelected.has(subject)) {
+      newSelected.delete(subject);
+    } else {
+      newSelected.add(subject);
+    }
+    setSelectedSubjects(newSelected);
+  };
+
+  const toggleSelectAllSubjects = () => {
+    const allSubjects = Object.keys(activeChildData);
+    if (selectedSubjects.size === allSubjects.length) {
+      setSelectedSubjects(new Set());
+    } else {
+      setSelectedSubjects(new Set(allSubjects));
+    }
+  };
+
+  async function handleGenerateComprehensiveReport() {
+    if (selectedSubjects.size === 0) {
+      alert("Please select at least one subject");
+      return;
+    }
+
+    if (!dateRange.start || !dateRange.end) {
+      alert("Please select both start and end dates");
+      return;
+    }
+
+    try {
+      // Gather all reports for selected subjects within date range
+      const allReports = Object.values(dashboardData)
+        .flatMap((child) =>
+          Object.values(child).flatMap((subject) =>
+            Object.values(subject).flat()
+          )
+        )
+        .filter((report) => {
+          const reportDate = new Date(report.generated_date);
+          const start = new Date(dateRange.start);
+          const end = new Date(dateRange.end);
+          return (
+            report.child_name === activeChild &&
+            report.subjects.some((s) => selectedSubjects.has(s.subject)) &&
+            reportDate >= start &&
+            reportDate <= end
+          );
+        });
+
+      const pdfRes = await fetch("/api/generate-comprehensive-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          childName: activeChild,
+          subjects: Array.from(selectedSubjects),
+          reports: allReports,
+          dateRange,
+        }),
+      });
+
+      if (!pdfRes.ok) throw new Error("PDF generation failed");
+      const blob = await pdfRes.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${activeChild}-comprehensive-report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShowComprehensiveModal(false);
+      setSelectedSubjects(new Set());
+      setDateRange({ start: "", end: "" });
+    } catch (error) {
+      alert("Error generating comprehensive report");
+    }
   }
 
   const activeChildData = dashboardData[activeChild] || {};
@@ -222,7 +305,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 flex flex-col">
         {children.length === 0 ? (
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-12 text-center border border-gray-200">
             <div className="text-5xl mb-4">📚</div>
@@ -239,7 +322,7 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <>
+          <div className="flex-1">
             {/* Stats Cards */}
             <div className="grid grid-cols-2 gap-6 mb-8">
               <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
@@ -354,9 +437,125 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-          </>
+          </div>
         )}
       </div>
+
+      {/* Right Sidebar CTA */}
+      {children.length > 0 && (
+        <div style={{ backgroundColor: "white", borderLeft: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6 flex flex-col">
+          <button
+            onClick={() => setShowComprehensiveModal(true)}
+            style={{ backgroundColor: COLORS.primary }}
+            className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition text-sm"
+          >
+            📊 Comprehensive Report
+          </button>
+
+          <div style={{ backgroundColor: COLORS.light, borderRadius: "12px" }} className="mt-6 p-4">
+            <p style={{ color: COLORS.dark }} className="font-semibold text-sm mb-2">
+              💡 Tip
+            </p>
+            <p style={{ color: "#666" }} className="text-xs leading-relaxed">
+              Generate a comprehensive report combining multiple subjects for a complete overview of {activeChild}'s progress.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Comprehensive Report Modal */}
+      {showComprehensiveModal && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Comprehensive Report
+            </h2>
+
+            {/* Subject Selection */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p style={{ color: COLORS.dark }} className="font-semibold text-sm">
+                  Subjects
+                </p>
+                <button
+                  onClick={toggleSelectAllSubjects}
+                  style={{ color: COLORS.primary }}
+                  className="text-xs font-medium hover:underline"
+                >
+                  {selectedSubjects.size === Object.keys(activeChildData).length ? "Deselect All" : "Select All"}
+                </button>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {Object.keys(activeChildData).map((subject) => (
+                  <label key={subject} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedSubjects.has(subject)}
+                      onChange={() => toggleSubjectSelect(subject)}
+                      className="w-4 h-4"
+                    />
+                    <span style={{ color: "#666" }} className="text-sm">
+                      {subject}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Date Range */}
+            <div className="mb-6">
+              <p style={{ color: COLORS.dark }} className="font-semibold text-sm mb-3">
+                Date Range
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <label style={{ color: "#666" }} className="text-xs font-medium block mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label style={{ color: "#666" }} className="text-xs font-medium block mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleGenerateComprehensiveReport}
+                style={{ backgroundColor: COLORS.primary }}
+                className="flex-1 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 transition text-sm"
+              >
+                Generate & Download
+              </button>
+              <button
+                onClick={() => {
+                  setShowComprehensiveModal(false);
+                  setSelectedSubjects(new Set());
+                  setDateRange({ start: "", end: "" });
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 font-semibold rounded-lg hover:bg-gray-50 transition text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
