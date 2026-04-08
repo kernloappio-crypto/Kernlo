@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-export const dynamic = "force-dynamic";
 import Link from "next/link";
 
 interface Subject {
@@ -50,10 +48,11 @@ export default function SubjectDetailPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDateRange, setShowDateRange] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
 
   useEffect(() => {
-    if (!childName || !subjectName) return;
-
     const userEmail = localStorage.getItem("user_email");
     if (!userEmail) {
       router.push("/auth/login");
@@ -81,25 +80,23 @@ export default function SubjectDetailPage() {
     setLoading(false);
   }, [childName, subjectName, router]);
 
-  if (loading) {
-    return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
-    );
-  }
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
 
-  const bgColor = SUBJECT_COLORS[subjectName] || COLORS.primary;
-  const totalHours = reports.reduce(
-    (sum, r) =>
-      sum +
-      r.subjects
-        .filter((s) => s.subject === subjectName)
-        .reduce((s, sub) => s + (parseInt(sub.duration) || 0) / 60, 0),
-    0
-  );
+  const toggleSelectAll = () => {
+    if (selectedIds.size === reports.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(reports.map((r) => r.id)));
+    }
+  };
 
   async function handleDownloadReport(report: Report) {
     try {
@@ -134,10 +131,33 @@ export default function SubjectDetailPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div style={{ color: COLORS.primary }}>Loading...</div>
+        </div>
+      </main>
+    );
+  }
+
+  const bgColor = SUBJECT_COLORS[subjectName] || COLORS.primary;
+  const totalHours = reports.reduce(
+    (sum, r) =>
+      sum +
+      r.subjects
+        .filter((s) => s.subject === subjectName)
+        .reduce((s, sub) => s + (parseInt(sub.duration) || 0) / 60, 0),
+    0
+  );
+
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
       {/* Sidebar */}
-      <div style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6">
+      <div
+        style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
+        className="w-64 min-h-screen p-6"
+      >
         <div className="mb-8">
           <h2 style={{ color: COLORS.primary }} className="text-2xl font-bold">
             kernlo
@@ -153,7 +173,10 @@ export default function SubjectDetailPage() {
         </Link>
 
         <div>
-          <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-2">
+          <p
+            style={{ color: COLORS.primary }}
+            className="text-xs font-semibold uppercase tracking-wide mb-2"
+          >
             Current View
           </p>
           <p style={{ color: COLORS.dark }} className="font-semibold">
@@ -168,7 +191,10 @@ export default function SubjectDetailPage() {
       {/* Main Content */}
       <div className="flex-1 p-8">
         {/* Header */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
+        <div
+          style={{ backgroundColor: "white", borderRadius: "12px" }}
+          className="p-6 border border-gray-200 mb-8"
+        >
           <div className="flex items-center gap-4">
             <div
               style={{ backgroundColor: bgColor, width: "60px", height: "60px" }}
@@ -184,67 +210,178 @@ export default function SubjectDetailPage() {
                 {subjectName}
               </h1>
               <p style={{ color: bgColor }} className="text-sm font-semibold mt-1">
-                {reports.length} report{reports.length !== 1 ? "s" : ""} • {totalHours.toFixed(1)} hours
+                {reports.length} report{reports.length !== 1 ? "s" : ""} •{" "}
+                {totalHours.toFixed(1)} hours
               </p>
             </div>
           </div>
         </div>
 
+        {/* Action Buttons */}
+        <div className="flex gap-3 mb-6">
+          <button
+            onClick={() => setShowDateRange(!showDateRange)}
+            style={{ backgroundColor: COLORS.primary }}
+            className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition"
+          >
+            📊 Comprehensive Report
+          </button>
+        </div>
+
+        {/* Date Range Popup */}
+        {showDateRange && (
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              border: `2px solid ${COLORS.primary}`,
+            }}
+            className="p-6 mb-6"
+          >
+            <h3 style={{ color: COLORS.dark }} className="font-semibold mb-4">
+              Generate Comprehensive Report
+            </h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label
+                  style={{ color: "#666" }}
+                  className="text-sm font-medium block mb-1"
+                >
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, start: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  style={{ color: "#666" }}
+                  className="text-sm font-medium block mb-1"
+                >
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, end: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  // Generate comprehensive report logic here
+                  alert(
+                    `Generating report from ${dateRange.start} to ${dateRange.end}`
+                  );
+                  setShowDateRange(false);
+                }}
+                style={{ backgroundColor: COLORS.primary }}
+                className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition"
+              >
+                Generate & Download
+              </button>
+              <button
+                onClick={() => setShowDateRange(false)}
+                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Reports List */}
-        <div>
-          <h2 style={{ color: COLORS.dark }} className="text-lg font-semibold mb-4">
-            All Reports
-          </h2>
-          <div className="space-y-3">
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRadius: "12px",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          {/* List Header with Select All */}
+          <div className="p-4 border-b border-gray-200 flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={
+                reports.length > 0 && selectedIds.size === reports.length
+              }
+              onChange={toggleSelectAll}
+              className="w-5 h-5 cursor-pointer"
+            />
+            <h2 style={{ color: COLORS.dark }} className="text-lg font-semibold flex-1">
+              Reports ({selectedIds.size} selected)
+            </h2>
+            {selectedIds.size > 0 && (
+              <button
+                style={{ backgroundColor: bgColor }}
+                className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 transition"
+              >
+                Download Selected ({selectedIds.size})
+              </button>
+            )}
+          </div>
+
+          {/* Reports List Items */}
+          <div className="divide-y divide-gray-200">
             {reports.map((report) => {
-              const subjectData = report.subjects.find((s) => s.subject === subjectName);
+              const subjectData = report.subjects.find(
+                (s) => s.subject === subjectName
+              );
               if (!subjectData) return null;
+
+              const isSelected = selectedIds.has(report.id);
 
               return (
                 <div
                   key={report.id}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-4 border border-gray-200 hover:shadow-md transition"
+                  style={{
+                    backgroundColor: isSelected ? `${COLORS.light}` : "white",
+                  }}
+                  className="p-4 hover:bg-gray-50 transition flex items-center gap-3"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p style={{ color: COLORS.dark }} className="font-semibold">
-                        {report.report_type === "weekly" ? "Weekly" : "Daily"} Report
-                      </p>
-                      <p style={{ color: "#999" }} className="text-sm">
-                        {new Date(report.generated_date).toLocaleDateString("en-US", {
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelect(report.id)}
+                    className="w-5 h-5 cursor-pointer"
+                  />
+
+                  <div className="flex-1">
+                    <p style={{ color: COLORS.dark }} className="font-semibold">
+                      {report.report_type === "weekly" ? "📅 Weekly" : "📝 Daily"}{" "}
+                      Report
+                    </p>
+                    <p style={{ color: "#999" }} className="text-sm">
+                      {new Date(report.generated_date).toLocaleDateString(
+                        "en-US",
+                        {
                           weekday: "long",
                           month: "short",
                           day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDownloadReport(report)}
-                      style={{ backgroundColor: bgColor }}
-                      className="px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition"
-                    >
-                      Download
-                    </button>
-                  </div>
-
-                  <div className="space-y-2 mb-3">
-                    <p style={{ color: "#666" }} className="text-sm">
-                      <strong>Platform:</strong> {subjectData.platform}
+                        }
+                      )}
                     </p>
-                    <p style={{ color: "#666" }} className="text-sm">
-                      <strong>Topics:</strong> {subjectData.topics}
-                    </p>
-                    <p style={{ color: "#666" }} className="text-sm">
-                      <strong>Duration:</strong> {subjectData.duration} minutes
+                    <p style={{ color: "#666" }} className="text-xs mt-1">
+                      {subjectData.platform} • {subjectData.duration} min
                     </p>
                   </div>
 
-                  <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-3 border border-gray-200 mt-4">
-                    <p style={{ color: "#666" }} className="text-sm leading-relaxed">
-                      {report.report_content}
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => handleDownloadReport(report)}
+                    style={{ backgroundColor: bgColor }}
+                    className="px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition whitespace-nowrap"
+                  >
+                    Download
+                  </button>
                 </div>
               );
             })}
@@ -254,3 +391,5 @@ export default function SubjectDetailPage() {
     </main>
   );
 }
+
+export const dynamic = "force-dynamic";
