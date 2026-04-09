@@ -147,8 +147,7 @@ export default function DashboardHomePage() {
     return { hours, subjects: subjects.length, topSubjects };
   }
 
-  // Get recent activity
-  const recentActivity = allReports.slice(0, 5);
+
 
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
@@ -335,28 +334,7 @@ export default function DashboardHomePage() {
               )}
             </div>
 
-            {/* Recent Activity */}
-            {recentActivity.length > 0 && (
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
-                <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
-                  <h3 style={{ color: COLORS.dark }} className="font-semibold">
-                    Recent Activity
-                  </h3>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {recentActivity.map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
-                      <p style={{ color: COLORS.dark }} className="font-semibold">
-                        {report.child_name}
-                      </p>
-                      <p style={{ color: "#666" }} className="text-sm">
-                        {report.subjects.map(s => s.subject).join(", ")} • {new Date(report.generated_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
