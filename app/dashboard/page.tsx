@@ -1,35 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-
-interface Subject {
-  id: string;
-  date: string;
-  subject: string;
-  platform: string;
-  topics: string;
-  duration: string;
-}
-
-interface Report {
-  id: string;
-  child_name: string;
-  report_type: string;
-  generated_date: string;
-  subjects: Subject[];
-  report_content: string;
-  notes?: string;
-}
-
-interface DashboardData {
-  [childName: string]: {
-    [subject: string]: {
-      [platform: string]: Report[];
-    };
-  };
-}
+import { Kid, Goal, ComplianceSetting } from "@/lib/types";
 
 const COLORS = {
   primary: "#0066cc",
@@ -37,522 +11,208 @@ const COLORS = {
   accent1: "#ff6b6b",
   accent2: "#ffd93d",
   accent3: "#6bcf7f",
-  accent4: "#a78bfa",
   dark: "#1a1a2e",
   light: "#f0f7ff",
 };
 
-const SUBJECT_COLORS: { [key: string]: string } = {
-  Math: "#ff6b6b",
-  Reading: "#ffd93d",
-  Science: "#6bcf7f",
-  History: "#a78bfa",
-  "Language Arts": "#00d4ff",
-  Other: "#ff9999",
-};
+type Tab = "overview" | "goals" | "compliance";
 
 export default function DashboardPage() {
-  const [dashboardData, setDashboardData] = useState<DashboardData>({});
-  const [children, setChildren] = useState<string[]>([]);
-  const [activeChild, setActiveChild] = useState<string>("");
+  const { user, supabase } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeChild, setActiveChild] = useState("");
+  const [kids, setKids] = useState<Kid[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [complianceSettings, setComplianceSettings] = useState<ComplianceSetting | null>(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState("");
-  const [showComprehensiveModal, setShowComprehensiveModal] = useState(false);
-  const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
-  const router = useRouter();
+  const [showQuickLog, setShowQuickLog] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const userEmail = localStorage.getItem("user_email");
-      if (!userEmail) {
-        router.push("/auth/login");
-        return;
-      }
-      setEmail(userEmail);
-      loadReports(userEmail);
-    };
-    checkAuth();
-  }, [router]);
+    if (!user) return;
+    loadData();
+  }, [user, supabase]);
 
-  function loadReports(userEmail: string) {
-    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
-    const userReports = (allReports[userEmail] || []) as Report[];
-
-    const organized: DashboardData = {};
-    userReports.forEach((report) => {
-      const childName = report.child_name;
-      if (!organized[childName]) {
-        organized[childName] = {};
-      }
-      report.subjects.forEach((subject) => {
-        if (!organized[childName][subject.subject]) {
-          organized[childName][subject.subject] = {};
-        }
-        if (!organized[childName][subject.subject][subject.platform]) {
-          organized[childName][subject.subject][subject.platform] = [];
-        }
-        organized[childName][subject.subject][subject.platform].push(report);
-      });
-    });
-
-    setDashboardData(organized);
-    const childrenList = Object.keys(organized).sort();
-    setChildren(childrenList);
-    if (childrenList.length > 0) {
-      setActiveChild(childrenList[0]);
-    }
-    setLoading(false);
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("user_email");
-    router.push("/");
-  }
-
-  const toggleSubjectSelect = (subject: string) => {
-    const newSelected = new Set(selectedSubjects);
-    if (newSelected.has(subject)) {
-      newSelected.delete(subject);
-    } else {
-      newSelected.add(subject);
-    }
-    setSelectedSubjects(newSelected);
-  };
-
-  const toggleSelectAllSubjects = () => {
-    const allSubjects = Object.keys(activeChildData);
-    if (selectedSubjects.size === allSubjects.length) {
-      setSelectedSubjects(new Set());
-    } else {
-      setSelectedSubjects(new Set(allSubjects));
-    }
-  };
-
-  async function handleGenerateComprehensiveReport() {
-    if (selectedSubjects.size === 0) {
-      alert("Please select at least one subject");
-      return;
-    }
-
-    if (!dateRange.start || !dateRange.end) {
-      alert("Please select both start and end dates");
-      return;
-    }
+  async function loadData() {
+    if (!user) return;
 
     try {
-      // Gather all reports for selected subjects within date range
-      const allReports = Object.values(dashboardData)
-        .flatMap((child) =>
-          Object.values(child).flatMap((subject) =>
-            Object.values(subject).flat()
-          )
-        )
-        .filter((report) => {
-          const reportDate = new Date(report.generated_date);
-          const start = new Date(dateRange.start);
-          const end = new Date(dateRange.end);
-          return (
-            report.child_name === activeChild &&
-            report.subjects.some((s) => selectedSubjects.has(s.subject)) &&
-            reportDate >= start &&
-            reportDate <= end
-          );
-        });
+      // Get workspace
+      const { data: workspace, error: wsError } = await supabase
+        .from("workspaces")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
 
-      const pdfRes = await fetch("/api/generate-comprehensive-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          childName: activeChild,
-          subjects: Array.from(selectedSubjects),
-          reports: allReports,
-          dateRange,
-        }),
-      });
-
-      if (!pdfRes.ok) throw new Error("PDF generation failed");
-      const blob = await pdfRes.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${activeChild}-comprehensive-report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setShowComprehensiveModal(false);
-      setSelectedSubjects(new Set());
-      setDateRange({ start: "", end: "" });
+      if (wsError || !workspace) {
+        // Create workspace if doesn't exist
+        const { data: newWs } = await supabase
+          .from("workspaces")
+          .insert([{ user_id: user.id, name: `${user.email}'s Workspace` }])
+          .select()
+          .single();
+        
+        if (newWs) {
+          await loadKidsAndGoals(newWs.id);
+        }
+      } else {
+        await loadKidsAndGoals(workspace.id);
+      }
     } catch (error) {
-      alert("Error generating comprehensive report");
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
-  const activeChildData = dashboardData[activeChild] || {};
-  const allReports = Object.values(dashboardData)
-    .flatMap((child) =>
-      Object.values(child).flatMap((subject) =>
-        Object.values(subject).flat()
-      )
-    )
-    .sort((a, b) => new Date(b.generated_date).getTime() - new Date(a.generated_date).getTime());
+  async function loadKidsAndGoals(workspaceId: string) {
+    // Load kids
+    const { data: kidsData } = await supabase
+      .from("kids")
+      .select("*")
+      .eq("workspace_id", workspaceId);
 
-  const totalReports = allReports.length;
-  const totalHours = allReports.reduce(
-    (sum, report) =>
-      sum +
-      report.subjects.reduce(
-        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
-        0
-      ),
-    0
-  );
+    if (kidsData && kidsData.length > 0) {
+      setKids(kidsData);
+      setActiveChild(kidsData[0].id);
 
-  const getWeeklyData = () => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const weekData = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+      // Load goals
+      const { data: goalsData } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("workspace_id", workspaceId);
 
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+      if (goalsData) {
+        setGoals(goalsData);
+      }
+    }
 
-    allReports.forEach((report) => {
-      const reportDate = new Date(report.generated_date);
-      const dayOfWeek = reportDate.getDay();
-      const dayName = days[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+    // Load compliance settings
+    const { data: complianceData } = await supabase
+      .from("compliance_settings")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .single();
 
-      report.subjects.forEach((subject) => {
-        weekData[dayName as keyof typeof weekData] += parseInt(subject.duration) || 0;
-      });
-    });
-
-    return days.map((day) => ({
-      day,
-      hours: Number((weekData[day as keyof typeof weekData] / 60).toFixed(1)),
-    }));
-  };
-
-  const weeklyData = getWeeklyData();
-  const maxHours = Math.max(...weeklyData.map((d) => d.hours), 1);
+    if (complianceData) {
+      setComplianceSettings(complianceData);
+    }
+  }
 
   if (loading) {
-    return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
-    );
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   return (
-    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
-      {/* Sidebar */}
-      <div style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6 flex flex-col">
-        <div className="mb-8">
-          <h2 style={{ color: COLORS.primary }} className="text-2xl font-bold">
+    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+      {/* Top Navigation */}
+      <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div style={{ color: COLORS.primary }} className="text-2xl font-bold">
             kernlo
-          </h2>
-        </div>
-
-        <nav className="space-y-2 mb-8">
-          <Link
-            href="/generator"
-            style={{ color: COLORS.dark }}
-            className="block px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
-          >
-            📝 New Report
-          </Link>
-        </nav>
-
-        <div className="mb-8">
-          <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-3">
-            Kids
-          </p>
-          <div className="space-y-2">
-            {children.map((child) => (
-              <button
-                key={child}
-                onClick={() => setActiveChild(child)}
-                style={{
-                  backgroundColor: activeChild === child ? COLORS.primary : "transparent",
-                  color: activeChild === child ? "white" : COLORS.dark,
-                }}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition hover:opacity-80"
-              >
-                {child}
-              </button>
-            ))}
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/generator" style={{ color: COLORS.dark }} className="text-sm font-medium hover:opacity-70">
+              New Report
+            </Link>
+            <button
+              onClick={() => setShowQuickLog(true)}
+              style={{ backgroundColor: COLORS.primary }}
+              className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+            >
+              ⚡ Quick Log
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Log Out
+            </button>
           </div>
         </div>
-
-        <div className="mt-auto pt-6 border-t border-gray-200">
-          <p style={{ color: "#999" }} className="text-xs mb-4">
-            {email}
-          </p>
-          <button
-            onClick={handleLogout}
-            style={{ color: COLORS.primary, borderColor: COLORS.primary }}
-            className="w-full px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 transition font-medium"
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
-      <div className="flex-1 p-8 flex flex-col">
-        {children.length === 0 ? (
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-12 text-center border border-gray-200">
-            <div className="text-5xl mb-4">📚</div>
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-semibold mb-2">
-              No reports yet
-            </h3>
-            <p className="text-gray-600 mb-6">Create your first progress report</p>
-            <Link
-              href="/generator"
-              style={{ backgroundColor: COLORS.primary }}
-              className="inline-block px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition"
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Tab Navigation */}
+        <div className="mb-8 border-b border-gray-200 flex gap-8">
+          {["overview", "goals", "compliance"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as Tab)}
+              style={{
+                color: activeTab === tab ? COLORS.primary : "#999",
+                borderBottom: activeTab === tab ? `2px solid ${COLORS.primary}` : "none",
+              }}
+              className="pb-4 font-medium text-sm capitalize transition"
             >
-              Create Report
-            </Link>
-          </div>
-        ) : (
-          <div className="flex-1">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-6 mb-8">
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-4">
-                  Total Courses
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-                    {Object.keys(activeChildData).length}
-                  </div>
-                  <div style={{ width: "80px", height: "80px", backgroundColor: `${COLORS.primary}20` }} className="rounded-full flex items-center justify-center">
-                    <svg width="60" height="60" viewBox="0 0 60 60">
-                      <circle cx="30" cy="30" r="25" fill="none" stroke={COLORS.primary} strokeWidth="3" opacity="0.3" />
-                      <circle
-                        cx="30"
-                        cy="30"
-                        r="25"
-                        fill="none"
-                        stroke={COLORS.primary}
-                        strokeWidth="3"
-                        strokeDasharray={`${(Object.keys(activeChildData).length / 10) * 157} 157`}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+              {tab}
+            </button>
+          ))}
+        </div>
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-4">
-                  Time Spent
-                </p>
-                <p className="text-4xl font-bold mb-2" style={{ color: COLORS.secondary }}>
-                  {totalHours.toFixed(1)}h
-                </p>
-                <p style={{ color: "#999" }} className="text-xs">
-                  This week
-                </p>
-              </div>
-            </div>
-
-            {/* Weekly Graph */}
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-              <h3 style={{ color: COLORS.dark }} className="font-semibold mb-6">
-                Weekly Progress
-              </h3>
-              <div className="flex items-end gap-3 h-40">
-                {weeklyData.map((data, idx) => (
-                  <div key={data.day} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex items-end justify-center" style={{ height: "120px" }}>
-                      <div
-                        style={{
-                          backgroundColor: [COLORS.accent1, COLORS.accent2, COLORS.accent3, COLORS.accent4, COLORS.secondary, COLORS.primary, COLORS.accent1][idx],
-                          height: `${(data.hours / maxHours) * 100}%`,
-                          width: "24px",
-                          borderRadius: "6px",
-                          minHeight: data.hours > 0 ? "8px" : "0px",
-                        }}
-                      />
-                    </div>
-                    <p style={{ color: "#666" }} className="text-xs mt-2 font-medium">
-                      {data.day}
-                    </p>
-                    <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
-                      {data.hours}h
-                    </p>
-                  </div>
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <div>
+            <div className="mb-8">
+              <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-3">
+                Kids
+              </p>
+              <div className="flex gap-2">
+                {kids.map((kid) => (
+                  <button
+                    key={kid.id}
+                    onClick={() => setActiveChild(kid.id)}
+                    style={{
+                      backgroundColor: activeChild === kid.id ? COLORS.primary : "white",
+                      color: activeChild === kid.id ? "white" : COLORS.dark,
+                      borderColor: COLORS.primary,
+                    }}
+                    className="px-4 py-2 rounded-lg text-sm font-medium border transition"
+                  >
+                    {kid.name}
+                  </button>
                 ))}
               </div>
             </div>
+            <p style={{ color: COLORS.dark }} className="text-lg">Overview content coming</p>
+          </div>
+        )}
 
-            {/* Subject Cards Grid */}
-            <div className="grid grid-cols-2 gap-6">
-              {Object.entries(activeChildData).map(([subject]) => {
-                const reports = Object.values(activeChildData[subject]).flat();
-                const subjectHours = reports.reduce(
-                  (sum, r) =>
-                    sum +
-                    r.subjects.reduce(
-                      (s, sub) => s + (parseInt(sub.duration) || 0) / 60,
-                      0
-                    ),
-                  0
-                );
-                const bgColor = SUBJECT_COLORS[subject] || COLORS.primary;
+        {/* Goals Tab */}
+        {activeTab === "goals" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Learning Goals
+            </h2>
+            <p style={{ color: COLORS.dark }} className="text-lg">Goals content coming</p>
+          </div>
+        )}
 
-                return (
-                  <Link
-                    key={subject}
-                    href={`/dashboard/subject?child=${activeChild}&subject=${subject}`}
-                    style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div
-                        style={{ backgroundColor: bgColor, width: "40px", height: "40px" }}
-                        className="rounded-lg flex items-center justify-center text-white font-bold"
-                      >
-                        {subject.charAt(0)}
-                      </div>
-                    </div>
-                    <h3 style={{ color: COLORS.dark }} className="font-semibold mb-1">
-                      {subject}
-                    </h3>
-                    <p style={{ color: "#999" }} className="text-sm mb-4">
-                      {reports.length} report{reports.length > 1 ? "s" : ""} • {subjectHours.toFixed(1)}h
-                    </p>
-                    <p style={{ color: bgColor }} className="text-sm font-medium">
-                      View Details →
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
+        {/* Compliance Tab */}
+        {activeTab === "compliance" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Compliance Tracking
+            </h2>
+            <p style={{ color: COLORS.dark }} className="text-lg">Compliance content coming</p>
           </div>
         )}
       </div>
 
-      {/* Right Sidebar CTA */}
-      {children.length > 0 && (
-        <div style={{ backgroundColor: "white", borderLeft: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6 flex flex-col">
-          <button
-            onClick={() => setShowComprehensiveModal(true)}
-            style={{ backgroundColor: COLORS.primary }}
-            className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition text-sm"
-          >
-            📊 Comprehensive Report
-          </button>
-
-          <div style={{ backgroundColor: COLORS.light, borderRadius: "12px" }} className="mt-6 p-4">
-            <p style={{ color: COLORS.dark }} className="font-semibold text-sm mb-2">
-              💡 Tip
-            </p>
-            <p style={{ color: "#666" }} className="text-xs leading-relaxed">
-              Generate a comprehensive report combining multiple subjects for a complete overview of {activeChild}'s progress.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Comprehensive Report Modal */}
-      {showComprehensiveModal && (
+      {/* Quick Log Modal */}
+      {showQuickLog && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Comprehensive Report
+              Quick Log
             </h2>
-
-            {/* Subject Selection */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <p style={{ color: COLORS.dark }} className="font-semibold text-sm">
-                  Subjects
-                </p>
-                <button
-                  onClick={toggleSelectAllSubjects}
-                  style={{ color: COLORS.primary }}
-                  className="text-xs font-medium hover:underline"
-                >
-                  {selectedSubjects.size === Object.keys(activeChildData).length ? "Deselect All" : "Select All"}
-                </button>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {Object.keys(activeChildData).map((subject) => (
-                  <label key={subject} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
-                    <input
-                      type="checkbox"
-                      checked={selectedSubjects.has(subject)}
-                      onChange={() => toggleSubjectSelect(subject)}
-                      className="w-4 h-4"
-                    />
-                    <span style={{ color: "#666" }} className="text-sm">
-                      {subject}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Range */}
-            <div className="mb-6">
-              <p style={{ color: COLORS.dark }} className="font-semibold text-sm mb-3">
-                Date Range
-              </p>
-              <div className="space-y-2">
-                <div>
-                  <label style={{ color: "#666" }} className="text-xs font-medium block mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label style={{ color: "#666" }} className="text-xs font-medium block mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleGenerateComprehensiveReport}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 transition text-sm"
-              >
-                Generate & Download
-              </button>
-              <button
-                onClick={() => {
-                  setShowComprehensiveModal(false);
-                  setSelectedSubjects(new Set());
-                  setDateRange({ start: "", end: "" });
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 font-semibold rounded-lg hover:bg-gray-50 transition text-sm"
-              >
-                Cancel
-              </button>
-            </div>
+            <p style={{ color: COLORS.dark }}>Coming soon</p>
+            <button
+              onClick={() => setShowQuickLog(false)}
+              className="mt-6 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
