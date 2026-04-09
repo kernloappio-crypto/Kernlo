@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,7 +11,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -19,23 +23,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        setError(authError.message || "Failed to sign in");
+      if (loginError) {
+        setError(loginError.message);
         return;
       }
 
       if (data?.user) {
-        setError("");
         router.push("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Network error. Please check your connection and try again.");
+      setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -43,7 +46,10 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full border border-gray-200">
+      <div
+        style={{ backgroundColor: "white", borderRadius: "12px" }}
+        className="p-8 max-w-md w-full border border-gray-200"
+      >
         <div className="mb-8">
           <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
             Welcome Back
@@ -54,7 +60,13 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div style={{ backgroundColor: "#ffebee", borderLeft: "4px solid #ff6b6b" }} className="p-3 rounded mb-6">
+          <div
+            style={{
+              backgroundColor: "#ffebee",
+              borderLeft: "4px solid #ff6b6b",
+            }}
+            className="p-3 rounded mb-6"
+          >
             <p style={{ color: "#c62828" }} className="text-sm">
               {error}
             </p>
@@ -63,7 +75,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4 mb-6">
           <div>
-            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+            <label
+              style={{ color: "#666" }}
+              className="text-sm font-medium block mb-2"
+            >
               Email
             </label>
             <input
@@ -72,12 +87,16 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              style={{ color: "#1a1a2e" }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+            <label
+              style={{ color: "#666" }}
+              className="text-sm font-medium block mb-2"
+            >
               Password
             </label>
             <input

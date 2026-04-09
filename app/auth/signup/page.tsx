@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +12,11 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -23,39 +27,38 @@ export default function SignupPage() {
       return;
     }
 
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signUp({
+      const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (authError) {
-        setError(authError.message || "Failed to create account");
+      if (signupError) {
+        setError(signupError.message);
         return;
       }
 
       if (data?.user) {
         // Create workspace
-        try {
-          await supabase
-            .from("workspaces")
-            .insert([{
-              user_id: data.user.id,
-              name: `${email}'s Workspace`,
-            }]);
-        } catch (wsError) {
-          console.error("Workspace creation error:", wsError);
-          // Continue anyway
-        }
+        await supabase.from("workspaces").insert([
+          {
+            user_id: data.user.id,
+            name: `${email}'s Workspace`,
+          },
+        ]);
 
-        setError(""); // Clear error on success
         router.push("/dashboard");
       }
     } catch (err) {
       console.error("Signup error:", err);
-      setError("Network error. Please check your connection and try again.");
+      setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +66,10 @@ export default function SignupPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full border border-gray-200">
+      <div
+        style={{ backgroundColor: "white", borderRadius: "12px" }}
+        className="p-8 max-w-md w-full border border-gray-200"
+      >
         <div className="mb-8">
           <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
             Get Started
@@ -74,7 +80,13 @@ export default function SignupPage() {
         </div>
 
         {error && (
-          <div style={{ backgroundColor: "#ffebee", borderLeft: "4px solid #ff6b6b" }} className="p-3 rounded mb-6">
+          <div
+            style={{
+              backgroundColor: "#ffebee",
+              borderLeft: "4px solid #ff6b6b",
+            }}
+            className="p-3 rounded mb-6"
+          >
             <p style={{ color: "#c62828" }} className="text-sm">
               {error}
             </p>
@@ -83,7 +95,10 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-4 mb-6">
           <div>
-            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+            <label
+              style={{ color: "#666" }}
+              className="text-sm font-medium block mb-2"
+            >
               Email
             </label>
             <input
@@ -92,12 +107,16 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              style={{ color: "#1a1a2e" }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+            <label
+              style={{ color: "#666" }}
+              className="text-sm font-medium block mb-2"
+            >
               Password
             </label>
             <input
@@ -112,7 +131,10 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+            <label
+              style={{ color: "#666" }}
+              className="text-sm font-medium block mb-2"
+            >
               Confirm Password
             </label>
             <input
