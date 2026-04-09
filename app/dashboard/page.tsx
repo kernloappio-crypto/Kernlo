@@ -40,10 +40,18 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
+interface Goal {
+  id: string;
+  child_name: string;
+  subject: string;
+  monthly_hours: number;
+}
+
 export default function DashboardHomePage() {
   const [email, setEmail] = useState("");
   const [kids, setKids] = useState<Kid[]>([]);
   const [allReports, setAllReports] = useState<Report[]>([]);
+  const [allGoals, setAllGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
@@ -72,6 +80,10 @@ export default function DashboardHomePage() {
     const allReportsData = JSON.parse(localStorage.getItem("reports") || "{}");
     const userReports = (allReportsData[userEmail] || []) as Report[];
     setAllReports(userReports);
+
+    const allGoalsData = JSON.parse(localStorage.getItem("goals") || "{}");
+    const userGoals = (allGoalsData[userEmail] || []) as Goal[];
+    setAllGoals(userGoals);
 
     setLoading(false);
   }
@@ -263,6 +275,134 @@ export default function DashboardHomePage() {
                   {kids.length}
                 </p>
               </div>
+            </div>
+
+            {/* Goals Progress */}
+            <div className="mb-8">
+              <h2 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+                Monthly Goals Progress
+              </h2>
+              {allGoals.length === 0 ? (
+                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 text-center">
+                  <p style={{ color: "#999" }}>No goals set yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-6">
+                  {allGoals.map((goal) => {
+                    const goalReports = allReports.filter(r => r.child_name === goal.child_name);
+                    const hoursLogged = goalReports.reduce(
+                      (sum, report) =>
+                        sum +
+                        report.subjects
+                          .filter(s => s.subject === goal.subject)
+                          .reduce((subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60, 0),
+                      0
+                    );
+                    const percentage = Math.round((hoursLogged / goal.monthly_hours) * 100);
+                    const isOnTrack = percentage >= 80;
+
+                    return (
+                      <div
+                        key={goal.id}
+                        style={{ backgroundColor: "white", borderRadius: "12px" }}
+                        className="p-6 border border-gray-200"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p style={{ color: COLORS.dark }} className="font-semibold">
+                              {goal.child_name}
+                            </p>
+                            <p style={{ color: "#666" }} className="text-sm">
+                              {goal.subject}
+                            </p>
+                          </div>
+                          <p
+                            style={{
+                              backgroundColor: isOnTrack ? "#d4edda" : "#fff3cd",
+                              color: isOnTrack ? "#155724" : "#856404",
+                            }}
+                            className="px-2 py-1 rounded text-xs font-bold"
+                          >
+                            {percentage}%
+                          </p>
+                        </div>
+                        <p style={{ color: "#666" }} className="text-xs mb-3">
+                          {hoursLogged.toFixed(1)}h / {goal.monthly_hours}h
+                        </p>
+                        <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
+                          <div
+                            style={{
+                              backgroundColor: isOnTrack ? COLORS.accent3 : COLORS.accent2,
+                              width: `${Math.min(percentage, 100)}%`,
+                            }}
+                            className="h-full transition-all"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Weekly Summary */}
+            <div className="mb-8">
+              <h2 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+                This Week's Activity
+              </h2>
+              {kids.length === 0 ? (
+                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 text-center">
+                  <p style={{ color: "#999" }}>No kids yet.</p>
+                </div>
+              ) : (
+                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                  <div className="space-y-4">
+                    {kids.map((kid) => {
+                      const weekAgo = new Date();
+                      weekAgo.setDate(weekAgo.getDate() - 7);
+                      const weekReports = allReports.filter(
+                        r =>
+                          r.child_name === kid.name &&
+                          new Date(r.generated_date) >= weekAgo
+                      );
+                      const weekHours = weekReports.reduce(
+                        (sum, report) =>
+                          sum +
+                          report.subjects.reduce(
+                            (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
+                            0
+                          ),
+                        0
+                      );
+                      const maxHours = 20; // Scale for visualization
+
+                      return (
+                        <div key={kid.id} className="flex items-center gap-4">
+                          <div style={{ minWidth: "100px" }}>
+                            <p style={{ color: COLORS.dark }} className="font-semibold text-sm">
+                              {kid.name}
+                            </p>
+                            <p style={{ color: "#666" }} className="text-xs">
+                              {weekHours.toFixed(1)}h
+                            </p>
+                          </div>
+                          <div className="flex-1">
+                            <div style={{ backgroundColor: COLORS.light }} className="h-6 rounded-full overflow-hidden">
+                              <div
+                                style={{
+                                  backgroundColor: COLORS.primary,
+                                  width: `${Math.min((weekHours / maxHours) * 100, 100)}%`,
+                                }}
+                                className="h-full transition-all"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Kid Cards */}
