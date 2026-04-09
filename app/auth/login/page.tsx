@@ -25,15 +25,17 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setError(authError.message);
+        setError(authError.message || "Failed to sign in");
         return;
       }
 
       if (data?.user) {
+        setError("");
         router.push("/dashboard");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      console.error("Login error:", err);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -84,6 +86,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              style={{ color: "#1a1a2e" }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

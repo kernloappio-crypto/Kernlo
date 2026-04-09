@@ -32,23 +32,30 @@ export default function SignupPage() {
       });
 
       if (authError) {
-        setError(authError.message);
+        setError(authError.message || "Failed to create account");
         return;
       }
 
       if (data?.user) {
         // Create workspace
-        await supabase
-          .from("workspaces")
-          .insert([{
-            user_id: data.user.id,
-            name: `${email}'s Workspace`,
-          }]);
+        try {
+          await supabase
+            .from("workspaces")
+            .insert([{
+              user_id: data.user.id,
+              name: `${email}'s Workspace`,
+            }]);
+        } catch (wsError) {
+          console.error("Workspace creation error:", wsError);
+          // Continue anyway
+        }
 
+        setError(""); // Clear error on success
         router.push("/dashboard");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      console.error("Signup error:", err);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -99,6 +106,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              style={{ color: "#1a1a2e" }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -113,6 +121,7 @@ export default function SignupPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               required
+              style={{ color: "#1a1a2e" }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
