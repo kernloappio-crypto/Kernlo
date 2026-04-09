@@ -48,14 +48,11 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-type TabType = "overview" | "goals" | "compliance";
-
 export default function KidDashboardPage() {
   const params = useParams();
   const kidId = params?.id as string;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [email, setEmail] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [childReports, setChildReports] = useState<Report[]>([]);
@@ -69,7 +66,6 @@ export default function KidDashboardPage() {
   const [editName, setEditName] = useState("");
   const [editAge, setEditAge] = useState("");
   const [editGrade, setEditGrade] = useState("");
-  const [state, setState] = useState("CA");
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -118,9 +114,6 @@ export default function KidDashboardPage() {
     const userGoals = (allGoalsData[userEmail] || []) as Goal[];
     const kidGoals = userGoals.filter(g => g.child_name === foundKid.name);
     setChildGoals(kidGoals);
-
-    const savedState = localStorage.getItem("state");
-    if (savedState) setState(savedState);
 
     setLoading(false);
   }
@@ -221,24 +214,6 @@ export default function KidDashboardPage() {
     setShowQuickLog(false);
   }
 
-  function addGoal(subject: string, hours: number) {
-    if (!kid) return;
-
-    const newGoal: Goal = {
-      id: Math.random().toString(36).substr(2, 9),
-      child_name: kid.name,
-      subject,
-      monthly_hours: hours,
-    };
-
-    const allGoalsData = JSON.parse(localStorage.getItem("goals") || "{}");
-    if (!allGoalsData[email]) allGoalsData[email] = [];
-    allGoalsData[email].push(newGoal);
-    localStorage.setItem("goals", JSON.stringify(allGoalsData));
-
-    setChildGoals([...childGoals, newGoal]);
-  }
-
   function handleGenerateComprehensiveReport() {
     if (!kid || selectedSubjects.length === 0) return;
 
@@ -278,14 +253,7 @@ export default function KidDashboardPage() {
     0
   );
 
-  const STATE_REQUIREMENTS: { [key: string]: { [subject: string]: number } } = {
-    CA: { Math: 180, "Language Arts": 180, Science: 180, History: 180 },
-    TX: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-    FL: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-    NY: { Math: 120, "Language Arts": 120, Science: 120, History: 120 },
-  };
-
-  const requirements = STATE_REQUIREMENTS[state] || {};
+  const topGoals = childGoals.slice(0, 3);
 
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
@@ -390,205 +358,136 @@ export default function KidDashboardPage() {
 
         <div className="flex-1 overflow-auto">
           <div className="max-w-6xl mx-auto px-6 py-8">
-            {/* Tab Navigation */}
-            <div className="mb-8 border-b border-gray-200 flex gap-8">
-              {[
-                { id: "overview" as TabType, label: "Overview" },
-                { id: "goals" as TabType, label: "Goals" },
-                { id: "compliance" as TabType, label: "Compliance" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    color: activeTab === tab.id ? COLORS.primary : "#999",
-                    borderBottom: activeTab === tab.id ? `2px solid ${COLORS.primary}` : "none",
-                  }}
-                  className="pb-4 font-medium text-sm capitalize transition"
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Reports
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
+                  {totalReports}
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Hours
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
+                  {totalHours.toFixed(1)}h
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Subjects
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
+                  {new Set(childReports.flatMap(r => r.subjects.map(s => s.subject))).size}
+                </p>
+              </div>
             </div>
 
-            {/* Overview Tab */}
-            {activeTab === "overview" && (
-              <div>
-                <div className="grid grid-cols-3 gap-6 mb-8">
-                  <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                    <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                      Total Reports
-                    </p>
-                    <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-                      {totalReports}
-                    </p>
-                  </div>
+            {/* Goals Card */}
+            <div className="grid grid-cols-2 gap-6 mb-8">
+              <Link
+                href={`/dashboard/${kid.id}/goals`}
+                style={{ backgroundColor: "white", borderRadius: "12px" }}
+                className="p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer"
+              >
+                <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                  📚 Goals
+                </h2>
+                {childGoals.length === 0 ? (
+                  <p style={{ color: "#999" }} className="text-sm">
+                    No goals yet. Add one to get started.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {topGoals.map((goal) => {
+                      const goalReports = childReports.filter(r => r.child_name === goal.child_name);
+                      const hoursLogged = goalReports.reduce(
+                        (sum, report) =>
+                          sum +
+                          report.subjects
+                            .filter(s => s.subject === goal.subject)
+                            .reduce((subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60, 0),
+                        0
+                      );
+                      const percentage = Math.round((hoursLogged / goal.monthly_hours) * 100);
 
-                  <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                    <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                      Total Hours
-                    </p>
-                    <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
-                      {totalHours.toFixed(1)}h
-                    </p>
-                  </div>
-
-                  <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                    <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                      Subjects
-                    </p>
-                    <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
-                      {new Set(childReports.flatMap(r => r.subjects.map(s => s.subject))).size}
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
-                  <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
-                    <h3 style={{ color: COLORS.dark }} className="font-semibold">
-                      Recent Reports
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {childReports.length === 0 ? (
-                      <div className="p-6 text-center">
-                        <p style={{ color: "#999" }}>No reports yet.</p>
-                      </div>
-                    ) : (
-                      childReports.slice(0, 10).map((report) => (
-                        <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
-                          <p style={{ color: COLORS.dark }} className="font-semibold">
-                            {report.subjects.map(s => s.subject).join(", ")}
-                          </p>
-                          <p style={{ color: "#666" }} className="text-sm">
-                            {new Date(report.generated_date).toLocaleDateString()}
-                          </p>
+                      return (
+                        <div key={goal.id}>
+                          <div className="flex justify-between mb-1">
+                            <p style={{ color: "#666" }} className="text-sm">
+                              {goal.subject}
+                            </p>
+                            <p style={{ color: COLORS.primary }} className="text-xs font-bold">
+                              {percentage}%
+                            </p>
+                          </div>
+                          <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
+                            <div
+                              style={{ backgroundColor: COLORS.primary, width: `${Math.min(percentage, 100)}%` }}
+                              className="h-full"
+                            />
+                          </div>
                         </div>
-                      ))
+                      );
+                    })}
+                    {childGoals.length > 3 && (
+                      <p style={{ color: COLORS.primary }} className="text-xs font-semibold mt-2">
+                        +{childGoals.length - 3} more →
+                      </p>
                     )}
                   </div>
-                </div>
-              </div>
-            )}
+                )}
+              </Link>
 
-            {/* Goals Tab */}
-            {activeTab === "goals" && (
-              <div>
-                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-                  Monthly Learning Goals
+              {/* Compliance Card */}
+              <Link
+                href={`/dashboard/${kid.id}/compliance`}
+                style={{ backgroundColor: "white", borderRadius: "12px" }}
+                className="p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer"
+              >
+                <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                  ✓ Compliance
                 </h2>
+                <p style={{ color: "#666" }} className="text-sm mb-4">
+                  Track state requirements for {kid.name}.
+                </p>
+                <p style={{ color: COLORS.primary }} className="text-sm font-semibold">
+                  View Details →
+                </p>
+              </Link>
+            </div>
 
-                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-                  <h3 style={{ color: COLORS.dark }} className="font-semibold mb-4">
-                    Add Goal
-                  </h3>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Subject (e.g., Math)"
-                      id="goalSubject"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      style={{ color: "#1a1a2e" }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Monthly hours"
-                      id="goalHours"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      style={{ color: "#1a1a2e" }}
-                    />
-                    <button
-                      onClick={() => {
-                        const subject = (document.getElementById("goalSubject") as HTMLInputElement).value;
-                        const hours = parseInt((document.getElementById("goalHours") as HTMLInputElement).value);
-                        if (subject && hours > 0) {
-                          addGoal(subject, hours);
-                          (document.getElementById("goalSubject") as HTMLInputElement).value = "";
-                          (document.getElementById("goalHours") as HTMLInputElement).value = "";
-                        }
-                      }}
-                      style={{ backgroundColor: COLORS.primary }}
-                      className="w-full px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-                    >
-                      Add Goal
-                    </button>
+            {/* Recent Reports */}
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
+              <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
+                <h3 style={{ color: COLORS.dark }} className="font-semibold">
+                  Recent Reports
+                </h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {childReports.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <p style={{ color: "#999" }}>No reports yet.</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  {childGoals.map((goal) => (
-                    <div
-                      key={goal.id}
-                      style={{ backgroundColor: "white", borderRadius: "12px" }}
-                      className="p-6 border border-gray-200"
-                    >
-                      <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
-                        {goal.subject}
-                      </h4>
-                      <p style={{ color: "#666" }} className="text-sm mb-4">
-                        Target: {goal.monthly_hours} hours
+                ) : (
+                  childReports.slice(0, 10).map((report) => (
+                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
+                      <p style={{ color: COLORS.dark }} className="font-semibold">
+                        {report.subjects.map(s => s.subject).join(", ")}
                       </p>
-                      <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
-                        <div style={{ backgroundColor: COLORS.primary, width: "45%" }} className="h-full" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Compliance Tab */}
-            {activeTab === "compliance" && (
-              <div>
-                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-                  Compliance Tracking
-                </h2>
-
-                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-                  <label style={{ color: COLORS.dark }} className="font-semibold block mb-3">
-                    Select State
-                  </label>
-                  <select
-                    value={state}
-                    onChange={(e) => {
-                      setState(e.target.value);
-                      localStorage.setItem("state", e.target.value);
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg"
-                    style={{ color: "#1a1a2e" }}
-                  >
-                    {Object.keys(STATE_REQUIREMENTS).map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  {Object.entries(requirements).map(([subject, hours]) => (
-                    <div
-                      key={subject}
-                      style={{ backgroundColor: "white", borderRadius: "12px" }}
-                      className="p-6 border border-gray-200"
-                    >
-                      <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
-                        {subject}
-                      </h4>
-                      <p style={{ color: "#666" }} className="text-sm mb-4">
-                        Required: {hours} hours/year
-                      </p>
-                      <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
-                        <div style={{ backgroundColor: "#ff6b6b", width: "30%" }} className="h-full" />
-                      </div>
-                      <p style={{ color: "#666" }} className="text-xs mt-2">
-                        30% complete
+                      <p style={{ color: "#666" }} className="text-sm">
+                        {new Date(report.generated_date).toLocaleDateString()}
                       </p>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
