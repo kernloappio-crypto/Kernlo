@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import { Kid, Goal, ComplianceSetting } from "@/lib/types";
+import { Kid, Goal, ComplianceSetting, ActivityTemplate } from "@/lib/types";
+import { GoalsTab } from "./goals";
+import { ComplianceTab } from "./compliance";
+import { QuickLogModal } from "./quick-log";
 
 const COLORS = {
   primary: "#0066cc",
@@ -26,6 +29,7 @@ export default function DashboardPage() {
   const [complianceSettings, setComplianceSettings] = useState<ComplianceSetting | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQuickLog, setShowQuickLog] = useState(false);
+  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -179,43 +183,19 @@ export default function DashboardPage() {
         )}
 
         {/* Goals Tab */}
-        {activeTab === "goals" && (
-          <div>
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Learning Goals
-            </h2>
-            <p style={{ color: COLORS.dark }} className="text-lg">Goals content coming</p>
-          </div>
-        )}
+        {activeTab === "goals" && <GoalsTab activeChild={activeChild} kids={kids} />}
 
         {/* Compliance Tab */}
-        {activeTab === "compliance" && (
-          <div>
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Compliance Tracking
-            </h2>
-            <p style={{ color: COLORS.dark }} className="text-lg">Compliance content coming</p>
-          </div>
-        )}
+        {activeTab === "compliance" && <ComplianceTab activeChild={activeChild} kids={kids} />}
       </div>
 
       {/* Quick Log Modal */}
-      {showQuickLog && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Quick Log
-            </h2>
-            <p style={{ color: COLORS.dark }}>Coming soon</p>
-            <button
-              onClick={() => setShowQuickLog(false)}
-              className="mt-6 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      <QuickLogModal 
+        isOpen={showQuickLog}
+        onClose={() => setShowQuickLog(false)}
+        kids={kids}
+        templates={templates}
+      />
     </main>
   );
 }
