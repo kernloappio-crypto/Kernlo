@@ -69,6 +69,8 @@ export default function KidDashboardPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [quickLogDate, setQuickLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [quickLogPlatform, setQuickLogPlatform] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -186,23 +188,23 @@ export default function KidDashboardPage() {
     router.push("/dashboard");
   }
 
-  function handleQuickLogSave(subject: string, hours: number, notes: string) {
+  function handleQuickLogSave(subject: string, hours: number, platform: string, notes: string, date: string) {
     if (!kid) return;
 
     const newReport: Report = {
       id: Math.random().toString(36).substr(2, 9),
       child_name: kid.name,
       report_type: "daily",
-      generated_date: new Date().toISOString().split("T")[0],
+      generated_date: date,
       subjects: [{
         id: Math.random().toString(36).substr(2, 9),
-        date: new Date().toISOString().split("T")[0],
+        date: date,
         subject,
-        platform: "Quick Log",
+        platform: platform || "Quick Log",
         topics: notes,
         duration: (hours * 60).toString(),
       }],
-      report_content: `Quick logged ${hours} hours on ${subject}.`,
+      report_content: `Quick logged ${hours} hours on ${subject}${platform ? ` (${platform})` : ""}.`,
     };
 
     const allReportsData = JSON.parse(localStorage.getItem("reports") || "{}");
@@ -212,6 +214,9 @@ export default function KidDashboardPage() {
 
     setChildReports([...childReports, newReport]);
     setShowQuickLog(false);
+    // Reset form
+    setQuickLogDate(new Date().toISOString().split("T")[0]);
+    setQuickLogPlatform("");
   }
 
   function handleGenerateComprehensiveReport() {
@@ -494,35 +499,79 @@ export default function KidDashboardPage() {
 
       {/* Quick Log Modal */}
       {showQuickLog && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
               ⚡ Quick Log
             </h2>
 
             <div className="space-y-4 mb-6">
-              <input
-                type="text"
-                placeholder="Subject"
-                id="quickLogSubject"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <input
-                type="number"
-                placeholder="Hours"
-                id="quickLogHours"
-                step="0.5"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                id="quickLogNotes"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-                rows={3}
-              />
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-xs font-semibold mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={quickLogDate}
+                  onChange={(e) => setQuickLogDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-xs font-semibold mb-2">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Math"
+                  id="quickLogSubject"
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-xs font-semibold mb-2">
+                  Duration (Hours)
+                </label>
+                <input
+                  type="number"
+                  placeholder="0.5"
+                  id="quickLogHours"
+                  step="0.5"
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-xs font-semibold mb-2">
+                  Platform (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Khan Academy, IXL, Outschool"
+                  value={quickLogPlatform}
+                  onChange={(e) => setQuickLogPlatform(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-xs font-semibold mb-2">
+                  Notes (optional)
+                </label>
+                <textarea
+                  placeholder="What did they learn?"
+                  id="quickLogNotes"
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                  rows={2}
+                />
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -532,7 +581,7 @@ export default function KidDashboardPage() {
                   const hours = parseFloat((document.getElementById("quickLogHours") as HTMLInputElement).value);
                   const notes = (document.getElementById("quickLogNotes") as HTMLTextAreaElement).value;
                   if (subject && hours > 0) {
-                    handleQuickLogSave(subject, hours, notes);
+                    handleQuickLogSave(subject, hours, quickLogPlatform, notes, quickLogDate);
                   }
                 }}
                 style={{ backgroundColor: COLORS.primary }}
@@ -541,7 +590,11 @@ export default function KidDashboardPage() {
                 Save
               </button>
               <button
-                onClick={() => setShowQuickLog(false)}
+                onClick={() => {
+                  setShowQuickLog(false);
+                  setQuickLogDate(new Date().toISOString().split("T")[0]);
+                  setQuickLogPlatform("");
+                }}
                 className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
               >
                 Cancel
