@@ -1,12 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Kid, Goal, ComplianceSetting, ActivityTemplate } from "@/lib/types";
-import { GoalsTab } from "./goals";
-import { ComplianceTab } from "./compliance";
-import { QuickLogModal } from "./quick-log";
+
+interface Subject {
+  id: string;
+  date: string;
+  subject: string;
+  platform: string;
+  topics: string;
+  duration: string;
+}
+
+interface Report {
+  id: string;
+  child_name: string;
+  report_type: "daily" | "weekly";
+  generated_date: string;
+  subjects: Subject[];
+  report_content: string;
+  notes?: string;
+}
 
 const COLORS = {
   primary: "#0066cc",
@@ -18,93 +33,60 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-type Tab = "overview" | "goals" | "compliance";
-
 export default function DashboardPage() {
-  const { user, supabase } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
-  const [activeChild, setActiveChild] = useState("");
-  const [kids, setKids] = useState<Kid[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [complianceSettings, setComplianceSettings] = useState<ComplianceSetting | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "goals" | "compliance">("overview");
+  const [email, setEmail] = useState("");
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showQuickLog, setShowQuickLog] = useState(false);
-  const [templates, setTemplates] = useState<ActivityTemplate[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    if (!user) return;
-    loadData();
-  }, [user, supabase]);
+    const token = localStorage.getItem("auth_token");
+    const userEmail = localStorage.getItem("user_email");
 
-  async function loadData() {
-    if (!user) return;
-
-    try {
-      // Get workspace
-      const { data: workspace, error: wsError } = await supabase
-        .from("workspaces")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (wsError || !workspace) {
-        // Create workspace if doesn't exist
-        const { data: newWs } = await supabase
-          .from("workspaces")
-          .insert([{ user_id: user.id, name: `${user.email}'s Workspace` }])
-          .select()
-          .single();
-        
-        if (newWs) {
-          await loadKidsAndGoals(newWs.id);
-        }
-      } else {
-        await loadKidsAndGoals(workspace.id);
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setLoading(false);
+    if (!token || !userEmail) {
+      router.push("/auth/login");
+      return;
     }
+
+    setEmail(userEmail);
+    loadReports(userEmail);
+  }, [router]);
+
+  function loadReports(userEmail: string) {
+    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
+    const userReports = (allReports[userEmail] || []) as Report[];
+    setReports(userReports);
+    setLoading(false);
   }
 
-  async function loadKidsAndGoals(workspaceId: string) {
-    // Load kids
-    const { data: kidsData } = await supabase
-      .from("kids")
-      .select("*")
-      .eq("workspace_id", workspaceId);
-
-    if (kidsData && kidsData.length > 0) {
-      setKids(kidsData);
-      setActiveChild(kidsData[0].id);
-
-      // Load goals
-      const { data: goalsData } = await supabase
-        .from("goals")
-        .select("*")
-        .eq("workspace_id", workspaceId);
-
-      if (goalsData) {
-        setGoals(goalsData);
-      }
-    }
-
-    // Load compliance settings
-    const { data: complianceData } = await supabase
-      .from("compliance_settings")
-      .select("*")
-      .eq("workspace_id", workspaceId)
-      .single();
-
-    if (complianceData) {
-      setComplianceSettings(complianceData);
-    }
+  function handleLogout() {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_email");
+    router.push("/");
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div style={{ color: COLORS.primary }}>Loading...</div>
+        </div>
+      </main>
+    );
   }
+
+  const totalReports = reports.length;
+  const totalHours = reports.reduce(
+    (sum, report) =>
+      sum +
+      report.subjects.reduce(
+        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
+        0
+      ),
+    0
+  );
 
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
@@ -119,14 +101,7 @@ export default function DashboardPage() {
               New Report
             </Link>
             <button
-              onClick={() => setShowQuickLog(true)}
-              style={{ backgroundColor: COLORS.primary }}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-            >
-              ⚡ Quick Log
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={handleLogout}
               className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Log Out
@@ -139,17 +114,21 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Tab Navigation */}
         <div className="mb-8 border-b border-gray-200 flex gap-8">
-          {["overview", "goals", "compliance"].map((tab) => (
+          {[
+            { id: "overview", label: "Overview" },
+            { id: "goals", label: "Goals" },
+            { id: "compliance", label: "Compliance" },
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as Tab)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
               style={{
-                color: activeTab === tab ? COLORS.primary : "#999",
-                borderBottom: activeTab === tab ? `2px solid ${COLORS.primary}` : "none",
+                color: activeTab === tab.id ? COLORS.primary : "#999",
+                borderBottom: activeTab === tab.id ? `2px solid ${COLORS.primary}` : "none",
               }}
               className="pb-4 font-medium text-sm capitalize transition"
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -157,45 +136,96 @@ export default function DashboardPage() {
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div>
-            <div className="mb-8">
-              <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-3">
-                Kids
-              </p>
-              <div className="flex gap-2">
-                {kids.map((kid) => (
-                  <button
-                    key={kid.id}
-                    onClick={() => setActiveChild(kid.id)}
-                    style={{
-                      backgroundColor: activeChild === kid.id ? COLORS.primary : "white",
-                      color: activeChild === kid.id ? "white" : COLORS.dark,
-                      borderColor: COLORS.primary,
-                    }}
-                    className="px-4 py-2 rounded-lg text-sm font-medium border transition"
-                  >
-                    {kid.name}
-                  </button>
-                ))}
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Dashboard
+            </h2>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Reports
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
+                  {totalReports}
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Hours
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
+                  {totalHours.toFixed(1)}h
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Subjects Tracked
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
+                  {new Set(reports.flatMap(r => r.subjects.map(s => s.subject))).size}
+                </p>
               </div>
             </div>
-            <p style={{ color: COLORS.dark }} className="text-lg">Overview content coming</p>
+
+            {/* Recent Reports */}
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
+              <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
+                <h3 style={{ color: COLORS.dark }} className="font-semibold">
+                  Recent Reports
+                </h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {reports.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <p style={{ color: "#999" }}>No reports yet. Create one to get started!</p>
+                    <Link href="/generator" style={{ color: COLORS.primary }} className="text-sm font-medium hover:underline mt-2 inline-block">
+                      Create Report →
+                    </Link>
+                  </div>
+                ) : (
+                  reports.slice(0, 10).map((report) => (
+                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50 transition">
+                      <p style={{ color: COLORS.dark }} className="font-semibold">
+                        {report.child_name}
+                      </p>
+                      <p style={{ color: "#666" }} className="text-sm">
+                        {report.subjects.map(s => s.subject).join(", ")} • {new Date(report.generated_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Goals Tab */}
-        {activeTab === "goals" && <GoalsTab activeChild={activeChild} kids={kids} />}
+        {activeTab === "goals" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Learning Goals
+            </h2>
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+              <p style={{ color: "#666" }}>Goals tracking coming soon. Track monthly hour targets per subject.</p>
+            </div>
+          </div>
+        )}
 
         {/* Compliance Tab */}
-        {activeTab === "compliance" && <ComplianceTab activeChild={activeChild} kids={kids} />}
+        {activeTab === "compliance" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Compliance Tracking
+            </h2>
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+              <p style={{ color: "#666" }}>Compliance tracking coming soon. Track state requirements and hour minimums.</p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Quick Log Modal */}
-      <QuickLogModal 
-        isOpen={showQuickLog}
-        onClose={() => setShowQuickLog(false)}
-        kids={kids}
-        templates={templates}
-      />
     </main>
   );
 }
