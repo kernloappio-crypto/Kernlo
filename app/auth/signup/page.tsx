@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -11,46 +12,41 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     if (password !== confirmPassword) {
       setError("Passwords don't match");
-      setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
     try {
-      // Simple localStorage auth (MVP only)
-      const users = JSON.parse(localStorage.getItem("users") || "{}");
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-      if (users[email]) {
-        setError("Email already registered");
+      if (authError) {
+        setError(authError.message);
         return;
       }
 
-      // Store user
-      users[email] = {
-        email,
-        password, // NOT secure for production
-        createdAt: new Date().toISOString(),
-      };
+      if (data?.user) {
+        // Create workspace
+        await supabase
+          .from("workspaces")
+          .insert([{
+            user_id: data.user.id,
+            name: `${email}'s Workspace`,
+          }]);
 
-      localStorage.setItem("users", JSON.stringify(users));
-      localStorage.setItem("auth_token", "token_" + btoa(email));
-      localStorage.setItem("user_id", email);
-      localStorage.setItem("user_email", email);
-
-      router.push("/dashboard");
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError("An error occurred. Please try again.");
     } finally {
@@ -59,80 +55,91 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Create Account</h1>
-        <p className="text-gray-600 text-sm">
-          Sign up to start generating progress reports
-        </p>
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full border border-gray-200">
+        <div className="mb-8">
+          <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
+            Get Started
+          </h1>
+          <p style={{ color: "#666" }} className="text-sm">
+            Create your account
+          </p>
+        </div>
+
+        {error && (
+          <div style={{ backgroundColor: "#ffebee", borderLeft: "4px solid #ff6b6b" }} className="p-3 rounded mb-6">
+            <p style={{ color: "#c62828" }} className="text-sm">
+              {error}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSignup} className="space-y-4 mb-6">
+          <div>
+            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ backgroundColor: "#0066cc" }}
+            className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
+          >
+            {loading ? "Creating account..." : "Sign Up"}
+          </button>
+        </form>
+
+        <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6 text-center">
+          <p style={{ color: "#666" }} className="text-sm mb-2">
+            Already have an account?
+          </p>
+          <Link
+            href="/auth/login"
+            style={{ color: "#0066cc" }}
+            className="text-sm font-medium hover:underline"
+          >
+            Sign In
+          </Link>
+        </div>
       </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSignup} className="space-y-4">
-        <div>
-          <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black transition-all bg-white"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black transition-all bg-white"
-            required
-            minLength={6}
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-gray-700 uppercase tracking-wide block mb-2">
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black transition-all bg-white"
-            required
-            minLength={6}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-4 py-3 bg-black text-white rounded-lg font-medium text-sm hover:bg-gray-900 disabled:opacity-50 transition-all mt-6"
-        >
-          {loading ? "Creating account..." : "Create Account"}
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-gray-600 mt-6">
-        Already have an account?{" "}
-        <Link href="/auth/login" className="text-black font-medium hover:underline">
-          Log in
-        </Link>
-      </p>
-    </div>
+    </main>
   );
 }
