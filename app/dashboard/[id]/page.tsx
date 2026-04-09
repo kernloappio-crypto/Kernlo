@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { generateComprehensiveReport } from "@/lib/pdf-generator";
 
 interface Kid {
   id: string;
@@ -64,10 +65,14 @@ export default function KidDashboardPage() {
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [showEditKid, setShowEditKid] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
   const [editName, setEditName] = useState("");
   const [editAge, setEditAge] = useState("");
   const [editGrade, setEditGrade] = useState("");
   const [state, setState] = useState("CA");
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -80,6 +85,12 @@ export default function KidDashboardPage() {
 
     setEmail(userEmail);
     loadData(userEmail, kidId);
+
+    // Initialize date range (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    setReportEndDate(today.toISOString().split("T")[0]);
+    setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
   }, [kidId, router]);
 
   function loadData(userEmail: string, id: string) {
@@ -228,6 +239,24 @@ export default function KidDashboardPage() {
     setChildGoals([...childGoals, newGoal]);
   }
 
+  function handleGenerateComprehensiveReport() {
+    if (!kid || selectedSubjects.length === 0) return;
+
+    const doc = generateComprehensiveReport(
+      childReports,
+      kid.name,
+      selectedSubjects,
+      reportStartDate,
+      reportEndDate
+    );
+
+    const dateRange = `${reportStartDate.replace(/-/g, "")}-${reportEndDate.replace(/-/g, "")}`;
+    const filename = `${kid.name.replace(/\s+/g, "-")}-${dateRange}.pdf`;
+    doc.save(filename);
+
+    setShowComprehensiveReport(false);
+  }
+
   if (loading || !kid) {
     return (
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
@@ -327,6 +356,13 @@ export default function KidDashboardPage() {
               {kid.name}
             </h1>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowComprehensiveReport(true)}
+                style={{ backgroundColor: COLORS.secondary }}
+                className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+              >
+                📄 Comprehensive Report
+              </button>
               <button
                 onClick={() => setShowQuickLog(true)}
                 style={{ backgroundColor: COLORS.primary }}
@@ -691,6 +727,97 @@ export default function KidDashboardPage() {
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comprehensive Report Modal */}
+      {showComprehensiveReport && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              📄 Comprehensive Report
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-3">
+                  Subjects
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {Array.from(new Set(childReports.flatMap(r => r.subjects.map(s => s.subject)))).length === 0 ? (
+                    <p style={{ color: "#999" }} className="text-sm">
+                      No subjects found. Create a report first.
+                    </p>
+                  ) : (
+                    Array.from(new Set(childReports.flatMap(r => r.subjects.map(s => s.subject)))).map((subject) => (
+                      <label key={subject} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedSubjects.includes(subject)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSubjects([...selectedSubjects, subject]);
+                            } else {
+                              setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span style={{ color: "#1a1a2e" }} className="text-sm">
+                          {subject}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleGenerateComprehensiveReport}
+                disabled={selectedSubjects.length === 0}
+                style={{
+                  backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
+                }}
+                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed"
+              >
+                Generate PDF
+              </button>
+              <button
+                onClick={() => setShowComprehensiveReport(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
               >
                 Cancel
