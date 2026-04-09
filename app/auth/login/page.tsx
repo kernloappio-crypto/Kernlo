@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createBrowserClient } from "@supabase/ssr";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,30 +11,28 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Simple localStorage auth
+      const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-      if (loginError) {
-        setError(loginError.message);
+      const user = users[email];
+      if (!user || user.password !== password) {
+        setError("Invalid email or password");
         return;
       }
 
-      if (data?.user) {
-        router.push("/dashboard");
-      }
+      // Set session
+      const token = "token_" + btoa(email);
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("user_email", email);
+      localStorage.setItem("user_id", email);
+
+      router.push("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError("An error occurred. Please try again.");

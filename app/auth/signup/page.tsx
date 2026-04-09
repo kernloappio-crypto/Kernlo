@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createBrowserClient } from "@supabase/ssr";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -12,11 +11,6 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -35,27 +29,24 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      // Simple localStorage signup
+      const users = JSON.parse(localStorage.getItem("users") || "{}");
 
-      if (signupError) {
-        setError(signupError.message);
+      if (users[email]) {
+        setError("Email already registered");
         return;
       }
 
-      if (data?.user) {
-        // Create workspace
-        await supabase.from("workspaces").insert([
-          {
-            user_id: data.user.id,
-            name: `${email}'s Workspace`,
-          },
-        ]);
+      users[email] = { password };
+      localStorage.setItem("users", JSON.stringify(users));
 
-        router.push("/dashboard");
-      }
+      // Set session
+      const token = "token_" + btoa(email);
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("user_email", email);
+      localStorage.setItem("user_id", email);
+
+      router.push("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
       setError("An error occurred. Please try again.");
