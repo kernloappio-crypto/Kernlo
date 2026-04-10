@@ -236,16 +236,16 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 gap-8 max-w-2xl mx-auto">
             {[
               {
-                name: "Free",
-                price: "$0",
-                desc: "Forever free tier",
-                features: ["3 reports/month", "All 50 states", "Multi-kid support", "Goals tracking"],
+                name: "Free Trial",
+                price: "30 days",
+                desc: "Unlimited access",
+                features: ["Unlimited reports", "Up to 5 children", "All 50 states", "Multi-kid support", "Goals + Compliance tracking"],
               },
               {
                 name: "Pro",
-                price: "$7",
+                price: "$14.99",
                 desc: "per month",
-                features: ["Unlimited reports", "All 50 states", "Multi-kid support", "Goals + Compliance tracking", "Priority support"],
+                features: ["Unlimited reports", "Up to 5 children", "All 50 states", "Multi-kid support", "Goals + Compliance tracking", "Priority support"],
               },
             ].map((plan, i) => (
               <div
@@ -284,7 +284,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p style={{ color: "#999" }} className="text-center mt-8 text-sm">
-            No credit card required. Cancel anytime.
+            Free trial. No credit card required. Upgrade anytime.
           </p>
         </div>
       </section>

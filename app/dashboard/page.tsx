@@ -91,6 +91,13 @@ export default function DashboardHomePage() {
   function handleAddKid() {
     if (!newKidName) return;
 
+    // Check kid limit (5 kids per account for MVP)
+    const MAX_KIDS = 5;
+    if (kids.length >= MAX_KIDS) {
+      alert(`You've reached the limit of ${MAX_KIDS} children per account. Upgrade to Team plan for more children (coming soon).`);
+      return;
+    }
+
     const newKid: Kid = {
       id: Math.random().toString(36).substr(2, 9),
       name: newKidName,
@@ -213,11 +220,20 @@ export default function DashboardHomePage() {
 
           <button
             onClick={() => setShowAddKid(true)}
-            style={{ color: COLORS.primary, borderColor: COLORS.primary }}
-            className="w-full mt-3 px-3 py-2 border rounded-lg text-sm font-medium hover:bg-blue-50 transition"
+            disabled={kids.length >= 5}
+            style={{
+              color: kids.length >= 5 ? "#ccc" : COLORS.primary,
+              borderColor: kids.length >= 5 ? "#ccc" : COLORS.primary,
+            }}
+            className="w-full mt-3 px-3 py-2 border rounded-lg text-sm font-medium hover:bg-blue-50 transition disabled:cursor-not-allowed"
           >
-            + Add Kid
+            + Add Kid {kids.length >= 5 && `(${kids.length}/5)`}
           </button>
+          {kids.length >= 5 && (
+            <p style={{ color: "#ff6b6b" }} className="text-xs mt-2 text-center">
+              Max 5 kids per account. Team plan coming soon.
+            </p>
+          )}
         </div>
 
         <div className="mt-auto pt-6 border-t border-gray-200">
