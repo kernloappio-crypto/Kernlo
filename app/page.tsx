@@ -369,8 +369,8 @@ export default function LandingPage() {
             <div>
               <p className="font-bold mb-4">Legal</p>
               <ul className="text-sm opacity-70 space-y-2">
-                <li><a href="#" className="hover:opacity-100">Privacy</a></li>
-                <li><a href="#" className="hover:opacity-100">Terms</a></li>
+                <li><Link href="/privacy" className="hover:opacity-100">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:opacity-100">Terms</Link></li>
               </ul>
             </div>
             <div>

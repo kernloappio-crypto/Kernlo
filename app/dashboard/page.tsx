@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getTrialStatus, formatTrialMessage, type TrialStatus } from "@/lib/trial-checker";
 
 interface Kid {
   id: string;
@@ -53,6 +54,8 @@ export default function DashboardHomePage() {
   const [allReports, setAllReports] = useState<Report[]>([]);
   const [allGoals, setAllGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
   const [newKidAge, setNewKidAge] = useState("");
@@ -69,6 +72,16 @@ export default function DashboardHomePage() {
     }
 
     setEmail(userEmail);
+
+    // Check trial status
+    const status = getTrialStatus(userEmail);
+    setTrialStatus(status);
+
+    // If trial expired and not paid, show upgrade modal
+    if (status.trial_expired && !status.is_paid) {
+      setShowUpgradeModal(true);
+    }
+
     loadData(userEmail);
   }, [router]);
 
@@ -494,6 +507,50 @@ export default function DashboardHomePage() {
           </div>
         </div>
       </div>
+
+      {/* Trial Expired Modal */}
+      {showUpgradeModal && trialStatus?.trial_expired && !trialStatus.is_paid && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.7)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
+            <h2 style={{ color: "#ff6b6b" }} className="text-2xl font-bold mb-4">
+              Your Trial Has Ended
+            </h2>
+            <p style={{ color: "#666" }} className="mb-6">
+              Your 30-day free trial is over. Upgrade to Pro to keep using Kernlo and generating reports.
+            </p>
+
+            <div style={{ backgroundColor: COLORS.light }} className="p-4 rounded-lg mb-6">
+              <p style={{ color: COLORS.dark }} className="font-bold mb-2">
+                Pro - $14.99/month
+              </p>
+              <ul style={{ color: "#666" }} className="text-sm space-y-1">
+                <li>✓ Unlimited reports</li>
+                <li>✓ Up to 5 children</li>
+                <li>✓ All features</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  // TODO: Redirect to Stripe checkout
+                  alert("Stripe integration coming soon. Contact support: hello@kernlo.app");
+                }}
+                style={{ backgroundColor: COLORS.primary }}
+                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+              >
+                Upgrade Now
+              </button>
+              <button
+                onClick={() => handleLogout()}
+                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Kid Modal */}
       {showAddKid && (
