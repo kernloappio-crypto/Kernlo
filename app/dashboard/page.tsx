@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import { getKids, addKid, deleteKid, getActivities, getGoals } from "@/lib/supabase-data";
-import { getTrialStatus, formatTrialMessage, type TrialStatus } from "@/lib/trial-checker";
+import { getTrialStatus as calculateTrialStatus, formatTrialMessage, type TrialStatus } from "@/lib/trial-checker";
 
 interface Kid {
   id: string;
@@ -80,20 +80,7 @@ export default function DashboardHomePage() {
           .single();
 
         if (userData) {
-          const trialStart = new Date(userData.trial_start_date);
-          const trialEnd = new Date(trialStart);
-          trialEnd.setDate(trialEnd.getDate() + 30);
-          const daysRemaining = Math.ceil(
-            (trialEnd.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-          );
-          const status = {
-            is_trial: !userData.is_paid,
-            days_remaining: Math.max(0, daysRemaining),
-            trial_expired: new Date() > trialEnd,
-            is_paid: userData.is_paid,
-            can_access: new Date() <= trialEnd || userData.is_paid,
-          };
-
+          const status = calculateTrialStatus(userData.trial_start_date, userData.is_paid);
           setTrialStatus(status);
 
           if (status.trial_expired && !status.is_paid) {
