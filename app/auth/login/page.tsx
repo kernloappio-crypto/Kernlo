@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "@/lib/supabase-auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,29 +15,27 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (!email || !password) {
+      setError("Email and password required");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Simple localStorage auth
-      const users = JSON.parse(localStorage.getItem("users") || "{}");
+      const result = await signIn(email, password);
 
-      const user = users[email];
-      if (!user || user.password !== password) {
-        setError("Invalid email or password");
+      if (!result.success) {
+        setError(result.error || "Login failed");
+        setLoading(false);
         return;
       }
-
-      // Set session
-      const token = "token_" + btoa(email);
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("user_email", email);
-      localStorage.setItem("user_id", email);
 
       router.push("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError("An error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
@@ -49,10 +48,10 @@ export default function LoginPage() {
       >
         <div className="mb-8">
           <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
-            Welcome Back
+            Sign In
           </h1>
           <p style={{ color: "#666" }} className="text-sm">
-            Log in to your account
+            Access your homeschool dashboard
           </p>
         </div>
 

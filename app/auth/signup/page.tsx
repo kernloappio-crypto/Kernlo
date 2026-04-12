@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signUp } from "@/lib/supabase-auth";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -29,43 +30,19 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Simple localStorage signup
-      const users = JSON.parse(localStorage.getItem("users") || "{}");
+      const result = await signUp(email, password);
 
-      if (users[email]) {
-        setError("Email already registered");
+      if (!result.success) {
+        setError(result.error || "Signup failed");
+        setLoading(false);
         return;
       }
 
-      // Create user with trial tracking
-      const trialStartDate = new Date().toISOString();
-      const userId = "user_" + Math.random().toString(36).substr(2, 9);
-      
-      users[email] = {
-        password,
-        id: userId,
-        trial_start_date: trialStartDate,
-        trial_ended: false,
-        is_paid: false,
-        email_verified: false,
-      };
-      localStorage.setItem("users", JSON.stringify(users));
-
-      // Set session
-      const token = "token_" + btoa(email);
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("user_email", email);
-      localStorage.setItem("user_id", userId);
-      localStorage.setItem("trial_start_date", trialStartDate);
-
-      // Show trial message
       alert("🎉 Welcome! Your 30-day free trial starts now. Full access to all features.");
-      
       router.push("/dashboard");
     } catch (err) {
       console.error("Signup error:", err);
       setError("An error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
