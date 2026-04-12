@@ -117,17 +117,28 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6 text-center">
-          <p style={{ color: "#666" }} className="text-sm mb-2">
-            Don't have an account?
-          </p>
-          <Link
-            href="/auth/signup"
-            style={{ color: "#0066cc" }}
-            className="text-sm font-medium hover:underline"
-          >
-            Sign Up
-          </Link>
+        <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6">
+          <div className="text-center mb-4">
+            <Link
+              href="/auth/forgot-password"
+              style={{ color: "#0066cc" }}
+              className="text-sm font-medium hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div className="text-center">
+            <p style={{ color: "#666" }} className="text-sm mb-2">
+              Don't have an account?
+            </p>
+            <Link
+              href="/auth/signup"
+              style={{ color: "#0066cc" }}
+              className="text-sm font-medium hover:underline"
+            >
+              Sign Up
+            </Link>
+          </div>
         </div>
       </div>
     </main>

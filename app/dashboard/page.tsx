@@ -531,16 +531,13 @@ export default function DashboardHomePage() {
             </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  // TODO: Redirect to Stripe checkout
-                  alert("Stripe integration coming soon. Contact support: hello@kernlo.app");
-                }}
+              <Link
+                href={`/upgrade?email=${encodeURIComponent(email)}`}
                 style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 text-center"
               >
                 Upgrade Now
-              </button>
+              </Link>
               <button
                 onClick={() => handleLogout()}
                 className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
