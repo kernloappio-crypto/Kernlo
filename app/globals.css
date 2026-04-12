@@ -39,3 +39,93 @@ input[type="text"]::placeholder,
 textarea::placeholder {
   color: #999 !important;
 }
+
+/* Mobile Optimization */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  button {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.75rem;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  /* Touch-friendly spacing */
+  .p-4 {
+    padding: 1rem;
+  }
+
+  .p-6 {
+    padding: 1.5rem;
+  }
+
+  .gap-4 {
+    gap: 1rem;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+
+  .space-y-8 > * + * {
+    margin-top: 2rem;
+  }
+
+  /* Full-width forms */
+  form {
+    width: 100%;
+  }
+
+  /* Grid to single column on mobile */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Prevent horizontal overflow */
+  main {
+    overflow-x: hidden;
+  }
+
+  /* Touch-friendly modals */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+      padding-top: max(0px, env(safe-area-inset-top));
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .max-w-7xl {
+    padding: 1rem;
+  }
+}
