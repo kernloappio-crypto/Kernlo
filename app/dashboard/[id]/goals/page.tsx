@@ -3,36 +3,27 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-
-interface Kid {
-  id: string;
-  name: string;
-  age?: number;
-  grade?: string;
-}
-
-interface Report {
-  id: string;
-  child_name: string;
-  report_type: "daily" | "weekly";
-  generated_date: string;
-  subjects: Array<{
-    id: string;
-    date: string;
-    subject: string;
-    platform: string;
-    topics: string;
-    duration: string;
-  }>;
-  report_content: string;
-  notes?: string;
-}
+import { supabase } from "@/lib/supabase-client";
+import { getGoals, addGoal, deleteGoal, getActivities } from "@/lib/supabase-data";
 
 interface Goal {
   id: string;
   child_name: string;
   subject: string;
   monthly_hours: number;
+}
+
+interface Activity {
+  id: string;
+  child_name: string;
+  subject: string;
+  duration: number;
+  date: string;
+}
+
+interface Kid {
+  id: string;
+  name: string;
 }
 
 const COLORS = {
@@ -45,214 +36,277 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
+const SUBJECTS = [
+  "Math",
+  "English",
+  "Science",
+  "History",
+  "Social Studies",
+  "Arts",
+  "Physical Education",
+  "Other",
+];
+
 export default function GoalsPage() {
   const params = useParams();
-  const kidId = params?.id as string;
   const router = useRouter();
+  const kidId = params.id as string;
 
-  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
-  const [childGoals, setChildGoals] = useState<Goal[]>([]);
-  const [childReports, setChildReports] = useState<Report[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddGoal, setShowAddGoal] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [newHours, setNewHours] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    const userEmail = localStorage.getItem("user_email");
+    const initializeUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-    if (!token || !userEmail) {
-      router.push("/auth/login");
-      return;
-    }
+        if (!user) {
+          router.push("/auth/login");
+          return;
+        }
 
-    setEmail(userEmail);
-    loadData(userEmail, kidId);
-  }, [kidId, router]);
+        setUserId(user.id);
 
-  function loadData(userEmail: string, id: string) {
-    const allKidsData = JSON.parse(localStorage.getItem("kids") || "{}");
-    const userKids = (allKidsData[userEmail] || []) as Kid[];
-    const foundKid = userKids.find(k => k.id === id);
+        // Load kid
+        const { data: kidData } = await supabase
+          .from("kids")
+          .select("*")
+          .eq("id", kidId)
+          .eq("user_id", user.id)
+          .single();
 
-    if (!foundKid) {
-      router.push("/dashboard");
-      return;
-    }
+        if (kidData) {
+          setKid(kidData as Kid);
+        }
 
-    setKid(foundKid);
+        // Load goals
+        const goalsData = await getGoals(user.id);
+        const kidGoals = goalsData.filter((g: any) => g.child_name === kidData?.name);
+        setGoals(kidGoals as Goal[]);
 
-    const allGoalsData = JSON.parse(localStorage.getItem("goals") || "{}");
-    const userGoals = (allGoalsData[userEmail] || []) as Goal[];
-    const kidGoals = userGoals.filter(g => g.child_name === foundKid.name);
-    setChildGoals(kidGoals);
+        // Load activities
+        const activitiesData = await getActivities(user.id);
+        const kidActivities = activitiesData.filter((a: any) => a.child_name === kidData?.name);
+        setActivities(kidActivities as Activity[]);
 
-    const allReportsData = JSON.parse(localStorage.getItem("reports") || "{}");
-    const userReports = (allReportsData[userEmail] || []) as Report[];
-    const kidReports = userReports.filter(r => r.child_name === foundKid.name);
-    setChildReports(kidReports);
-
-    setLoading(false);
-  }
-
-  function handleAddGoal() {
-    if (!kid || !newSubject || !newHours) return;
-
-    const newGoal: Goal = {
-      id: Math.random().toString(36).substr(2, 9),
-      child_name: kid.name,
-      subject: newSubject,
-      monthly_hours: parseInt(newHours),
+        setLoading(false);
+      } catch (err) {
+        console.error("Error initializing:", err);
+        setLoading(false);
+      }
     };
 
-    const allGoalsData = JSON.parse(localStorage.getItem("goals") || "{}");
-    if (!allGoalsData[email]) allGoalsData[email] = [];
-    allGoalsData[email].push(newGoal);
-    localStorage.setItem("goals", JSON.stringify(allGoalsData));
+    initializeUser();
+  }, [kidId, router]);
 
-    setChildGoals([...childGoals, newGoal]);
-    setNewSubject("");
-    setNewHours("");
+  async function handleAddGoal() {
+    if (!newSubject || !newHours) {
+      alert("Subject and hours are required");
+      return;
+    }
+
+    try {
+      await addGoal(userId, kid!.name, newSubject, parseFloat(newHours));
+
+      // Reload goals
+      const goalsData = await getGoals(userId);
+      const kidGoals = goalsData.filter((g: any) => g.child_name === kid!.name);
+      setGoals(kidGoals as Goal[]);
+
+      setNewSubject("");
+      setNewHours("");
+      setShowAddGoal(false);
+    } catch (err) {
+      console.error("Error adding goal:", err);
+      alert("Failed to add goal");
+    }
   }
 
-  function handleDeleteGoal(goalId: string) {
-    const allGoalsData = JSON.parse(localStorage.getItem("goals") || "{}");
-    allGoalsData[email] = (allGoalsData[email] as Goal[]).filter(g => g.id !== goalId);
-    localStorage.setItem("goals", JSON.stringify(allGoalsData));
-    setChildGoals(childGoals.filter(g => g.id !== goalId));
+  async function handleDeleteGoal(goalId: string) {
+    if (!confirm("Delete this goal?")) return;
+
+    try {
+      await deleteGoal(goalId);
+      setGoals(goals.filter((g) => g.id !== goalId));
+    } catch (err) {
+      console.error("Error deleting goal:", err);
+      alert("Failed to delete goal");
+    }
   }
 
-  if (loading || !kid) {
+  function calculateProgress(subject: string): { progress: number; hours: number } {
+    const subjectActivities = activities.filter((a) => a.subject === subject);
+    const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+    const goal = goals.find((g) => g.subject === subject);
+    const progress = goal ? Math.round((hours / goal.monthly_hours) * 100) : 0;
+    return { progress: Math.min(progress, 100), hours };
+  }
+
+  if (loading) {
     return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!kid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Child not found</p>
+      </div>
     );
   }
 
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-      <div style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href={`/dashboard/${kid.id}`} style={{ color: COLORS.primary }} className="text-sm hover:opacity-70">
+      {/* Header */}
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
             ← Back to {kid.name}
           </Link>
-          <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-            Learning Goals
+          <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
+            Goals
           </h1>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Add Goal */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-          <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-            Add New Goal
-          </h2>
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Subject (e.g., Math)"
-              value={newSubject}
-              onChange={(e) => setNewSubject(e.target.value)}
-              style={{ color: "#1a1a2e" }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-            <input
-              type="number"
-              placeholder="Monthly hours"
-              value={newHours}
-              onChange={(e) => setNewHours(e.target.value)}
-              style={{ color: "#1a1a2e" }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Add Goal Button */}
+        <button
+          onClick={() => setShowAddGoal(!showAddGoal)}
+          style={{ backgroundColor: COLORS.primary }}
+          className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
+        >
+          {showAddGoal ? "Cancel" : "+ Add Goal"}
+        </button>
+
+        {/* Add Goal Form */}
+        {showAddGoal && (
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              Set Monthly Goal
+            </h2>
+
+            <div className="space-y-4 mb-4">
+              <div>
+                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                  Subject
+                </label>
+                <select
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select subject...</option>
+                  {SUBJECTS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                  Hours per Month
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="10"
+                  value={newHours}
+                  onChange={(e) => setNewHours(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
             <button
               onClick={handleAddGoal}
               style={{ backgroundColor: COLORS.primary }}
-              className="w-full px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+              className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90"
             >
-              Add Goal
+              Save Goal
             </button>
           </div>
-        </div>
+        )}
 
-        {/* Goals Grid */}
-        {childGoals.length === 0 ? (
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-12 border border-gray-200 text-center">
-            <p style={{ color: "#999" }}>No goals yet.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-6">
-            {childGoals.map((goal) => {
-              const goalReports = childReports.filter(r => r.child_name === goal.child_name);
-              const hoursLogged = goalReports.reduce(
-                (sum, report) =>
-                  sum +
-                  report.subjects
-                    .filter(s => s.subject === goal.subject)
-                    .reduce((subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60, 0),
-                0
-              );
-              const percentage = Math.round((hoursLogged / goal.monthly_hours) * 100);
-              const isOnTrack = percentage >= 80;
+        {/* Goals List */}
+        <div>
+          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
+            Monthly Goals
+          </h2>
 
-              return (
-                <div
-                  key={goal.id}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-6 border border-gray-200"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                      {goal.subject}
-                    </h3>
-                    <button
-                      onClick={() => handleDeleteGoal(goal.id)}
-                      style={{ color: "#ff6b6b" }}
-                      className="text-xs font-semibold hover:opacity-70"
-                    >
-                      ✕ Delete
-                    </button>
-                  </div>
+          {goals.length === 0 ? (
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
+              <p style={{ color: "#666" }}>No goals set yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {goals.map((goal) => {
+                const { progress, hours } = calculateProgress(goal.subject);
+                const progressColor =
+                  progress >= 80 ? COLORS.accent3 : progress >= 50 ? COLORS.accent2 : COLORS.accent1;
 
-                  <p style={{ color: "#666" }} className="text-sm mb-4">
-                    {hoursLogged.toFixed(1)}h / {goal.monthly_hours}h
-                  </p>
+                return (
+                  <div
+                    key={goal.id}
+                    style={{ backgroundColor: "white", borderRadius: "12px" }}
+                    className="p-6 border border-gray-200"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                          {goal.subject}
+                        </h3>
+                        <p style={{ color: "#666" }} className="text-sm">
+                          {hours.toFixed(1)}h / {goal.monthly_hours}h
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGoal(goal.id)}
+                        style={{ color: "#ff6b6b" }}
+                        className="text-sm font-medium hover:opacity-70"
+                      >
+                        Delete
+                      </button>
+                    </div>
 
-                  <div className="mb-4">
-                    <div style={{ backgroundColor: COLORS.light }} className="h-3 rounded-full overflow-hidden">
+                    {/* Progress Bar */}
+                    <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-3 overflow-hidden">
                       <div
                         style={{
-                          backgroundColor: isOnTrack ? COLORS.accent3 : COLORS.accent2,
-                          width: `${Math.min(percentage, 100)}%`,
+                          backgroundColor: progressColor,
+                          width: `${progress}%`,
+                          transition: "width 0.3s ease",
                         }}
-                        className="h-full transition-all"
+                        className="h-full"
                       />
                     </div>
-                  </div>
 
-                  <div className="flex justify-between items-center">
-                    <p style={{ color: "#666" }} className="text-xs">
-                      {percentage}% complete
-                    </p>
-                    <p
-                      style={{
-                        backgroundColor: isOnTrack ? "#d4edda" : "#fff3cd",
-                        color: isOnTrack ? "#155724" : "#856404",
-                      }}
-                      className="px-2 py-1 rounded text-xs font-bold"
-                    >
-                      {isOnTrack ? "On Track" : "Behind"}
+                    <p style={{ color: "#666" }} className="text-sm mt-2">
+                      {progress}% complete
                     </p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

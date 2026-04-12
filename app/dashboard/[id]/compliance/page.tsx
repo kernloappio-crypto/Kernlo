@@ -3,29 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase-client";
+import { getActivities, getComplianceState, setComplianceState } from "@/lib/supabase-data";
+
+interface Activity {
+  id: string;
+  child_name: string;
+  subject: string;
+  duration: number;
+  date: string;
+}
 
 interface Kid {
   id: string;
   name: string;
-  age?: number;
-  grade?: string;
-}
-
-interface Report {
-  id: string;
-  child_name: string;
-  report_type: "daily" | "weekly";
-  generated_date: string;
-  subjects: Array<{
-    id: string;
-    date: string;
-    subject: string;
-    platform: string;
-    topics: string;
-    duration: string;
-  }>;
-  report_content: string;
-  notes?: string;
 }
 
 const COLORS = {
@@ -38,170 +29,251 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-const STATE_REQUIREMENTS: { [key: string]: { [subject: string]: number } } = {
-  CA: { Math: 180, "Language Arts": 180, Science: 180, History: 180 },
-  TX: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-  FL: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-  NY: { Math: 120, "Language Arts": 120, Science: 120, History: 120 },
+const STATE_REQUIREMENTS: { [key: string]: { [key: string]: number } } = {
+  CA: {
+    Math: 240,
+    English: 240,
+    Science: 120,
+    History: 120,
+    "Physical Education": 120,
+  },
+  TX: {
+    Math: 180,
+    English: 180,
+    Science: 120,
+    History: 120,
+  },
+  FL: {
+    Math: 180,
+    English: 180,
+    Science: 90,
+    History: 90,
+  },
+  NY: {
+    Math: 200,
+    English: 200,
+    Science: 100,
+    History: 100,
+  },
 };
 
 export default function CompliancePage() {
   const params = useParams();
-  const kidId = params?.id as string;
   const router = useRouter();
+  const kidId = params.id as string;
 
-  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
-  const [childReports, setChildReports] = useState<Report[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [selectedState, setSelectedState] = useState("CA");
   const [loading, setLoading] = useState(true);
-  const [state, setState] = useState("CA");
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    const userEmail = localStorage.getItem("user_email");
+    const initializeUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-    if (!token || !userEmail) {
-      router.push("/auth/login");
-      return;
-    }
+        if (!user) {
+          router.push("/auth/login");
+          return;
+        }
 
-    setEmail(userEmail);
-    loadData(userEmail, kidId);
+        setUserId(user.id);
 
-    const savedState = localStorage.getItem("state");
-    if (savedState) setState(savedState);
+        // Load kid
+        const { data: kidData } = await supabase
+          .from("kids")
+          .select("*")
+          .eq("id", kidId)
+          .eq("user_id", user.id)
+          .single();
+
+        if (kidData) {
+          setKid(kidData as Kid);
+        }
+
+        // Load compliance state
+        const complianceData = await getComplianceState(user.id);
+        if (complianceData?.state) {
+          setSelectedState(complianceData.state);
+        }
+
+        // Load activities
+        const activitiesData = await getActivities(user.id);
+        const kidActivities = activitiesData.filter((a: any) => a.child_name === kidData?.name);
+        setActivities(kidActivities as Activity[]);
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error initializing:", err);
+        setLoading(false);
+      }
+    };
+
+    initializeUser();
   }, [kidId, router]);
 
-  function loadData(userEmail: string, id: string) {
-    const allKidsData = JSON.parse(localStorage.getItem("kids") || "{}");
-    const userKids = (allKidsData[userEmail] || []) as Kid[];
-    const foundKid = userKids.find(k => k.id === id);
-
-    if (!foundKid) {
-      router.push("/dashboard");
-      return;
+  async function handleStateChange(state: string) {
+    setSelectedState(state);
+    try {
+      await setComplianceState(userId, state);
+    } catch (err) {
+      console.error("Error setting state:", err);
     }
-
-    setKid(foundKid);
-
-    const allReportsData = JSON.parse(localStorage.getItem("reports") || "{}");
-    const userReports = (allReportsData[userEmail] || []) as Report[];
-    const kidReports = userReports.filter(r => r.child_name === foundKid.name);
-    setChildReports(kidReports);
-
-    setLoading(false);
   }
 
-  if (loading || !kid) {
+  function calculateCompliance(): { [key: string]: { hours: number; required: number; met: boolean } } {
+    const requirements = STATE_REQUIREMENTS[selectedState] || {};
+    const compliance: { [key: string]: { hours: number; required: number; met: boolean } } = {};
+
+    Object.keys(requirements).forEach((subject) => {
+      const subjectActivities = activities.filter((a) => a.subject === subject);
+      const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+      const required = requirements[subject];
+      compliance[subject] = {
+        hours,
+        required,
+        met: hours >= required,
+      };
+    });
+
+    return compliance;
+  }
+
+  if (loading) {
     return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
     );
   }
 
-  const requirements = STATE_REQUIREMENTS[state] || {};
-
-  // Calculate hours logged per subject
-  function getSubjectHours(subject: string): number {
-    return childReports.reduce(
-      (sum, report) =>
-        sum +
-        report.subjects
-          .filter(s => s.subject === subject)
-          .reduce((subSum, s) => subSum + (parseInt(s.duration) || 0) / 60, 0),
-      0
+  if (!kid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Child not found</p>
+      </div>
     );
   }
+
+  const compliance = calculateCompliance();
+  const allMet = Object.values(compliance).every((c) => c.met);
 
   return (
     <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-      <div style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href={`/dashboard/${kid.id}`} style={{ color: COLORS.primary }} className="text-sm hover:opacity-70">
+      {/* Header */}
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
             ← Back to {kid.name}
           </Link>
-          <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-            Compliance Tracking
+          <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
+            State Compliance
           </h1>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* State Selector */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-          <label style={{ color: COLORS.dark }} className="block font-semibold mb-3">
-            Select State
-          </label>
-          <select
-            value={state}
-            onChange={(e) => {
-              setState(e.target.value);
-              localStorage.setItem("state", e.target.value);
-            }}
-            style={{ color: "#1a1a2e" }}
-            className="px-4 py-2 border border-gray-300 rounded-lg"
-          >
-            {Object.keys(STATE_REQUIREMENTS).map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* State Selection */}
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+          <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+            Select Your State
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.keys(STATE_REQUIREMENTS).map((state) => (
+              <button
+                key={state}
+                onClick={() => handleStateChange(state)}
+                style={{
+                  backgroundColor: selectedState === state ? COLORS.primary : "white",
+                  color: selectedState === state ? "white" : COLORS.dark,
+                  borderColor: selectedState === state ? COLORS.primary : "#e5e7eb",
+                }}
+                className="px-4 py-2 rounded-lg border font-medium transition"
+              >
+                {state}
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
-        {/* Requirements Grid */}
-        <div className="grid grid-cols-2 gap-6">
-          {Object.entries(requirements).map(([subject, hoursRequired]) => {
-            const hoursLogged = getSubjectHours(subject);
-            const percentage = Math.round((hoursLogged / hoursRequired) * 100);
-            const isOnTrack = percentage >= 100;
+        {/* Compliance Status */}
+        <div>
+          {allMet ? (
+            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-6 border border-green-200">
+              <p style={{ color: "#2e7d32" }} className="text-lg font-bold">
+                ✓ All requirements met!
+              </p>
+            </div>
+          ) : (
+            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-6 border border-orange-200">
+              <p style={{ color: "#e65100" }} className="text-lg font-bold">
+                ⚠ Not all requirements met. Keep logging activities.
+              </p>
+            </div>
+          )}
+        </div>
 
-            return (
-              <div
-                key={subject}
-                style={{ backgroundColor: "white", borderRadius: "12px" }}
-                className="p-6 border border-gray-200"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                    {subject}
-                  </h3>
-                  <p
-                    style={{
-                      backgroundColor: isOnTrack ? "#d4edda" : "#fff3cd",
-                      color: isOnTrack ? "#155724" : "#856404",
-                    }}
-                    className="px-2 py-1 rounded text-xs font-bold"
-                  >
-                    {percentage}%
-                  </p>
-                </div>
+        {/* Requirements Table */}
+        <div>
+          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
+            {selectedState} Requirements
+          </h2>
 
-                <p style={{ color: "#666" }} className="text-sm mb-4">
-                  {hoursLogged.toFixed(1)}h / {hoursRequired}h
-                </p>
+          <div className="space-y-4">
+            {Object.entries(compliance).map(([subject, data]) => {
+              const percentage = Math.round((data.hours / data.required) * 100);
+              const isMet = data.met;
 
-                <div className="mb-4">
-                  <div style={{ backgroundColor: COLORS.light }} className="h-3 rounded-full overflow-hidden">
+              return (
+                <div
+                  key={subject}
+                  style={{ backgroundColor: "white", borderRadius: "12px" }}
+                  className="p-6 border border-gray-200"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                        {subject}
+                      </h3>
+                      <p style={{ color: "#666" }} className="text-sm">
+                        {data.hours.toFixed(1)} / {data.required} hours
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        backgroundColor: isMet ? "#e8f5e9" : "#ffebee",
+                        color: isMet ? "#2e7d32" : "#c62828",
+                      }}
+                      className="px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      {isMet ? "✓ Met" : "✗ Not Met"}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-3 overflow-hidden">
                     <div
                       style={{
-                        backgroundColor: isOnTrack ? COLORS.accent3 : COLORS.accent2,
+                        backgroundColor: isMet ? COLORS.accent3 : COLORS.accent1,
                         width: `${Math.min(percentage, 100)}%`,
+                        transition: "width 0.3s ease",
                       }}
-                      className="h-full transition-all"
+                      className="h-full"
                     />
                   </div>
-                </div>
 
-                <p style={{ color: "#666" }} className="text-xs">
-                  {isOnTrack ? "✓ Requirement met" : `${hoursRequired - Math.round(hoursLogged)} hours remaining`}
-                </p>
-              </div>
-            );
-          })}
+                  <p style={{ color: "#666" }} className="text-sm mt-2">
+                    {percentage}% complete
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </main>
