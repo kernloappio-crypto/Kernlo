@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
+
+export const dynamic = "force-dynamic";
 import { getKids, addKid, deleteKid, getActivities, getGoals } from "@/lib/supabase-data";
 import { getTrialStatus as calculateTrialStatus, formatTrialMessage, type TrialStatus } from "@/lib/trial-checker";
 
