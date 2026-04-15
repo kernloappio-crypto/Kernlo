@@ -76,21 +76,16 @@ export default function LandingPage() {
 
           {/* Video - Whiteboard Animation */}
           <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-gray-900">
-            <div style={{ paddingBottom: "56.25%", position: "relative" }}>
-              <iframe
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                }}
-                src="https://www.youtube.com/embed/LKqKq54Haa4?autoplay=0"
-                title="Kernlo Whiteboard Animation"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
+            <video
+              width="100%"
+              height="auto"
+              controls
+              style={{ display: "block" }}
+              poster="/videos/kernlo-whiteboard-poster.png"
+            >
+              <source src="/videos/kernlo-whiteboard.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </section>
