@@ -106,20 +106,24 @@ export default function DashboardHomePage() {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel(`kids:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "kids", filter: `user_id=eq.${userId}` },
-        () => {
-          loadData(userId);
-        }
-      )
-      .subscribe();
+    try {
+      const channel = supabase
+        .channel(`kids:${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "kids", filter: `user_id=eq.${userId}` },
+          () => {
+            loadData(userId);
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.error("Real-time listener error:", err);
+    }
   }, [userId]);
 
   async function loadData(uid: string) {
