@@ -85,7 +85,7 @@ export default function LandingPage() {
                   width: "100%",
                   height: "100%",
                 }}
-                src="https://www.youtube.com/embed/LKqKq54Haa4"
+                src="https://www.youtube.com/embed/LKqKq54Haa4?autoplay=0"
                 title="Kernlo Whiteboard Animation"
                 allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
