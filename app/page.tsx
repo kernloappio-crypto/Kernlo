@@ -74,7 +74,7 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Video Placeholder (HeyGen) */}
+          {/* Video - Whiteboard Animation */}
           <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-gray-900">
             <div style={{ paddingBottom: "56.25%", position: "relative" }}>
               <iframe
@@ -85,16 +85,13 @@ export default function LandingPage() {
                   width: "100%",
                   height: "100%",
                 }}
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
-                title="Kernlo Demo"
+                src="https://www.youtube.com/embed/LKqKq54Haa4?autoplay=0&mute=0"
+                title="Kernlo Whiteboard Animation"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             </div>
           </div>
-          <p style={{ color: "#999" }} className="text-sm mt-4">
-            *Replace with your HeyGen video URL
-          </p>
         </div>
       </section>
 
