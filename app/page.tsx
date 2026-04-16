@@ -75,13 +75,12 @@ export default function LandingPage() {
           </div>
 
           {/* Video - Whiteboard Animation */}
-          <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-gray-900">
+          <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-black">
             <video
               width="100%"
               height="auto"
               controls
-              style={{ display: "block" }}
-              poster="/videos/kernlo-whiteboard-poster.png"
+              style={{ display: "block", backgroundColor: "#000" }}
             >
               <source src="/videos/kernlo-whiteboard.mp4" type="video/mp4" />
               Your browser does not support the video tag.
