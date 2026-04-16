@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
-
-export const dynamic = "force-dynamic";
 import { getActivities, addActivity, deleteActivity } from "@/lib/supabase-data";
 
 interface Activity {
