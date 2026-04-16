@@ -7,14 +7,18 @@ import { supabase } from './supabase-client';
 
 export async function signUp(email: string, password: string) {
   try {
+    if (!supabase || !supabase.auth) {
+      return { success: false, error: 'Supabase not initialized. Please check your configuration.' };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
 
     if (error) {
-      console.error('Signup error:', error.message);
-      return { success: false, error: error.message };
+      console.error('Signup error:', error);
+      return { success: false, error: error?.message || 'Signup failed' };
     }
 
     // Create user record in users table
@@ -45,14 +49,18 @@ export async function signUp(email: string, password: string) {
 
 export async function signIn(email: string, password: string) {
   try {
+    if (!supabase || !supabase.auth) {
+      return { success: false, error: 'Supabase not initialized. Please check your configuration.' };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      console.error('Login error:', error.message);
-      return { success: false, error: error.message };
+      console.error('Login error:', error);
+      return { success: false, error: error?.message || 'Login failed' };
     }
 
     return { success: true, session: data.session };

@@ -39,6 +39,13 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-6">
             <Link
+              href="/auth/login"
+              style={{ color: COLORS.primary }}
+              className="text-sm font-medium hover:opacity-70"
+            >
+              Log In
+            </Link>
+            <Link
               href="/auth/signup"
               style={{ backgroundColor: COLORS.primary }}
               className="px-6 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
@@ -66,12 +73,13 @@ export default function LandingPage() {
             >
               Try Free (No credit card)
             </Link>
-            <button
+            <a
+              href="#how-it-works"
               className="px-8 py-3 border-2 font-semibold rounded-lg transition hover:bg-gray-50"
               style={{ borderColor: COLORS.primary, color: COLORS.primary }}
             >
               See How It Works
-            </button>
+            </a>
           </div>
 
           {/* Video - Whiteboard Animation */}
@@ -80,6 +88,10 @@ export default function LandingPage() {
               width="100%"
               height="auto"
               controls
+              autoPlay
+              muted
+              loop
+              playsInline
               style={{ display: "block", backgroundColor: "#000" }}
             >
               <source src="/videos/kernlo-whiteboard.mp4" type="video/mp4" />
@@ -116,7 +128,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section style={{ backgroundColor: COLORS.light }} className="py-20">
+      <section id="how-it-works" style={{ backgroundColor: COLORS.light }} className="py-20">
         <div className="max-w-6xl mx-auto px-6">
           <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
             How Kernlo Works
@@ -306,7 +318,7 @@ export default function LandingPage() {
               },
               {
                 q: "What happens if I go over my free 3 reports?",
-                a: "You'll get a reminder. You can upgrade to Pro ($7/mo) for unlimited reports, or wait until next month.",
+                a: "You'll get a reminder. You can upgrade to Pro ($14.99/mo) for unlimited reports, or wait until next month.",
               },
               {
                 q: "Can I export my data?",
