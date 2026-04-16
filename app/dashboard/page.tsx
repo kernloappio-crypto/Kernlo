@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase-client";
+import Navbar from "@/components/Navbar";
+import { signOut } from "@/lib/supabase-auth";
+
+export const dynamic = "force-dynamic";
 
 interface Subject {
   id: string;
@@ -44,6 +49,7 @@ type TabType = "overview" | "goals" | "compliance";
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [reports, setReports] = useState<Report[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,398 +57,501 @@ export default function DashboardPage() {
   const [state, setState] = useState("CA");
   const router = useRouter();
 
+  // Load user and data from Supabase
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    const userEmail = localStorage.getItem("user_email");
+    const initUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.push("/auth/login");
+          return;
+        }
 
-    if (!token || !userEmail) {
-      router.push("/auth/login");
-      return;
-    }
+        setUserId(user.id);
+        setEmail(user.email || "");
 
-    setEmail(userEmail);
-    loadData(userEmail);
+        // Load goals from Supabase
+        const { data: goalsData } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (goalsData) {
+          setGoals(goalsData.map((g: any) => ({
+            id: g.id,
+            subject: g.subject,
+            monthly_hours: g.monthly_hours,
+          })));
+        }
+
+        // Load state from localStorage
+        const savedState = localStorage.getItem(`state_${user.id}`);
+        if (savedState) setState(savedState);
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error initializing:", err);
+        setLoading(false);
+      }
+    };
+
+    initUser();
   }, [router]);
 
-  function loadData(userEmail: string) {
-    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
-    const userReports = (allReports[userEmail] || []) as Report[];
-    setReports(userReports);
-
-    const allGoals = JSON.parse(localStorage.getItem("goals") || "{}");
-    const userGoals = (allGoals[userEmail] || []) as Goal[];
-    setGoals(userGoals);
-
-    const savedState = localStorage.getItem("state");
-    if (savedState) setState(savedState);
-
-    setLoading(false);
-  }
-
-  function handleLogout() {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("user_email");
+  async function handleLogout() {
+    await signOut();
     router.push("/");
   }
 
-  function handleQuickLogSave(subject: string, hours: number, notes: string) {
-    const newReport: Report = {
-      id: Math.random().toString(36).substr(2, 9),
-      child_name: "Quick Log",
-      report_type: "daily",
-      generated_date: new Date().toISOString().split("T")[0],
-      subjects: [{
-        id: Math.random().toString(36).substr(2, 9),
-        date: new Date().toISOString().split("T")[0],
-        subject,
-        platform: "Quick Log",
-        topics: notes,
-        duration: (hours * 60).toString(),
-      }],
-      report_content: `Quick logged ${hours} hours on ${subject}.`,
-    };
+  async function handleQuickLogSave(subject: string, hours: number, notes: string) {
+    if (!userId) return;
 
-    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
-    if (!allReports[email]) allReports[email] = [];
-    allReports[email].push(newReport);
-    localStorage.setItem("reports", JSON.stringify(allReports));
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      
+      const { error } = await supabase
+        .from("activities")
+        .insert({
+          user_id: userId,
+          child_name: "Default", // For now, single child
+          subject,
+          duration: hours,
+          platform: "Quick Log",
+          date: today,
+          notes,
+        });
 
-    setReports([...reports, newReport]);
-    setShowQuickLog(false);
+      if (error) {
+        alert("Error saving activity: " + error.message);
+        return;
+      }
+
+      alert("Activity logged successfully!");
+      setShowQuickLog(false);
+      
+      // Reload data
+      const { data: reportsData } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (reportsData) {
+        // Convert to report format for display
+        setReports(reportsData.map((a: any) => ({
+          id: a.id,
+          child_name: a.child_name,
+          report_type: "daily",
+          generated_date: a.date,
+          subjects: [{
+            id: a.id,
+            date: a.date,
+            subject: a.subject,
+            platform: a.platform,
+            topics: a.notes || "",
+            duration: a.duration.toString(),
+          }],
+          report_content: "",
+          notes: a.notes,
+        })));
+      }
+    } catch (err) {
+      console.error("Error saving quick log:", err);
+      alert("Failed to save activity");
+    }
   }
 
-  function addGoal(subject: string, hours: number) {
-    const newGoal: Goal = {
-      id: Math.random().toString(36).substr(2, 9),
-      subject,
-      monthly_hours: hours,
-    };
+  async function addGoal(subject: string, monthlyHours: number) {
+    if (!userId) return;
 
-    const allGoals = JSON.parse(localStorage.getItem("goals") || "{}");
-    if (!allGoals[email]) allGoals[email] = [];
-    allGoals[email].push(newGoal);
-    localStorage.setItem("goals", JSON.stringify(allGoals));
+    try {
+      const { error } = await supabase
+        .from("goals")
+        .insert({
+          user_id: userId,
+          child_name: "Default",
+          subject,
+          monthly_hours: monthlyHours,
+        });
 
-    setGoals([...goals, newGoal]);
+      if (error) {
+        alert("Error adding goal: " + error.message);
+        return;
+      }
+
+      // Reload goals
+      const { data: goalsData } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (goalsData) {
+        setGoals(goalsData.map((g: any) => ({
+          id: g.id,
+          subject: g.subject,
+          monthly_hours: g.monthly_hours,
+        })));
+      }
+
+      alert("Goal added!");
+    } catch (err) {
+      console.error("Error adding goal:", err);
+      alert("Failed to add goal");
+    }
   }
+
+  async function deleteGoal(goalId: string) {
+    try {
+      const { error } = await supabase
+        .from("goals")
+        .delete()
+        .eq("id", goalId);
+
+      if (error) {
+        alert("Error deleting goal: " + error.message);
+        return;
+      }
+
+      setGoals(goals.filter((g) => g.id !== goalId));
+    } catch (err) {
+      console.error("Error deleting goal:", err);
+    }
+  }
+
+  async function saveState(newState: string) {
+    setState(newState);
+    localStorage.setItem(`state_${userId}`, newState);
+  }
+
+  const compliances = [
+    {
+      state: "CA",
+      hours: 175,
+      details: "California requires 175 instructional days or hours per school year",
+    },
+    {
+      state: "TX",
+      hours: 0,
+      details: "Texas requires bona fide curriculum with reading, math, science, social studies",
+    },
+    {
+      state: "FL",
+      hours: 1000,
+      details: "Florida requires 1000 instructional hours per school year",
+    },
+    {
+      state: "NY",
+      hours: 900,
+      details: "New York requires 900 instructional hours per school year",
+    },
+  ];
+
+  const selectedCompliance = compliances.find((c) => c.state === state);
 
   if (loading) {
     return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
     );
   }
 
-  const totalReports = reports.length;
-  const totalHours = reports.reduce(
-    (sum, report) =>
-      sum +
-      report.subjects.reduce(
-        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
-        0
-      ),
-    0
-  );
-
-  const STATE_REQUIREMENTS: { [key: string]: { [subject: string]: number } } = {
-    CA: { Math: 180, "Language Arts": 180, Science: 180, History: 180 },
-    TX: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-    FL: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
-    NY: { Math: 120, "Language Arts": 120, Science: 120, History: 120 },
-  };
-
-  const requirements = STATE_REQUIREMENTS[state] || {};
-
   return (
-    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-      {/* Top Navigation */}
-      <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div style={{ color: COLORS.primary }} className="text-2xl font-bold">
-            kernlo
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/generator" style={{ color: COLORS.dark }} className="text-sm font-medium hover:opacity-70">
-              New Report
-            </Link>
-            <button
-              onClick={() => setShowQuickLog(true)}
-              style={{ backgroundColor: COLORS.primary }}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-            >
-              ⚡ Quick Log
-            </button>
+    <>
+      <Navbar />
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+        {/* Header */}
+        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+              <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
+                Dashboard
+              </h1>
+              <p style={{ color: "#666" }} className="text-sm">
+                Welcome, {email}
+              </p>
+            </div>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              style={{ color: COLORS.primary, borderColor: COLORS.primary }}
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
             >
-              Log Out
+              Logout
             </button>
           </div>
         </div>
-      </nav>
 
-      {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8 border-b border-gray-200 flex gap-8">
-          {[
-            { id: "overview" as TabType, label: "Overview" },
-            { id: "goals" as TabType, label: "Goals" },
-            { id: "compliance" as TabType, label: "Compliance" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                color: activeTab === tab.id ? COLORS.primary : "#999",
-                borderBottom: activeTab === tab.id ? `2px solid ${COLORS.primary}` : "none",
-              }}
-              className="pb-4 font-medium text-sm capitalize transition"
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Tabs */}
+        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+          <div className="max-w-7xl mx-auto flex gap-6">
+            {(["overview", "goals", "compliance"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  borderBottom: activeTab === tab ? `3px solid ${COLORS.primary}` : "none",
+                  color: activeTab === tab ? COLORS.primary : "#666",
+                }}
+                className="pb-2 font-medium capitalize transition hover:text-black"
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Overview Tab */}
-        {activeTab === "overview" && (
-          <div>
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Total Reports
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-                  {totalReports}
-                </p>
+        {/* Content */}
+        <div className="max-w-7xl mx-auto p-6">
+          {activeTab === "overview" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+                  Quick Log
+                </h2>
+                <button
+                  onClick={() => setShowQuickLog(!showQuickLog)}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium"
+                >
+                  {showQuickLog ? "Cancel" : "Log Activity"}
+                </button>
               </div>
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Total Hours
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
-                  {totalHours.toFixed(1)}h
-                </p>
-              </div>
+              {showQuickLog && (
+                <QuickLogForm onSave={handleQuickLogSave} colors={COLORS} />
+              )}
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Subjects
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
-                  {new Set(reports.flatMap(r => r.subjects.map(s => s.subject))).size}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
-              <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
-                <h3 style={{ color: COLORS.dark }} className="font-semibold">
-                  Recent Reports
+              <div className="mt-8">
+                <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                  Recent Activities
                 </h3>
-              </div>
-              <div className="divide-y divide-gray-200">
                 {reports.length === 0 ? (
-                  <div className="p-6 text-center">
-                    <p style={{ color: "#999" }}>No reports yet.</p>
-                  </div>
+                  <p style={{ color: "#999" }}>No activities logged yet</p>
                 ) : (
-                  reports.slice(0, 10).map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
-                      <p style={{ color: COLORS.dark }} className="font-semibold">
-                        {report.child_name}
-                      </p>
-                      <p style={{ color: "#666" }} className="text-sm">
-                        {report.subjects.map(s => s.subject).join(", ")} • {new Date(report.generated_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))
+                  <div className="space-y-3">
+                    {reports.map((report) => (
+                      <div key={report.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-4 rounded">
+                        <p style={{ color: COLORS.dark }} className="font-semibold">
+                          {report.subjects[0]?.subject}
+                        </p>
+                        <p style={{ color: "#666" }} className="text-sm">
+                          {report.subjects[0]?.duration} hours • {report.generated_date}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Goals Tab */}
-        {activeTab === "goals" && (
-          <div>
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Monthly Learning Goals
-            </h2>
-
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-              <h3 style={{ color: COLORS.dark }} className="font-semibold mb-4">
-                Add Goal
-              </h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Subject (e.g., Math)"
-                  id="goalSubject"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="Monthly hours"
-                  id="goalHours"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                <button
-                  onClick={() => {
-                    const subject = (document.getElementById("goalSubject") as HTMLInputElement).value;
-                    const hours = parseInt((document.getElementById("goalHours") as HTMLInputElement).value);
-                    if (subject && hours > 0) {
-                      addGoal(subject, hours);
-                      (document.getElementById("goalSubject") as HTMLInputElement).value = "";
-                      (document.getElementById("goalHours") as HTMLInputElement).value = "";
-                    }
-                  }}
-                  style={{ backgroundColor: COLORS.primary }}
-                  className="w-full px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-                >
-                  Add Goal
-                </button>
+          {activeTab === "goals" && (
+            <div>
+              <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+                Goals
+              </h2>
+              <GoalsForm onAddGoal={addGoal} colors={COLORS} />
+              <div className="mt-8">
+                <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                  Your Goals
+                </h3>
+                {goals.length === 0 ? (
+                  <p style={{ color: "#999" }}>No goals set yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {goals.map((goal) => (
+                      <div key={goal.id} style={{ backgroundColor: "white" }} className="p-4 rounded flex items-center justify-between">
+                        <div>
+                          <p style={{ color: COLORS.dark }} className="font-semibold">
+                            {goal.subject}
+                          </p>
+                          <p style={{ color: "#666" }} className="text-sm">
+                            {goal.monthly_hours} hours/month
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => deleteGoal(goal.id)}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-6">
-              {goals.map((goal) => (
-                <div
-                  key={goal.id}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-6 border border-gray-200"
+          {activeTab === "compliance" && (
+            <div>
+              <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+                Compliance Tracker
+              </h2>
+              <div className="mb-6">
+                <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                  Select Your State
+                </label>
+                <select
+                  value={state}
+                  onChange={(e) => saveState(e.target.value)}
+                  style={{ borderColor: COLORS.primary }}
+                  className="w-full p-3 border rounded-lg"
                 >
-                  <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
-                    {goal.subject}
-                  </h4>
-                  <p style={{ color: "#666" }} className="text-sm mb-4">
-                    Target: {goal.monthly_hours} hours
+                  {compliances.map((c) => (
+                    <option key={c.state} value={c.state}>
+                      {c.state}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedCompliance && (
+                <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded">
+                  <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-2">
+                    {selectedCompliance.state} Requirements
+                  </h3>
+                  <p style={{ color: "#666" }} className="mb-4">
+                    {selectedCompliance.details}
                   </p>
-                  <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
-                    <div style={{ backgroundColor: COLORS.primary, width: "45%" }} className="h-full" />
-                  </div>
+                  {selectedCompliance.hours > 0 && (
+                    <p style={{ color: COLORS.accent3 }} className="font-semibold">
+                      Minimum: {selectedCompliance.hours} hours/year
+                    </p>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
-
-        {/* Compliance Tab */}
-        {activeTab === "compliance" && (
-          <div>
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Compliance Tracking
-            </h2>
-
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
-              <label style={{ color: COLORS.dark }} className="font-semibold block mb-3">
-                Select State
-              </label>
-              <select
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value);
-                  localStorage.setItem("state", e.target.value);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg"
-              >
-                {Object.keys(STATE_REQUIREMENTS).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              {Object.entries(requirements).map(([subject, hours]) => (
-                <div
-                  key={subject}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-6 border border-gray-200"
-                >
-                  <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
-                    {subject}
-                  </h4>
-                  <p style={{ color: "#666" }} className="text-sm mb-4">
-                    Required: {hours} hours/year
-                  </p>
-                  <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
-                    <div style={{ backgroundColor: "#ff6b6b", width: "30%" }} className="h-full" />
-                  </div>
-                  <p style={{ color: "#666" }} className="text-xs mt-2">
-                    30% complete
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Log Modal */}
-      {showQuickLog && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              ⚡ Quick Log
-            </h2>
-
-            <div className="space-y-4 mb-6">
-              <input
-                type="text"
-                placeholder="Subject"
-                id="quickLogSubject"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <input
-                type="number"
-                placeholder="Hours"
-                id="quickLogHours"
-                step="0.5"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                id="quickLogNotes"
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const subject = (document.getElementById("quickLogSubject") as HTMLInputElement).value;
-                  const hours = parseFloat((document.getElementById("quickLogHours") as HTMLInputElement).value);
-                  const notes = (document.getElementById("quickLogNotes") as HTMLTextAreaElement).value;
-                  if (subject && hours > 0) {
-                    handleQuickLogSave(subject, hours, notes);
-                  }
-                }}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setShowQuickLog(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          )}
         </div>
-      )}
-    </main>
+      </main>
+    </>
+  );
+}
+
+function QuickLogForm({ onSave, colors }: { onSave: (subject: string, hours: number, notes: string) => void; colors: typeof COLORS }) {
+  const [subject, setSubject] = useState("");
+  const [hours, setHours] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const handleSubmit = () => {
+    if (!subject || !hours) {
+      alert("Please fill in subject and hours");
+      return;
+    }
+    onSave(subject, parseFloat(hours), notes);
+    setSubject("");
+    setHours("");
+    setNotes("");
+  };
+
+  return (
+    <div style={{ backgroundColor: "white", borderLeft: `4px solid ${colors.primary}` }} className="p-6 rounded mb-6">
+      <div className="space-y-4">
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Subject
+          </label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Math, Science, English, etc."
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          />
+        </div>
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Hours
+          </label>
+          <input
+            type="number"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            placeholder="1.5"
+            step="0.5"
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          />
+        </div>
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Notes (optional)
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Details about the lesson..."
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+            rows={3}
+          />
+        </div>
+        <button
+          onClick={handleSubmit}
+          style={{ backgroundColor: colors.primary }}
+          className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+        >
+          Save Activity
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GoalsForm({ onAddGoal, colors }: { onAddGoal: (subject: string, hours: number) => void; colors: typeof COLORS }) {
+  const [subject, setSubject] = useState("");
+  const [hours, setHours] = useState("");
+
+  const handleSubmit = () => {
+    if (!subject || !hours) {
+      alert("Please fill in subject and hours");
+      return;
+    }
+    onAddGoal(subject, parseFloat(hours));
+    setSubject("");
+    setHours("");
+  };
+
+  return (
+    <div style={{ backgroundColor: "white", borderLeft: `4px solid ${colors.primary}` }} className="p-6 rounded mb-6">
+      <div className="space-y-4">
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Subject
+          </label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Math, Science, etc."
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          />
+        </div>
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Monthly Hours Goal
+          </label>
+          <input
+            type="number"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            placeholder="20"
+            step="1"
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          />
+        </div>
+        <button
+          onClick={handleSubmit}
+          style={{ backgroundColor: colors.primary }}
+          className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+        >
+          Add Goal
+        </button>
+      </div>
+    </div>
   );
 }
