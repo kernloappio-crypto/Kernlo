@@ -2,7 +2,7 @@ import { supabase } from './supabase-client';
 
 /**
  * Supabase Auth Utilities
- * Replaces localStorage-based auth with real Supabase authentication
+ * Uses Supabase Auth (built-in) instead of custom users table
  */
 
 export async function signUp(email: string, password: string) {
@@ -19,25 +19,6 @@ export async function signUp(email: string, password: string) {
     if (error) {
       console.error('Signup error:', error);
       return { success: false, error: error?.message || 'Signup failed' };
-    }
-
-    // Create user record in users table
-    if (data.user) {
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email,
-          trial_start_date: new Date().toISOString(),
-          trial_ended: false,
-          is_paid: false,
-          email_verified: false,
-        });
-
-      if (userError) {
-        console.error('User creation error:', userError.message);
-        return { success: false, error: userError.message };
-      }
     }
 
     return { success: true, user: data.user };
