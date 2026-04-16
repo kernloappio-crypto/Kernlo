@@ -44,7 +44,7 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-type TabType = "overview" | "goals" | "compliance";
+type TabType = "overview" | "goals" | "compliance" | "reports";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -284,7 +284,7 @@ export default function DashboardPage() {
         {/* Tabs */}
         <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
           <div className="max-w-7xl mx-auto flex gap-6">
-            {(["overview", "goals", "compliance"] as const).map((tab) => (
+            {(["overview", "goals", "compliance", "reports"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -423,6 +423,15 @@ export default function DashboardPage() {
               )}
             </div>
           )}
+
+          {activeTab === "reports" && (
+            <div>
+              <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+                Generate Report
+              </h2>
+              <ReportGenerator colors={COLORS} userId={userId} />
+            </div>
+          )}
         </div>
       </main>
     </>
@@ -550,6 +559,164 @@ function GoalsForm({ onAddGoal, colors }: { onAddGoal: (subject: string, hours: 
           className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
         >
           Add Goal
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReportGenerator({ colors, userId }: { colors: typeof COLORS; userId: string }) {
+  const [childName, setChildName] = useState("");
+  const [reportType, setReportType] = useState<"daily" | "weekly">("daily");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const subjects = ["Math", "English", "Science", "History", "Social Studies", "Arts", "Physical Education", "Other"];
+
+  const handleGenerateReport = async () => {
+    if (!childName || selectedSubjects.length === 0) {
+      alert("Please fill in child name and select subjects");
+      return;
+    }
+
+    setGenerating(true);
+
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const reportContent = `Generated ${reportType} report for ${childName} covering: ${selectedSubjects.join(", ")}. ${notes}`;
+
+      const { error } = await supabase
+        .from("reports")
+        .insert({
+          user_id: userId,
+          child_name: childName,
+          report_type: reportType,
+          generated_date: today,
+          subjects: selectedSubjects,
+          report_content: reportContent,
+        });
+
+      if (error) {
+        alert("Error saving report: " + error.message);
+        return;
+      }
+
+      // Generate PDF
+      downloadReportAsPDF(childName, reportType, selectedSubjects, reportContent);
+
+      alert("Report generated and saved!");
+      setChildName("");
+      setSelectedSubjects([]);
+      setNotes("");
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to generate report");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const downloadReportAsPDF = (childName: string, type: string, subjects: string[], content: string) => {
+    const today = new Date().toLocaleDateString();
+    const pdfContent = `
+${childName}'s ${type.toUpperCase()} REPORT
+Generated: ${today}
+
+Subjects: ${subjects.join(", ")}
+
+${content}
+    `;
+
+    const element = document.createElement("a");
+    element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(pdfContent));
+    element.setAttribute("download", `${childName}-report-${today}.txt`);
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  return (
+    <div style={{ backgroundColor: "white", borderLeft: `4px solid ${colors.primary}` }} className="p-6 rounded mb-6">
+      <div className="space-y-4">
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Child Name
+          </label>
+          <input
+            type="text"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            placeholder="Enter child's name"
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Report Type
+          </label>
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as "daily" | "weekly")}
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Subjects (select all that apply)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {subjects.map((subject) => (
+              <label key={subject} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedSubjects.includes(subject)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedSubjects([...selectedSubjects, subject]);
+                    } else {
+                      setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
+                    }
+                  }}
+                  className="mr-2"
+                />
+                <span style={{ color: "#666" }} className="text-sm">
+                  {subject}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ color: colors.dark }} className="block font-semibold mb-2">
+            Additional Notes
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Any additional details..."
+            style={{ borderColor: colors.primary }}
+            className="w-full p-3 border rounded-lg"
+            rows={3}
+          />
+        </div>
+
+        <button
+          onClick={handleGenerateReport}
+          disabled={generating}
+          style={{ backgroundColor: generating ? "#ccc" : colors.primary }}
+          className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+        >
+          {generating ? "Generating..." : "Generate & Download Report"}
         </button>
       </div>
     </div>
