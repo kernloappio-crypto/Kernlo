@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
+import Navbar from "@/components/Navbar";
 
 export const dynamic = "force-dynamic";
 import { getKids, addKid, deleteKid, getActivities, getGoals } from "@/lib/supabase-data";
@@ -291,8 +292,10 @@ export default function DashboardHomePage() {
   const weeklyData = getThisWeekActivity();
 
   return (
-    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-      {/* Header */}
+    <>
+      <Navbar />
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+        {/* Header */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
@@ -479,6 +482,7 @@ export default function DashboardHomePage() {
           </div>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

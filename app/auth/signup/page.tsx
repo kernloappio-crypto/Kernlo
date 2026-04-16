@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/supabase-auth";
+import Navbar from "@/components/Navbar";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,9 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
         className="p-8 max-w-md w-full border border-gray-200"
@@ -156,6 +159,7 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
