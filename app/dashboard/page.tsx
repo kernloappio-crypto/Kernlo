@@ -74,20 +74,42 @@ export default function DashboardHomePage() {
         setUserId(user.id);
         setEmail(user.email || "");
 
-        // Load trial status
-        const { data: userData } = await supabase
+        // Ensure user record exists with trial_start_date
+        const { data: userData, error: fetchError } = await supabase
           .from("users")
           .select("trial_start_date, is_paid, trial_ended")
           .eq("id", user.id)
           .single();
 
-        if (userData) {
-          const status = calculateTrialStatus(userData.trial_start_date, userData.is_paid);
+        if (fetchError || !userData) {
+          // Create user record with today as trial start
+          await supabase.from("users").insert({
+            id: user.id,
+            email: user.email,
+            trial_start_date: new Date().toISOString(),
+            trial_ended: false,
+            is_paid: false,
+          }).catch(err => console.warn('User creation failed (may already exist):', err));
+        }
+
+        // Re-fetch or use existing data
+        const { data: userDataFinal } = await supabase
+          .from("users")
+          .select("trial_start_date, is_paid, trial_ended")
+          .eq("id", user.id)
+          .single();
+
+        if (userDataFinal) {
+          const status = calculateTrialStatus(userDataFinal.trial_start_date, userDataFinal.is_paid);
           setTrialStatus(status);
 
           if (status.trial_expired && !status.is_paid) {
             setShowUpgradeModal(true);
           }
+        } else {
+          // Fallback: assume trial just started
+          const status = calculateTrialStatus(new Date().toISOString(), false);
+          setTrialStatus(status);
         }
 
         // Load kids, activities, goals
