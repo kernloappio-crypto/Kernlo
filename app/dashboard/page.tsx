@@ -35,6 +35,12 @@ interface Report {
   notes?: string;
 }
 
+interface Goal {
+  id: string;
+  subject: string;
+  monthly_hours: number;
+}
+
 const COLORS = {
   primary: "#0066cc",
   secondary: "#00d4ff",
@@ -45,390 +51,831 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-export default function DashboardHomePage() {
+const SUBJECTS = [
+  "Math",
+  "English",
+  "Science",
+  "History",
+  "Social Studies",
+  "Arts",
+  "Physical Education",
+  "Other",
+];
+
+export default function DashboardPage() {
   const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [kids, setKids] = useState<Kid[]>([]);
-  const [allReports, setAllReports] = useState<Report[]>([]);
+  const [activeKid, setActiveKid] = useState<Kid | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
   const [newKidAge, setNewKidAge] = useState("");
   const [newKidGrade, setNewKidGrade] = useState("");
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [logSubject, setLogSubject] = useState("");
+  const [logDuration, setLogDuration] = useState("");
+  const [logPlatform, setLogPlatform] = useState("");
+  const [logNotes, setLogNotes] = useState("");
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [goalSubject, setGoalSubject] = useState("");
+  const [goalHours, setGoalHours] = useState("");
+  const [state, setState] = useState("CA");
+  const [showReportGen, setShowReportGen] = useState(false);
+  const [reportChildName, setReportChildName] = useState("");
+  const [reportType, setReportType] = useState<"daily" | "weekly">("daily");
+  const [reportSubjects, setReportSubjects] = useState<string[]>([]);
+  const [reportNotes, setReportNotes] = useState("");
   const router = useRouter();
 
+  // Initialize user and load all data from Supabase
   useEffect(() => {
     const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push("/auth/login");
-        return;
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      const email = user.email || user.id;
-      setEmail(email);
-      loadData(email);
+        if (!user) {
+          router.push("/auth/login");
+          return;
+        }
+
+        setUserId(user.id);
+        setEmail(user.email || "");
+
+        // Load kids from Supabase
+        const { data: kidsData } = await supabase
+          .from("kids")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (kidsData && kidsData.length > 0) {
+          setKids(kidsData);
+          setActiveKid(kidsData[0]);
+        }
+
+        // Load goals from Supabase
+        const { data: goalsData } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (goalsData) {
+          setGoals(goalsData.map((g: any) => ({
+            id: g.id,
+            subject: g.subject,
+            monthly_hours: g.monthly_hours,
+          })));
+        }
+
+        // Load reports from Supabase
+        const { data: reportsData } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (reportsData) {
+          setReports(reportsData.map((r: any) => ({
+            id: r.id,
+            child_name: r.child_name,
+            report_type: r.report_type,
+            generated_date: r.generated_date,
+            subjects: r.subjects || [],
+            report_content: r.report_content,
+            notes: r.notes,
+          })));
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error initializing:", err);
+        setLoading(false);
+      }
     };
-    
+
     initUser();
   }, [router]);
 
-  function loadData(userEmail: string) {
-    const allKidsData = JSON.parse(localStorage.getItem("kids") || "{}");
-    const userKids = (allKidsData[userEmail] || []) as Kid[];
-    setKids(userKids);
+  async function handleAddKid() {
+    if (!newKidName.trim()) {
+      alert("Kid name is required");
+      return;
+    }
 
-    const allReportsData = JSON.parse(localStorage.getItem("reports") || "{}");
-    const userReports = (allReportsData[userEmail] || []) as Report[];
-    setAllReports(userReports);
+    if (kids.length >= 5) {
+      alert("Pro tier limited to 5 children. Upgrade for more.");
+      return;
+    }
 
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("kids")
+        .insert({
+          user_id: userId,
+          name: newKidName,
+          age: newKidAge ? parseInt(newKidAge) : null,
+          grade: newKidGrade || null,
+        })
+        .select();
+
+      if (error) {
+        alert("Error adding kid: " + error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        const newKid = data[0];
+        setKids([...kids, newKid]);
+        setActiveKid(newKid);
+      }
+
+      setNewKidName("");
+      setNewKidAge("");
+      setNewKidGrade("");
+      setShowAddKid(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to add kid");
+    }
   }
 
-  function handleAddKid() {
-    if (!newKidName) return;
+  async function handleQuickLogSave() {
+    if (!logSubject || !logDuration || !activeKid) {
+      alert("Please fill in all required fields");
+      return;
+    }
 
-    const newKid: Kid = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newKidName,
-      age: newKidAge ? parseInt(newKidAge) : undefined,
-      grade: newKidGrade || undefined,
-    };
+    try {
+      const { error } = await supabase
+        .from("activities")
+        .insert({
+          user_id: userId,
+          child_name: activeKid.name,
+          subject: logSubject,
+          duration: parseFloat(logDuration),
+          platform: logPlatform || "Other",
+          date: logDate,
+          notes: logNotes,
+        });
 
-    const allKidsData = JSON.parse(localStorage.getItem("kids") || "{}");
-    if (!allKidsData[email]) allKidsData[email] = [];
-    allKidsData[email].push(newKid);
-    localStorage.setItem("kids", JSON.stringify(allKidsData));
+      if (error) {
+        alert("Error saving activity: " + error.message);
+        return;
+      }
 
-    setKids([...kids, newKid]);
-    setNewKidName("");
-    setNewKidAge("");
-    setNewKidGrade("");
-    setShowAddKid(false);
+      alert("Activity logged!");
+      setLogSubject("");
+      setLogDuration("");
+      setLogPlatform("");
+      setLogNotes("");
+      setLogDate(new Date().toISOString().split("T")[0]);
+      setShowQuickLog(false);
+
+      // Reload reports
+      const { data: reportsData } = await supabase
+        .from("reports")
+        .select("*")
+        .eq("user_id", userId);
+
+      if (reportsData) {
+        setReports(reportsData);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to save activity");
+    }
   }
+
+  async function handleAddGoal() {
+    if (!goalSubject || !goalHours) {
+      alert("Please fill in subject and hours");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("goals")
+        .insert({
+          user_id: userId,
+          child_name: activeKid?.name || "General",
+          subject: goalSubject,
+          monthly_hours: parseFloat(goalHours),
+        })
+        .select();
+
+      if (error) {
+        alert("Error adding goal: " + error.message);
+        return;
+      }
+
+      if (data && data[0]) {
+        setGoals([
+          ...goals,
+          {
+            id: data[0].id,
+            subject: data[0].subject,
+            monthly_hours: data[0].monthly_hours,
+          },
+        ]);
+      }
+
+      setGoalSubject("");
+      setGoalHours("");
+      setShowAddGoal(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to add goal");
+    }
+  }
+
+  async function handleDeleteGoal(goalId: string) {
+    try {
+      const { error } = await supabase
+        .from("goals")
+        .delete()
+        .eq("id", goalId);
+
+      if (error) {
+        alert("Error deleting goal: " + error.message);
+        return;
+      }
+
+      setGoals(goals.filter((g) => g.id !== goalId));
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  }
+
+  async function handleGenerateReport() {
+    if (!reportChildName || reportSubjects.length === 0) {
+      alert("Please fill in child name and select subjects");
+      return;
+    }
+
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const reportContent = `Generated ${reportType} report for ${reportChildName} covering: ${reportSubjects.join(", ")}. ${reportNotes}`;
+
+      const { data, error } = await supabase
+        .from("reports")
+        .insert({
+          user_id: userId,
+          child_name: reportChildName,
+          report_type: reportType,
+          generated_date: today,
+          subjects: reportSubjects,
+          report_content: reportContent,
+        })
+        .select();
+
+      if (error) {
+        alert("Error saving report: " + error.message);
+        return;
+      }
+
+      if (data) {
+        setReports([...reports, ...data]);
+      }
+
+      // Download PDF
+      downloadReportAsPDF(reportChildName, reportType, reportSubjects, reportContent);
+
+      alert("Report generated and saved!");
+      setReportChildName("");
+      setReportSubjects([]);
+      setReportNotes("");
+      setShowReportGen(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to generate report");
+    }
+  }
+
+  const downloadReportAsPDF = (
+    childName: string,
+    type: string,
+    subjects: string[],
+    content: string
+  ) => {
+    const today = new Date().toLocaleDateString();
+    const pdfContent = `
+${childName}'s ${type.toUpperCase()} REPORT
+Generated: ${today}
+
+Subjects: ${subjects.join(", ")}
+
+${content}
+    `;
+
+    const element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(pdfContent)
+    );
+    element.setAttribute("download", `${childName}-report-${today}.txt`);
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
 
   async function handleLogout() {
     await signOut();
     router.push("/");
   }
 
-  if (loading) {
-    return (
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        <div className="flex items-center justify-center min-h-screen">
-          <div style={{ color: COLORS.primary }}>Loading...</div>
-        </div>
-      </main>
-    );
-  }
+  const compliances = [
+    {
+      state: "CA",
+      hours: 175,
+      details: "California requires 175 instructional days or hours per school year",
+    },
+    {
+      state: "TX",
+      hours: 0,
+      details: "Texas requires bona fide curriculum with reading, math, science, social studies",
+    },
+    {
+      state: "FL",
+      hours: 1000,
+      details: "Florida requires 1000 instructional hours per school year",
+    },
+    {
+      state: "NY",
+      hours: 900,
+      details: "New York requires 900 instructional hours per school year",
+    },
+  ];
 
-  // Calculate stats across all kids
-  const totalHours = allReports.reduce(
-    (sum, report) =>
-      sum +
-      report.subjects.reduce(
-        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
-        0
-      ),
-    0
+  const selectedCompliance = compliances.find((c) => c.state === state);
+  const kidReports = reports.filter(
+    (r) => !activeKid || r.child_name === activeKid.name
   );
 
-  const uniqueSubjects = new Set(allReports.flatMap(r => r.subjects.map(s => s.subject))).size;
-
-  // Get stats per kid
-  function getKidStats(kidName: string) {
-    const kidReports = allReports.filter(r => r.child_name === kidName);
-    const hours = kidReports.reduce(
-      (sum, report) =>
-        sum +
-        report.subjects.reduce(
-          (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
-          0
-        ),
-      0
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
     );
-
-    const subjects = [...new Set(kidReports.flatMap(r => r.subjects.map(s => s.subject)))];
-    const topSubjects = subjects.slice(0, 2).join(", ");
-
-    return { hours, subjects: subjects.length, topSubjects };
   }
-
-  // Get recent activity
-  const recentActivity = allReports.slice(0, 5);
 
   return (
     <>
       <Navbar />
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
-      {/* Left Sidebar */}
-      <div style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }} className="w-64 min-h-screen p-6 flex flex-col">
-        <div className="mb-8">
-          <h2 style={{ color: COLORS.primary }} className="text-2xl font-bold">
-            kernlo
-          </h2>
-        </div>
-
-        <nav className="space-y-2 mb-8">
-          <Link
-            href="/dashboard"
-            style={{ backgroundColor: COLORS.primary, color: "white" }}
-            className="block px-4 py-2 rounded-lg text-sm font-medium transition"
-          >
-            🏠 Home
-          </Link>
-          <Link
-            href="/generator"
-            style={{ color: COLORS.dark }}
-            className="block px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
-          >
-            📝 New Report
-          </Link>
-        </nav>
-
-        <div className="mb-8">
-          <p style={{ color: COLORS.primary }} className="text-xs font-semibold uppercase tracking-wide mb-3">
-            Kids
-          </p>
-          <div className="space-y-2">
-            {kids.length === 0 ? (
-              <p style={{ color: "#999" }} className="text-xs">
-                No kids yet.
-              </p>
-            ) : (
-              kids.map((kid) => (
-                <Link
+        {/* Left Sidebar - Kids */}
+        <div
+          style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
+          className="w-64 min-h-screen p-6 flex flex-col"
+        >
+          <div className="mb-8">
+            <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              Kids
+            </h2>
+            <div className="space-y-2 mb-4">
+              {kids.map((kid) => (
+                <button
                   key={kid.id}
-                  href={`/dashboard/${kid.id}`}
-                  style={{ color: COLORS.dark }}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition"
+                  onClick={() => setActiveKid(kid)}
+                  style={{
+                    backgroundColor: activeKid?.id === kid.id ? COLORS.primary : "transparent",
+                    color: activeKid?.id === kid.id ? "white" : COLORS.dark,
+                  }}
+                  className="w-full px-4 py-2 text-left rounded-lg hover:bg-gray-100 transition"
                 >
                   {kid.name}
-                </Link>
-              ))
+                  {kid.age && <span className="text-xs ml-2">({kid.age})</span>}
+                </button>
+              ))}
+            </div>
+            {kids.length < 5 && (
+              <button
+                onClick={() => setShowAddKid(!showAddKid)}
+                style={{ backgroundColor: COLORS.primary }}
+                className="w-full px-4 py-2 text-white text-sm rounded-lg hover:opacity-90"
+              >
+                + Add Kid
+              </button>
+            )}
+
+            {showAddKid && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <input
+                  type="text"
+                  value={newKidName}
+                  onChange={(e) => setNewKidName(e.target.value)}
+                  placeholder="Name"
+                  style={{ borderColor: COLORS.primary }}
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                />
+                <input
+                  type="number"
+                  value={newKidAge}
+                  onChange={(e) => setNewKidAge(e.target.value)}
+                  placeholder="Age"
+                  style={{ borderColor: COLORS.primary }}
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={newKidGrade}
+                  onChange={(e) => setNewKidGrade(e.target.value)}
+                  placeholder="Grade"
+                  style={{ borderColor: COLORS.primary }}
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                />
+                <button
+                  onClick={handleAddKid}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="w-full px-3 py-2 text-white text-sm rounded hover:opacity-90"
+                >
+                  Save
+                </button>
+              </div>
             )}
           </div>
 
-          <button
-            onClick={() => setShowAddKid(true)}
-            style={{ color: COLORS.primary, borderColor: COLORS.primary }}
-            className="w-full mt-3 px-3 py-2 border rounded-lg text-sm font-medium hover:bg-blue-50 transition"
-          >
-            + Add Kid
-          </button>
-        </div>
-
-        <div className="mt-auto pt-6 border-t border-gray-200">
-          <p style={{ color: "#999" }} className="text-xs mb-4">
-            {email}
-          </p>
-          <button
-            onClick={handleLogout}
-            style={{ color: COLORS.primary, borderColor: COLORS.primary }}
-            className="w-full px-4 py-2 text-sm border rounded-lg hover:bg-gray-50 transition font-medium"
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Navigation */}
-        <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between w-full">
-            <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-              Dashboard
-            </h1>
+          <div className="mt-auto pt-4 border-t">
+            <button
+              onClick={handleLogout}
+              style={{ color: COLORS.primary }}
+              className="w-full text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded text-left"
+            >
+              Logout
+            </button>
           </div>
-        </nav>
+        </div>
 
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-6xl mx-auto px-6 py-8">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Total Hours
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-                  {totalHours.toFixed(1)}h
-                </p>
+        {/* Right Content */}
+        <div className="flex-1 p-8">
+          <div className="max-w-4xl">
+            <div className="mb-8">
+              <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold mb-2">
+                {activeKid ? `${activeKid.name}'s Dashboard` : "Dashboard"}
+              </h1>
+              <p style={{ color: "#666" }} className="text-sm">
+                Welcome, {email}
+              </p>
+            </div>
+
+            {/* Quick Log Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+                  Quick Log
+                </h2>
+                <button
+                  onClick={() => setShowQuickLog(!showQuickLog)}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium"
+                >
+                  {showQuickLog ? "Cancel" : "Log Activity"}
+                </button>
               </div>
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Subjects Tracked
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
-                  {uniqueSubjects}
-                </p>
-              </div>
+              {showQuickLog && (
+                <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded mb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={logDate}
+                        onChange={(e) => setLogDate(e.target.value)}
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Subject
+                      </label>
+                      <select
+                        value={logSubject}
+                        onChange={(e) => setLogSubject(e.target.value)}
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      >
+                        <option value="">Select subject</option>
+                        {SUBJECTS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Duration (hours)
+                      </label>
+                      <input
+                        type="number"
+                        value={logDuration}
+                        onChange={(e) => setLogDuration(e.target.value)}
+                        placeholder="1.5"
+                        step="0.5"
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Platform
+                      </label>
+                      <input
+                        type="text"
+                        value={logPlatform}
+                        onChange={(e) => setLogPlatform(e.target.value)}
+                        placeholder="Khan Academy, IXL, etc."
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Notes
+                      </label>
+                      <textarea
+                        value={logNotes}
+                        onChange={(e) => setLogNotes(e.target.value)}
+                        placeholder="Lesson details..."
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                        rows={3}
+                      />
+                    </div>
+                    <button
+                      onClick={handleQuickLogSave}
+                      style={{ backgroundColor: COLORS.primary }}
+                      className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+                    >
+                      Save Activity
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Kids
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
-                  {kids.length}
-                </p>
+              <div>
+                <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                  Recent Activities
+                </h3>
+                {kidReports.length === 0 ? (
+                  <p style={{ color: "#999" }}>No activities logged yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {kidReports.map((report) => (
+                      <div
+                        key={report.id}
+                        style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }}
+                        className="p-4 rounded"
+                      >
+                        <p style={{ color: COLORS.dark }} className="font-semibold">
+                          {report.report_content}
+                        </p>
+                        <p style={{ color: "#666" }} className="text-sm">
+                          {report.generated_date}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Kid Cards */}
+            {/* Goals Section */}
             <div className="mb-8">
-              <h2 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
-                Kids
-              </h2>
-              {kids.length === 0 ? (
-                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-12 border border-gray-200 text-center">
-                  <p style={{ color: "#999" }} className="mb-4">
-                    No kids yet. Add one to get started.
-                  </p>
-                  <button
-                    onClick={() => setShowAddKid(true)}
-                    style={{ backgroundColor: COLORS.primary }}
-                    className="px-6 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-                  >
-                    + Add Kid
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-6">
-                  {kids.map((kid) => {
-                    const stats = getKidStats(kid.name);
-                    return (
-                      <Link
-                        key={kid.id}
-                        href={`/dashboard/${kid.id}`}
-                        style={{ backgroundColor: "white", borderRadius: "12px" }}
-                        className="p-6 border border-gray-200 hover:shadow-lg transition cursor-pointer"
+              <div className="flex items-center justify-between mb-4">
+                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+                  Goals
+                </h2>
+                <button
+                  onClick={() => setShowAddGoal(!showAddGoal)}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium"
+                >
+                  {showAddGoal ? "Cancel" : "+ Add Goal"}
+                </button>
+              </div>
+
+              {showAddGoal && (
+                <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded mb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Subject
+                      </label>
+                      <select
+                        value={goalSubject}
+                        onChange={(e) => setGoalSubject(e.target.value)}
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
                       >
-                        <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-2">
-                          {kid.name}
-                        </h3>
-                        {kid.age && <p style={{ color: "#666" }} className="text-sm mb-1">Age: {kid.age}</p>}
-                        {kid.grade && <p style={{ color: "#666" }} className="text-sm mb-4">Grade: {kid.grade}</p>}
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span style={{ color: "#666" }} className="text-sm">
-                              Hours
-                            </span>
-                            <span style={{ color: COLORS.primary }} className="font-bold">
-                              {stats.hours.toFixed(1)}h
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span style={{ color: "#666" }} className="text-sm">
-                              Subjects
-                            </span>
-                            <span style={{ color: COLORS.secondary }} className="font-bold">
-                              {stats.subjects}
-                            </span>
-                          </div>
-                          {stats.topSubjects && (
-                            <div className="flex justify-between">
-                              <span style={{ color: "#666" }} className="text-sm">
-                                Top
-                              </span>
-                              <span style={{ color: COLORS.accent3 }} className="text-sm font-medium">
-                                {stats.topSubjects}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
+                        <option value="">Select subject</option>
+                        {SUBJECTS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Monthly Hours
+                      </label>
+                      <input
+                        type="number"
+                        value={goalHours}
+                        onChange={(e) => setGoalHours(e.target.value)}
+                        placeholder="20"
+                        step="1"
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddGoal}
+                      style={{ backgroundColor: COLORS.primary }}
+                      className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+                    >
+                      Add Goal
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {goals.length === 0 ? (
+                <p style={{ color: "#999" }}>No goals set yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {goals.map((goal) => (
+                    <div
+                      key={goal.id}
+                      style={{ backgroundColor: "white" }}
+                      className="p-4 rounded flex items-center justify-between"
+                    >
+                      <div>
+                        <p style={{ color: COLORS.dark }} className="font-semibold">
+                          {goal.subject}
+                        </p>
+                        <p style={{ color: "#666" }} className="text-sm">
+                          {goal.monthly_hours} hours/month
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGoal(goal.id)}
+                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Recent Activity */}
-            {recentActivity.length > 0 && (
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
-                <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
-                  <h3 style={{ color: COLORS.dark }} className="font-semibold">
-                    Recent Activity
-                  </h3>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {recentActivity.map((report) => (
-                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
-                      <p style={{ color: COLORS.dark }} className="font-semibold">
-                        {report.child_name}
-                      </p>
-                      <p style={{ color: "#666" }} className="text-sm">
-                        {report.subjects.map(s => s.subject).join(", ")} • {new Date(report.generated_date).toLocaleDateString()}
-                      </p>
-                    </div>
+            {/* Compliance Section */}
+            <div className="mb-8">
+              <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
+                Compliance Tracker
+              </h2>
+              <div className="mb-6">
+                <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                  Select Your State
+                </label>
+                <select
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  style={{ borderColor: COLORS.primary }}
+                  className="w-full p-3 border rounded-lg"
+                >
+                  {compliances.map((c) => (
+                    <option key={c.state} value={c.state}>
+                      {c.state}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Add Kid Modal */}
-      {showAddKid && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Add Kid
-            </h2>
-
-            <div className="space-y-4 mb-6">
-              <input
-                type="text"
-                placeholder="Kid's name"
-                value={newKidName}
-                onChange={(e) => setNewKidName(e.target.value)}
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <input
-                type="number"
-                placeholder="Age (optional)"
-                value={newKidAge}
-                onChange={(e) => setNewKidAge(e.target.value)}
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
-              <input
-                type="text"
-                placeholder="Grade (optional)"
-                value={newKidGrade}
-                onChange={(e) => setNewKidGrade(e.target.value)}
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
-              />
+              {selectedCompliance && (
+                <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded">
+                  <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-2">
+                    {selectedCompliance.state} Requirements
+                  </h3>
+                  <p style={{ color: "#666" }} className="mb-4">
+                    {selectedCompliance.details}
+                  </p>
+                  {selectedCompliance.hours > 0 && (
+                    <p style={{ color: COLORS.accent3 }} className="font-semibold">
+                      Minimum: {selectedCompliance.hours} hours/year
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddKid}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => {
-                  setShowAddKid(false);
-                  setNewKidName("");
-                  setNewKidAge("");
-                  setNewKidGrade("");
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+            {/* Report Generator Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+                  Generate Report
+                </h2>
+                <button
+                  onClick={() => setShowReportGen(!showReportGen)}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium"
+                >
+                  {showReportGen ? "Cancel" : "New Report"}
+                </button>
+              </div>
+
+              {showReportGen && (
+                <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded mb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Child Name
+                      </label>
+                      <input
+                        type="text"
+                        value={reportChildName}
+                        onChange={(e) => setReportChildName(e.target.value)}
+                        placeholder="Enter child's name"
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Report Type
+                      </label>
+                      <select
+                        value={reportType}
+                        onChange={(e) => setReportType(e.target.value as "daily" | "weekly")}
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Subjects (select all that apply)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {SUBJECTS.map((subject) => (
+                          <label key={subject} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={reportSubjects.includes(subject)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setReportSubjects([...reportSubjects, subject]);
+                                } else {
+                                  setReportSubjects(reportSubjects.filter((s) => s !== subject));
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            <span style={{ color: "#666" }} className="text-sm">
+                              {subject}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block font-semibold mb-2">
+                        Notes
+                      </label>
+                      <textarea
+                        value={reportNotes}
+                        onChange={(e) => setReportNotes(e.target.value)}
+                        placeholder="Additional details..."
+                        style={{ borderColor: COLORS.primary }}
+                        className="w-full p-3 border rounded-lg"
+                        rows={3}
+                      />
+                    </div>
+                    <button
+                      onClick={handleGenerateReport}
+                      style={{ backgroundColor: COLORS.primary }}
+                      className="w-full py-3 text-white font-semibold rounded-lg hover:opacity-90"
+                    >
+                      Generate & Download Report
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
-    </main>
+      </main>
     </>
   );
 }
