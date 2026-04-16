@@ -62,6 +62,10 @@ export default function KidDetailPage() {
   const [logDuration, setLogDuration] = useState("");
   const [logPlatform, setLogPlatform] = useState("");
   const [logNotes, setLogNotes] = useState("");
+  const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -88,6 +92,12 @@ export default function KidDetailPage() {
         if (kidData) {
           setKid(kidData as Kid);
         }
+
+        // Initialize date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        setReportEndDate(today.toISOString().split("T")[0]);
+        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
         // Load activities
         const activitiesData = await getActivities(user.id);
@@ -161,6 +171,72 @@ export default function KidDetailPage() {
     );
   }
 
+  const handleGenerateComprehensiveReport = () => {
+    if (!kid || selectedSubjects.length === 0 || !activities.length) {
+      alert("Need activities and selected subjects to generate report");
+      return;
+    }
+
+    // Filter activities by date range and selected subjects
+    const filteredActivities = activities.filter(
+      (a) =>
+        new Date(a.date) >= new Date(reportStartDate) &&
+        new Date(a.date) <= new Date(reportEndDate) &&
+        selectedSubjects.includes(a.subject)
+    );
+
+    if (!filteredActivities.length) {
+      alert("No activities found for selected criteria");
+      return;
+    }
+
+    // Generate simple text report (since we don't have jsPDF)
+    const reportContent = `
+=====================================
+  COMPREHENSIVE REPORT
+=====================================
+
+Student: ${kid.name}
+Period: ${reportStartDate} to ${reportEndDate}
+Generated: ${new Date().toLocaleDateString()}
+
+SUBJECTS COVERED:
+${selectedSubjects.map((s) => `  • ${s}`).join("\n")}
+
+DETAILED ACTIVITIES:
+${filteredActivities
+  .map(
+    (a) => `
+  ${a.date} - ${a.subject}
+    Duration: ${a.duration} hours
+    Platform: ${a.platform}
+    ${a.notes ? `Notes: ${a.notes}` : ""}
+`
+  )
+  .join("\n")}
+
+SUMMARY:
+  Total Activities: ${filteredActivities.length}
+  Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+
+=====================================
+    `;
+
+    // Download as text file
+    const element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(reportContent)
+    );
+    element.setAttribute("download", `${kid.name}-report-${reportStartDate}-${reportEndDate}.txt`);
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+
+    setShowComprehensiveReport(false);
+  };
+
   if (!kid) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -193,7 +269,7 @@ export default function KidDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Quick Log Button */}
+        {/* Quick Log Button & Report Button */}
         <div className="flex gap-3">
           <button
             onClick={() => setShowQuickLog(!showQuickLog)}
@@ -201,6 +277,13 @@ export default function KidDetailPage() {
             className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
           >
             {showQuickLog ? "Cancel" : "+ Log Activity"}
+          </button>
+          <button
+            onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
+            style={{ backgroundColor: COLORS.secondary }}
+            className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
+          >
+            {showComprehensiveReport ? "Cancel" : "📄 Report"}
           </button>
           <Link
             href={`/dashboard/${kid.id}/goals`}
@@ -362,6 +445,97 @@ export default function KidDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Comprehensive Report Modal */}
+      {showComprehensiveReport && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              📄 Comprehensive Report
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={reportStartDate}
+                  onChange={(e) => setReportStartDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={reportEndDate}
+                  onChange={(e) => setReportEndDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-3">
+                  Subjects
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                  {Array.from(new Set(activities.map((a) => a.subject))).length === 0 ? (
+                    <p style={{ color: "#999" }} className="text-sm">
+                      No subjects found. Log activities first.
+                    </p>
+                  ) : (
+                    Array.from(new Set(activities.map((a) => a.subject))).map((subject) => (
+                      <label key={subject} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedSubjects.includes(subject)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSubjects([...selectedSubjects, subject]);
+                            } else {
+                              setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span style={{ color: "#1a1a2e" }} className="text-sm">
+                          {subject}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleGenerateComprehensiveReport}
+                disabled={selectedSubjects.length === 0}
+                style={{
+                  backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
+                }}
+                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed"
+              >
+                Download Report
+              </button>
+              <button
+                onClick={() => setShowComprehensiveReport(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
     </>
   );
