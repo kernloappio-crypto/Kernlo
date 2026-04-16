@@ -3,33 +3,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase-client";
-import Navbar from "@/components/Navbar";
 
-export const dynamic = "force-dynamic";
-import { getKids, addKid, deleteKid, getActivities, getGoals } from "@/lib/supabase-data";
-import { getTrialStatus as calculateTrialStatus, formatTrialMessage, type TrialStatus } from "@/lib/trial-checker";
-
-interface Kid {
+interface Subject {
   id: string;
-  name: string;
-  age?: number;
-  grade?: string;
+  date: string;
+  subject: string;
+  platform: string;
+  topics: string;
+  duration: string;
 }
 
-interface Activity {
+interface Report {
   id: string;
   child_name: string;
-  subject: string;
-  duration: number;
-  platform: string;
-  date: string;
+  report_type: "daily" | "weekly";
+  generated_date: string;
+  subjects: Subject[];
+  report_content: string;
   notes?: string;
 }
 
 interface Goal {
   id: string;
-  child_name: string;
   subject: string;
   monthly_hours: number;
 }
@@ -44,407 +39,402 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-export default function DashboardHomePage() {
-  const [userId, setUserId] = useState("");
+type TabType = "overview" | "goals" | "compliance";
+
+export default function DashboardPage() {
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [email, setEmail] = useState("");
-  const [kids, setKids] = useState<Kid[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [trialStatus, setTrialStatus] = useState<TrialStatus | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showAddKid, setShowAddKid] = useState(false);
-  const [newKidName, setNewKidName] = useState("");
-  const [newKidAge, setNewKidAge] = useState("");
-  const [newKidGrade, setNewKidGrade] = useState("");
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [state, setState] = useState("CA");
   const router = useRouter();
 
-  // Initialize and load data
   useEffect(() => {
-    const initializeUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    const token = localStorage.getItem("auth_token");
+    const userEmail = localStorage.getItem("user_email");
 
-        if (!user) {
-          router.push("/auth/login");
-          return;
-        }
+    if (!token || !userEmail) {
+      router.push("/auth/login");
+      return;
+    }
 
-        setUserId(user.id);
-        setEmail(user.email || "");
-
-        // Use user's created_at timestamp as trial start date
-        const trialStart = user.created_at || new Date().toISOString();
-        const status = calculateTrialStatus(trialStart, false); // MVP: no paid users yet
-        setTrialStatus(status);
-
-        if (status.trial_expired) {
-          setShowUpgradeModal(true);
-        }
-
-        // Load kids, activities, goals
-        await loadData(user.id);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error initializing user:", err);
-        setLoading(false);
-      }
-    };
-
-    initializeUser();
+    setEmail(userEmail);
+    loadData(userEmail);
   }, [router]);
 
-  // Real-time listeners for kids
-  useEffect(() => {
-    if (!userId) return;
+  function loadData(userEmail: string) {
+    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
+    const userReports = (allReports[userEmail] || []) as Report[];
+    setReports(userReports);
 
-    try {
-      const channel = supabase
-        .channel(`kids:${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "kids", filter: `user_id=eq.${userId}` },
-          () => {
-            loadData(userId);
-          }
-        )
-        .subscribe();
+    const allGoals = JSON.parse(localStorage.getItem("goals") || "{}");
+    const userGoals = (allGoals[userEmail] || []) as Goal[];
+    setGoals(userGoals);
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } catch (err) {
-      console.error("Real-time listener error:", err);
-    }
-  }, [userId]);
+    const savedState = localStorage.getItem("state");
+    if (savedState) setState(savedState);
 
-  async function loadData(uid: string) {
-    try {
-      const kidsData = await getKids(uid);
-      setKids(kidsData as Kid[]);
-
-      const activitiesData = await getActivities(uid);
-      setActivities(activitiesData as Activity[]);
-
-      const goalsData = await getGoals(uid);
-      setGoals(goalsData as Goal[]);
-    } catch (err) {
-      console.error("Error loading data:", err);
-    }
+    setLoading(false);
   }
 
-  async function handleAddKid() {
-    if (!newKidName.trim()) {
-      alert("Kid name is required");
-      return;
-    }
-
-    if (kids.length >= 5) {
-      alert("Pro tier limited to 5 children. Upgrade for more.");
-      return;
-    }
-
-    try {
-      await addKid(
-        userId,
-        newKidName,
-        newKidAge ? parseInt(newKidAge) : undefined,
-        newKidGrade || undefined
-      );
-
-      setNewKidName("");
-      setNewKidAge("");
-      setNewKidGrade("");
-      setShowAddKid(false);
-      await loadData(userId);
-    } catch (err) {
-      console.error("Error adding kid:", err);
-      alert("Failed to add kid");
-    }
+  function handleLogout() {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_email");
+    router.push("/");
   }
 
-  async function handleDeleteKid(kidId: string) {
-    if (!confirm("Delete this child's profile?")) return;
+  function handleQuickLogSave(subject: string, hours: number, notes: string) {
+    const newReport: Report = {
+      id: Math.random().toString(36).substr(2, 9),
+      child_name: "Quick Log",
+      report_type: "daily",
+      generated_date: new Date().toISOString().split("T")[0],
+      subjects: [{
+        id: Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString().split("T")[0],
+        subject,
+        platform: "Quick Log",
+        topics: notes,
+        duration: (hours * 60).toString(),
+      }],
+      report_content: `Quick logged ${hours} hours on ${subject}.`,
+    };
 
-    try {
-      await deleteKid(kidId);
-      await loadData(userId);
-    } catch (err) {
-      console.error("Error deleting kid:", err);
-      alert("Failed to delete kid");
-    }
+    const allReports = JSON.parse(localStorage.getItem("reports") || "{}");
+    if (!allReports[email]) allReports[email] = [];
+    allReports[email].push(newReport);
+    localStorage.setItem("reports", JSON.stringify(allReports));
+
+    setReports([...reports, newReport]);
+    setShowQuickLog(false);
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/auth/login");
-  }
+  function addGoal(subject: string, hours: number) {
+    const newGoal: Goal = {
+      id: Math.random().toString(36).substr(2, 9),
+      subject,
+      monthly_hours: hours,
+    };
 
-  function calculateGoalProgress(childName: string, subject: string): number {
-    const childActivities = activities.filter(
-      (a) => a.child_name === childName && a.subject === subject
-    );
-    const totalHours = childActivities.reduce((sum, a) => sum + a.duration, 0);
-    const goal = goals.find(
-      (g) => g.child_name === childName && g.subject === subject
-    );
-    return goal ? Math.round((totalHours / goal.monthly_hours) * 100) : 0;
-  }
+    const allGoals = JSON.parse(localStorage.getItem("goals") || "{}");
+    if (!allGoals[email]) allGoals[email] = [];
+    allGoals[email].push(newGoal);
+    localStorage.setItem("goals", JSON.stringify(allGoals));
 
-  function getThisWeekActivity(): { [key: string]: number } {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const weeklyData: { [key: string]: number } = {};
-
-    kids.forEach((kid) => {
-      const kidActivities = activities.filter(
-        (a) => a.child_name === kid.name && new Date(a.date) >= weekAgo
-      );
-      const totalHours = kidActivities.reduce((sum, a) => sum + a.duration, 0);
-      weeklyData[kid.name] = totalHours;
-    });
-
-    return weeklyData;
+    setGoals([...goals, newGoal]);
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div style={{ color: COLORS.primary }}>Loading...</div>
+        </div>
+      </main>
     );
   }
 
-  if (!trialStatus?.can_access) {
-    return (
-      <div style={{ backgroundColor: "rgba(0,0,0,0.7)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
-          <h2 style={{ color: "#ff6b6b" }} className="text-2xl font-bold mb-4">
-            Your Trial Has Ended
-          </h2>
-          <p style={{ color: "#666" }} className="mb-6">
-            Your 30-day free trial is over. Upgrade to Pro to keep using Kernlo and generating reports.
-          </p>
+  const totalReports = reports.length;
+  const totalHours = reports.reduce(
+    (sum, report) =>
+      sum +
+      report.subjects.reduce(
+        (subSum, subject) => subSum + (parseInt(subject.duration) || 0) / 60,
+        0
+      ),
+    0
+  );
 
-          <div style={{ backgroundColor: COLORS.light }} className="p-4 rounded-lg mb-6">
-            <p style={{ color: COLORS.dark }} className="font-bold mb-2">
-              Pro - $14.99/month
-            </p>
-            <ul style={{ color: "#666" }} className="text-sm space-y-1">
-              <li>✓ Unlimited reports</li>
-              <li>✓ Up to 5 children</li>
-              <li>✓ All features</li>
-            </ul>
+  const STATE_REQUIREMENTS: { [key: string]: { [subject: string]: number } } = {
+    CA: { Math: 180, "Language Arts": 180, Science: 180, History: 180 },
+    TX: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
+    FL: { Math: 180, "Language Arts": 180, Science: 90, History: 90 },
+    NY: { Math: 120, "Language Arts": 120, Science: 120, History: 120 },
+  };
+
+  const requirements = STATE_REQUIREMENTS[state] || {};
+
+  return (
+    <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
+      {/* Top Navigation */}
+      <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div style={{ color: COLORS.primary }} className="text-2xl font-bold">
+            kernlo
           </div>
-
-          <div className="flex gap-3">
-            <Link
-              href={`/upgrade?email=${encodeURIComponent(email)}`}
-              style={{ backgroundColor: COLORS.primary }}
-              className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 text-center"
-            >
-              Upgrade Now
+          <div className="flex items-center gap-6">
+            <Link href="/generator" style={{ color: COLORS.dark }} className="text-sm font-medium hover:opacity-70">
+              New Report
             </Link>
             <button
+              onClick={() => setShowQuickLog(true)}
+              style={{ backgroundColor: COLORS.primary }}
+              className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+            >
+              ⚡ Quick Log
+            </button>
+            <button
               onClick={handleLogout}
-              className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Log Out
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      </nav>
 
-  const weeklyData = getThisWeekActivity();
+      {/* Tab Navigation */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-8 border-b border-gray-200 flex gap-8">
+          {[
+            { id: "overview" as TabType, label: "Overview" },
+            { id: "goals" as TabType, label: "Goals" },
+            { id: "compliance" as TabType, label: "Compliance" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                color: activeTab === tab.id ? COLORS.primary : "#999",
+                borderBottom: activeTab === tab.id ? `2px solid ${COLORS.primary}` : "none",
+              }}
+              className="pb-4 font-medium text-sm capitalize transition"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-  return (
-    <>
-      <Navbar />
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-        {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
           <div>
-            <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
-              Kernlo
-            </h1>
-            <p style={{ color: "#666" }} className="text-sm">
-              {formatTrialMessage(trialStatus!)}
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
-          >
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm mb-2">
-              Total Children
-            </p>
-            <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
-              {kids.length}
-            </p>
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm mb-2">
-              Total Goals
-            </p>
-            <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
-              {goals.length}
-            </p>
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm mb-2">
-              Total Hours Logged
-            </p>
-            <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
-              {Math.round(activities.reduce((sum, a) => sum + a.duration, 0))}
-            </p>
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm mb-2">
-              This Week
-            </p>
-            <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
-              {Math.round(Object.values(weeklyData).reduce((a, b) => a + b, 0))}h
-            </p>
-          </div>
-        </div>
-
-        {/* Kids Grid */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-              Children
-            </h2>
-            {kids.length < 5 && (
-              <button
-                onClick={() => setShowAddKid(true)}
-                style={{ backgroundColor: COLORS.primary }}
-                className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-              >
-                + Add Child
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {kids.map((kid) => (
-              <Link
-                key={kid.id}
-                href={`/dashboard/${kid.id}`}
-                style={{ backgroundColor: "white", borderRadius: "12px" }}
-                className="p-6 border border-gray-200 hover:border-gray-300 transition cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                      {kid.name}
-                    </h3>
-                    {kid.age && (
-                      <p style={{ color: "#666" }} className="text-sm">
-                        Age {kid.age}
-                        {kid.grade && ` • Grade ${kid.grade}`}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDeleteKid(kid.id);
-                    }}
-                    style={{ color: "#ff6b6b" }}
-                    className="text-sm font-medium hover:opacity-70"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <p style={{ color: "#666" }} className="text-sm">
-                  {activities.filter((a) => a.child_name === kid.name).length} activities logged
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Reports
                 </p>
-              </Link>
-            ))}
-          </div>
+                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
+                  {totalReports}
+                </p>
+              </div>
 
-          {kids.length === 0 && (
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
-              <p style={{ color: "#666" }} className="mb-4">
-                No children yet. Add your first child to get started.
-              </p>
-              <button
-                onClick={() => setShowAddKid(true)}
-                style={{ backgroundColor: COLORS.primary }}
-                className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
-              >
-                Add Child
-              </button>
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Total Hours
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
+                  {totalHours.toFixed(1)}h
+                </p>
+              </div>
+
+              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+                  Subjects
+                </p>
+                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
+                  {new Set(reports.flatMap(r => r.subjects.map(s => s.subject))).size}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
+
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="border border-gray-200 overflow-hidden">
+              <div style={{ backgroundColor: "#f9fafb" }} className="px-6 py-4 border-b border-gray-200">
+                <h3 style={{ color: COLORS.dark }} className="font-semibold">
+                  Recent Reports
+                </h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {reports.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <p style={{ color: "#999" }}>No reports yet.</p>
+                  </div>
+                ) : (
+                  reports.slice(0, 10).map((report) => (
+                    <div key={report.id} className="px-6 py-4 hover:bg-gray-50">
+                      <p style={{ color: COLORS.dark }} className="font-semibold">
+                        {report.child_name}
+                      </p>
+                      <p style={{ color: "#666" }} className="text-sm">
+                        {report.subjects.map(s => s.subject).join(", ")} • {new Date(report.generated_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Goals Tab */}
+        {activeTab === "goals" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Monthly Learning Goals
+            </h2>
+
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
+              <h3 style={{ color: COLORS.dark }} className="font-semibold mb-4">
+                Add Goal
+              </h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Subject (e.g., Math)"
+                  id="goalSubject"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <input
+                  type="number"
+                  placeholder="Monthly hours"
+                  id="goalHours"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <button
+                  onClick={() => {
+                    const subject = (document.getElementById("goalSubject") as HTMLInputElement).value;
+                    const hours = parseInt((document.getElementById("goalHours") as HTMLInputElement).value);
+                    if (subject && hours > 0) {
+                      addGoal(subject, hours);
+                      (document.getElementById("goalSubject") as HTMLInputElement).value = "";
+                      (document.getElementById("goalHours") as HTMLInputElement).value = "";
+                    }
+                  }}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="w-full px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+                >
+                  Add Goal
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {goals.map((goal) => (
+                <div
+                  key={goal.id}
+                  style={{ backgroundColor: "white", borderRadius: "12px" }}
+                  className="p-6 border border-gray-200"
+                >
+                  <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
+                    {goal.subject}
+                  </h4>
+                  <p style={{ color: "#666" }} className="text-sm mb-4">
+                    Target: {goal.monthly_hours} hours
+                  </p>
+                  <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
+                    <div style={{ backgroundColor: COLORS.primary, width: "45%" }} className="h-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Compliance Tab */}
+        {activeTab === "compliance" && (
+          <div>
+            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+              Compliance Tracking
+            </h2>
+
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-8">
+              <label style={{ color: COLORS.dark }} className="font-semibold block mb-3">
+                Select State
+              </label>
+              <select
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value);
+                  localStorage.setItem("state", e.target.value);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                {Object.keys(STATE_REQUIREMENTS).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {Object.entries(requirements).map(([subject, hours]) => (
+                <div
+                  key={subject}
+                  style={{ backgroundColor: "white", borderRadius: "12px" }}
+                  className="p-6 border border-gray-200"
+                >
+                  <h4 style={{ color: COLORS.dark }} className="font-semibold mb-2">
+                    {subject}
+                  </h4>
+                  <p style={{ color: "#666" }} className="text-sm mb-4">
+                    Required: {hours} hours/year
+                  </p>
+                  <div style={{ backgroundColor: COLORS.light }} className="h-2 rounded-full overflow-hidden">
+                    <div style={{ backgroundColor: "#ff6b6b", width: "30%" }} className="h-full" />
+                  </div>
+                  <p style={{ color: "#666" }} className="text-xs mt-2">
+                    30% complete
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Add Kid Modal */}
-      {showAddKid && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.7)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
+      {/* Quick Log Modal */}
+      {showQuickLog && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Add Child
+              ⚡ Quick Log
             </h2>
 
             <div className="space-y-4 mb-6">
               <input
                 type="text"
-                placeholder="Child's name"
-                value={newKidName}
-                onChange={(e) => setNewKidName(e.target.value)}
+                placeholder="Subject"
+                id="quickLogSubject"
                 style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
               />
               <input
                 type="number"
-                placeholder="Age (optional)"
-                value={newKidAge}
-                onChange={(e) => setNewKidAge(e.target.value)}
+                placeholder="Hours"
+                id="quickLogHours"
+                step="0.5"
                 style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
               />
-              <input
-                type="text"
-                placeholder="Grade (optional)"
-                value={newKidGrade}
-                onChange={(e) => setNewKidGrade(e.target.value)}
+              <textarea
+                placeholder="Notes (optional)"
+                id="quickLogNotes"
                 style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                rows={3}
               />
             </div>
 
             <div className="flex gap-3">
               <button
-                onClick={handleAddKid}
+                onClick={() => {
+                  const subject = (document.getElementById("quickLogSubject") as HTMLInputElement).value;
+                  const hours = parseFloat((document.getElementById("quickLogHours") as HTMLInputElement).value);
+                  const notes = (document.getElementById("quickLogNotes") as HTMLTextAreaElement).value;
+                  if (subject && hours > 0) {
+                    handleQuickLogSave(subject, hours, notes);
+                  }
+                }}
                 style={{ backgroundColor: COLORS.primary }}
                 className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
               >
-                Add
+                Save
               </button>
               <button
-                onClick={() => setShowAddKid(false)}
+                onClick={() => setShowQuickLog(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
               >
                 Cancel
@@ -453,7 +443,6 @@ export default function DashboardHomePage() {
           </div>
         </div>
       )}
-      </main>
-    </>
+    </main>
   );
 }
