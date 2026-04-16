@@ -245,6 +245,11 @@ SUMMARY:
     );
   }
 
+  // Calculate stats
+  const totalHours = activities.reduce((sum, a) => sum + a.duration, 0);
+  const uniqueSubjects = new Set(activities.map((a) => a.subject)).size;
+  const totalActivities = activities.length;
+
   return (
     <>
       <Navbar />
@@ -299,6 +304,36 @@ SUMMARY:
           >
             Compliance
           </Link>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-6 my-8">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+              Total Activities
+            </p>
+            <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
+              {totalActivities}
+            </p>
+          </div>
+
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+              Total Hours
+            </p>
+            <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
+              {totalHours.toFixed(1)}h
+            </p>
+          </div>
+
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
+              Subjects
+            </p>
+            <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
+              {uniqueSubjects}
+            </p>
+          </div>
         </div>
 
         {/* Quick Log Form */}
