@@ -248,7 +248,7 @@ export default function KidDetailPage() {
     }
   }
 
-  const handleGenerateComprehensiveReport = () => {
+  const handleGenerateComprehensiveReport = async () => {
     if (!kid || selectedSubjects.length === 0 || !activities.length) {
       alert("Need activities and selected subjects to generate report");
       return;
@@ -266,49 +266,111 @@ export default function KidDetailPage() {
       return;
     }
 
-    const reportContent = `
-=====================================
-  COMPREHENSIVE REPORT
-=====================================
+    // Prepare activity summary for AI
+    const activitySummary = filteredActivities
+      .map((a) => `${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}`)
+      .join("\n");
 
-Student: ${kid.name}
-Period: ${reportStartDate} to ${reportEndDate}
-Generated: ${new Date().toLocaleDateString()}
+    const prompt = `Generate a professional, comprehensive homeschool progress report for ${kid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
 
-SUBJECTS COVERED:
-${selectedSubjects.map((s) => `  • ${s}`).join("\n")}
+Subjects covered: ${selectedSubjects.join(", ")}
+Total activities logged: ${filteredActivities.length}
+Total hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
 
-DETAILED ACTIVITIES:
-${filteredActivities
-  .map(
-    (a) => `
-  ${a.date} - ${a.subject}
-    Duration: ${a.duration} hours
-    Platform: ${a.platform}
-    ${a.notes ? `Notes: ${a.notes}` : ""}
-`
-  )
-  .join("\n")}
+Activity log:
+${activitySummary}
 
-SUMMARY:
-  Total Activities: ${filteredActivities.length}
-  Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+Create a narrative-style report that:
+1. Opens with a summary of learning progress
+2. Details accomplishments in each subject
+3. Highlights engagement and effort
+4. Notes any challenges or areas for growth
+5. Concludes with recommendations for continued learning
 
-=====================================
-    `;
+Format as professional homeschool compliance documentation.`;
 
-    const element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(reportContent)
-    );
-    element.setAttribute("download", `${kid.name}-report-${reportStartDate}-${reportEndDate}.txt`);
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    try {
+      const response = await fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          studentName: kid.name,
+          startDate: reportStartDate,
+          endDate: reportEndDate,
+        }),
+      });
 
-    setShowComprehensiveReport(false);
+      if (!response.ok) throw new Error("Report generation failed");
+      const data = await response.json();
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Save report to Supabase
+      try {
+        await supabase
+          .from("reports")
+          .insert([
+            {
+              user_id: user?.id,
+              child_name: kid.name,
+              report_type: "comprehensive",
+              generated_date: new Date().toISOString(),
+              subjects: selectedSubjects.join(","),
+              report_content: data.narrative,
+              start_date: reportStartDate,
+              end_date: reportEndDate,
+              notes: `Report for ${reportStartDate} to ${reportEndDate}`,
+            },
+          ]);
+      } catch (err) {
+        console.error("Failed to save report to DB:", err);
+      }
+
+      // Generate PDF for download
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginLeft = 15;
+      const marginRight = 15;
+      const marginTop = 15;
+      let yPosition = marginTop;
+
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("COMPREHENSIVE PROGRESS REPORT", marginLeft, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Student: ${kid.name}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Period: ${reportStartDate} to ${reportEndDate}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, marginLeft, yPosition);
+      yPosition += 12;
+
+      doc.setFontSize(10);
+      const narrativeLines = (doc.splitTextToSize(data.narrative, pageWidth - marginLeft - marginRight)) as string[];
+      narrativeLines.forEach((line) => {
+        if (yPosition > pageHeight - 20) {
+          doc.addPage();
+          yPosition = marginTop;
+        }
+        doc.text(line, marginLeft, yPosition);
+        yPosition += 5;
+      });
+
+      doc.save(`${kid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
+
+      setShowComprehensiveReport(false);
+      setReports([...reports]); // Trigger re-render
+    } catch (err) {
+      console.error("Error generating report:", err);
+      alert("Failed to generate report. Please try again.");
+    }
   };
 
   if (loading) {
