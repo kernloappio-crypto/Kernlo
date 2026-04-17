@@ -478,7 +478,7 @@ Format as professional homeschool compliance documentation.`;
                   value={newKidAge}
                   onChange={(e) => setNewKidAge(e.target.value)}
                   placeholder="Age"
-                  style={{ color: "#1a1a2e" }}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded mb-2 text-sm"
                 />
                 <input
@@ -673,6 +673,7 @@ Format as professional homeschool compliance documentation.`;
                   type="date"
                   value={logDate}
                   onChange={(e) => setLogDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -703,6 +704,7 @@ Format as professional homeschool compliance documentation.`;
                   onChange={(e) => setLogDuration(e.target.value)}
                   placeholder="1.5"
                   step="0.5"
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -742,7 +744,8 @@ Format as professional homeschool compliance documentation.`;
               </button>
               <button
                 onClick={() => setShowQuickLog(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 font-semibold rounded-lg hover:bg-gray-50"
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2 border font-semibold rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -788,6 +791,7 @@ Format as professional homeschool compliance documentation.`;
                   type="date"
                   value={reportStartDate}
                   onChange={(e) => setReportStartDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -800,6 +804,7 @@ Format as professional homeschool compliance documentation.`;
                   type="date"
                   value={reportEndDate}
                   onChange={(e) => setReportEndDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -851,7 +856,8 @@ Format as professional homeschool compliance documentation.`;
               </button>
               <button
                 onClick={() => setShowReportGen(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 font-semibold rounded-lg hover:bg-gray-50"
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2 border font-semibold rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
