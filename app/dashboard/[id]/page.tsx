@@ -47,6 +47,35 @@ const SUBJECTS = [
   "Other",
 ];
 
+const STATE_REQUIREMENTS: { [key: string]: { [key: string]: number } } = {
+  CA: {
+    Math: 240,
+    English: 240,
+    Science: 120,
+    History: 120,
+    "Physical Education": 120,
+  },
+  TX: {
+    Math: 180,
+    English: 180,
+    Science: 120,
+    History: 120,
+  },
+  FL: {
+    Math: 180,
+    English: 180,
+    Science: 90,
+    History: 90,
+  },
+  NY: {
+    Math: 180,
+    English: 180,
+    Science: 90,
+    History: 90,
+    "Physical Education": 90,
+  },
+};
+
 export default function KidDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -314,33 +343,56 @@ SUMMARY:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Subjects & Compliance Card */}
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              Subjects & Compliance
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <p style={{ color: "#666" }} className="text-sm font-semibold mb-2">
-                  Subjects Logged
-                </p>
-                <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
-                  {new Set(activities.map((a) => a.subject)).size}
-                </p>
-              </div>
-              <div>
-                <p style={{ color: "#666" }} className="text-sm font-semibold mb-2">
-                  Compliance State
-                </p>
-                <p style={{ color: COLORS.secondary }} className="text-lg font-bold">
-                  {complianceState}
-                </p>
-                <Link
-                  href={`/dashboard/${kid.id}/compliance`}
-                  style={{ color: COLORS.primary }}
-                  className="text-xs font-medium hover:underline mt-2 block"
-                >
-                  View Requirements →
-                </Link>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                Subject Progress ({complianceState})
+              </h3>
+              <Link
+                href={`/dashboard/${kid.id}/compliance`}
+                style={{ color: COLORS.primary }}
+                className="text-xs font-medium hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+            
+            <div className="space-y-3">
+              {(() => {
+                const requirements = STATE_REQUIREMENTS[complianceState] || {};
+                const subjects = Object.keys(requirements).slice(0, 4); // Show top 4
+                
+                return subjects.map((subject) => {
+                  const subjectActivities = activities.filter((a) => a.subject === subject);
+                  const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+                  const required = requirements[subject] || 0;
+                  const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
+                  const met = hours >= required;
+
+                  return (
+                    <div key={subject}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span style={{ color: COLORS.dark }} className="text-sm font-medium">
+                          {subject}
+                        </span>
+                        <span style={{ color: met ? COLORS.accent3 : "#999" }} className="text-xs font-bold">
+                          {hours}h / {required}h
+                        </span>
+                      </div>
+                      <div style={{ backgroundColor: "#e5e7eb", height: "6px", borderRadius: "3px" }}>
+                        <div
+                          style={{
+                            backgroundColor: met ? COLORS.accent3 : COLORS.primary,
+                            height: "100%",
+                            borderRadius: "3px",
+                            width: `${percentage}%`,
+                            transition: "width 0.3s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
