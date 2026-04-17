@@ -32,31 +32,56 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
-const STATE_REQUIREMENTS: { [key: string]: { [key: string]: number } } = {
+const STATE_REQUIREMENTS: { [key: string]: any } = {
   CA: {
-    Math: 240,
-    English: 240,
-    Science: 120,
-    History: 120,
-    "Physical Education": 120,
+    name: "California",
+    description: "175 instructional days OR equivalent hours per school year",
+    totalHours: 900,
+    subjects: {
+      Math: 240,
+      English: 240,
+      Science: 120,
+      History: 120,
+      "Physical Education": 120,
+    },
+    notes: "Must include instruction in reading, language arts, mathematics, science, and social studies",
   },
   TX: {
-    Math: 180,
-    English: 180,
-    Science: 120,
-    History: 120,
+    name: "Texas",
+    description: "Bona fide curriculum requirement (NO hour minimums)",
+    totalHours: 0,
+    subjects: {
+      "Reading/Language Arts": 0,
+      Mathematics: 0,
+      Science: 0,
+      "Social Studies": 0,
+    },
+    notes: "Requires a bona fide curriculum with reading, language arts, mathematics, science, and social studies. No hour requirements.",
   },
   FL: {
-    Math: 180,
-    English: 180,
-    Science: 90,
-    History: 90,
+    name: "Florida",
+    description: "1,000 instructional hours per school year",
+    totalHours: 1000,
+    subjects: {
+      Math: 180,
+      English: 180,
+      Science: 90,
+      History: 90,
+    },
+    notes: "Must include core subjects: English Language Arts, Mathematics, Science, and Social Studies",
   },
   NY: {
-    Math: 200,
-    English: 200,
-    Science: 100,
-    History: 100,
+    name: "New York",
+    description: "900 instructional hours per school year",
+    totalHours: 900,
+    subjects: {
+      Math: 200,
+      English: 200,
+      Science: 100,
+      History: 100,
+      "Physical Education": 90,
+    },
+    notes: "Must include English Language Arts, Mathematics, Science, and Social Studies",
   },
 };
 
@@ -229,63 +254,93 @@ export default function CompliancePage() {
           )}
         </div>
 
-        {/* Requirements Table */}
-        <div>
-          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
-            {selectedState} Requirements
+        {/* State Requirements Header */}
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-2">
+            {STATE_REQUIREMENTS[selectedState]?.name} Requirements
           </h2>
-
-          <div className="space-y-4">
-            {Object.entries(compliance).map(([subject, data]) => {
-              const percentage = Math.round((data.hours / data.required) * 100);
-              const isMet = data.met;
-
-              return (
-                <div
-                  key={subject}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-6 border border-gray-200"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                        {subject}
-                      </h3>
-                      <p style={{ color: "#666" }} className="text-sm">
-                        {data.hours.toFixed(1)} / {data.required} hours
-                      </p>
-                    </div>
-                    <span
-                      style={{
-                        backgroundColor: isMet ? "#e8f5e9" : "#ffebee",
-                        color: isMet ? "#2e7d32" : "#c62828",
-                      }}
-                      className="px-3 py-1 rounded-full text-sm font-medium"
-                    >
-                      {isMet ? "✓ Met" : "✗ Not Met"}
-                    </span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-3 overflow-hidden">
-                    <div
-                      style={{
-                        backgroundColor: isMet ? COLORS.accent3 : COLORS.accent1,
-                        width: `${Math.min(percentage, 100)}%`,
-                        transition: "width 0.3s ease",
-                      }}
-                      className="h-full"
-                    />
-                  </div>
-
-                  <p style={{ color: "#666" }} className="text-sm mt-2">
-                    {percentage}% complete
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          <p style={{ color: "#666" }} className="text-sm mb-4">
+            {STATE_REQUIREMENTS[selectedState]?.description}
+          </p>
+          {STATE_REQUIREMENTS[selectedState]?.notes && (
+            <div style={{ backgroundColor: "#f0f7ff", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 rounded text-sm">
+              <p style={{ color: COLORS.dark }} className="font-medium mb-1">
+                Important Note:
+              </p>
+              <p style={{ color: "#666" }}>
+                {STATE_REQUIREMENTS[selectedState]?.notes}
+              </p>
+            </div>
+          )}
         </div>
+
+        {/* Subject Requirements */}
+        {STATE_REQUIREMENTS[selectedState]?.totalHours > 0 ? (
+          <div>
+            <h3 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+              Subject Hour Requirements
+            </h3>
+            <div className="space-y-4">
+              {Object.entries(compliance).map(([subject, data]) => {
+                const percentage = Math.round((data.hours / data.required) * 100);
+                const isMet = data.met;
+
+                return (
+                  <div
+                    key={subject}
+                    style={{ backgroundColor: "white", borderRadius: "12px" }}
+                    className="p-6 border border-gray-200"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                          {subject}
+                        </h3>
+                        <p style={{ color: "#666" }} className="text-sm">
+                          {data.hours.toFixed(1)} / {data.required} hours
+                        </p>
+                      </div>
+                      <span
+                        style={{
+                          backgroundColor: isMet ? "#e8f5e9" : "#ffebee",
+                          color: isMet ? "#2e7d32" : "#c62828",
+                        }}
+                        className="px-3 py-1 rounded-full text-sm font-medium"
+                      >
+                        {isMet ? "✓ Met" : "✗ Not Met"}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-3 overflow-hidden">
+                      <div
+                        style={{
+                          backgroundColor: isMet ? COLORS.accent3 : COLORS.accent1,
+                          width: `${Math.min(percentage, 100)}%`,
+                          transition: "width 0.3s ease",
+                        }}
+                        className="h-full"
+                      />
+                    </div>
+
+                    <p style={{ color: "#666" }} className="text-sm mt-2">
+                      {percentage}% complete
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-6 border border-orange-200">
+            <p style={{ color: "#e65100" }} className="font-semibold mb-2">
+              Curriculum-Based State
+            </p>
+            <p style={{ color: "#666" }} className="text-sm">
+              {selectedState} requires a bona fide curriculum with core subjects. While there are no specific hour minimums, logging your activities helps demonstrate a comprehensive educational program.
+            </p>
+          </div>
+        )}
       </div>
     </main>
     </>

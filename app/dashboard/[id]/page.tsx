@@ -47,32 +47,52 @@ const SUBJECTS = [
   "Other",
 ];
 
-const STATE_REQUIREMENTS: { [key: string]: { [key: string]: number } } = {
+const STATE_REQUIREMENTS: { [key: string]: any } = {
   CA: {
-    Math: 240,
-    English: 240,
-    Science: 120,
-    History: 120,
-    "Physical Education": 120,
+    name: "California",
+    description: "175 instructional days OR equivalent hours per school year",
+    totalHours: 900,
+    subjects: {
+      Math: 240,
+      English: 240,
+      Science: 120,
+      History: 120,
+      "Physical Education": 120,
+    },
   },
   TX: {
-    Math: 180,
-    English: 180,
-    Science: 120,
-    History: 120,
+    name: "Texas",
+    description: "Bona fide curriculum requirement (NO hour minimums)",
+    totalHours: 0,
+    subjects: {
+      "Reading/Language Arts": 0,
+      Mathematics: 0,
+      Science: 0,
+      "Social Studies": 0,
+    },
   },
   FL: {
-    Math: 180,
-    English: 180,
-    Science: 90,
-    History: 90,
+    name: "Florida",
+    description: "1,000 instructional hours per school year",
+    totalHours: 1000,
+    subjects: {
+      Math: 180,
+      English: 180,
+      Science: 90,
+      History: 90,
+    },
   },
   NY: {
-    Math: 180,
-    English: 180,
-    Science: 90,
-    History: 90,
-    "Physical Education": 90,
+    name: "New York",
+    description: "900 instructional hours per school year",
+    totalHours: 900,
+    subjects: {
+      Math: 200,
+      English: 200,
+      Science: 100,
+      History: 100,
+      "Physical Education": 90,
+    },
   },
 };
 
@@ -360,42 +380,48 @@ SUMMARY:
             </div>
             
             <div className="space-y-3">
-              {(() => {
-                const requirements = STATE_REQUIREMENTS[complianceState] || {};
-                const subjects = Object.keys(requirements).slice(0, 4); // Show top 4
-                
-                return subjects.map((subject) => {
-                  const subjectActivities = activities.filter((a) => a.subject === subject);
-                  const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
-                  const required = requirements[subject] || 0;
-                  const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
-                  const met = hours >= required;
+              {STATE_REQUIREMENTS[complianceState]?.totalHours > 0 ? (
+                (() => {
+                  const stateReqs = STATE_REQUIREMENTS[complianceState];
+                  const subjects = Object.keys(stateReqs.subjects).slice(0, 4); // Show top 4
+                  
+                  return subjects.map((subject) => {
+                    const subjectActivities = activities.filter((a) => a.subject === subject);
+                    const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+                    const required = stateReqs.subjects[subject] || 0;
+                    const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
+                    const met = hours >= required;
 
-                  return (
-                    <div key={subject}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span style={{ color: COLORS.dark }} className="text-sm font-medium">
-                          {subject}
-                        </span>
-                        <span style={{ color: met ? COLORS.accent3 : "#999" }} className="text-xs font-bold">
-                          {hours}h / {required}h
-                        </span>
+                    return (
+                      <div key={subject}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span style={{ color: COLORS.dark }} className="text-sm font-medium">
+                            {subject}
+                          </span>
+                          <span style={{ color: met ? COLORS.accent3 : "#999" }} className="text-xs font-bold">
+                            {hours}h / {required}h
+                          </span>
+                        </div>
+                        <div style={{ backgroundColor: "#e5e7eb", height: "6px", borderRadius: "3px" }}>
+                          <div
+                            style={{
+                              backgroundColor: met ? COLORS.accent3 : COLORS.primary,
+                              height: "100%",
+                              borderRadius: "3px",
+                              width: `${percentage}%`,
+                              transition: "width 0.3s ease",
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div style={{ backgroundColor: "#e5e7eb", height: "6px", borderRadius: "3px" }}>
-                        <div
-                          style={{
-                            backgroundColor: met ? COLORS.accent3 : COLORS.primary,
-                            height: "100%",
-                            borderRadius: "3px",
-                            width: `${percentage}%`,
-                            transition: "width 0.3s ease",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
+                    );
+                  });
+                })()
+              ) : (
+                <p style={{ color: "#999" }} className="text-xs italic">
+                  {complianceState} is curriculum-based (no specific hour requirements). Continue logging activities to demonstrate a comprehensive program.
+                </p>
+              )}
             </div>
           </div>
 
