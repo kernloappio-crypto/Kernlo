@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { getActivities, addActivity, deleteActivity } from "@/lib/supabase-data";
+import { getActivities, addActivity, deleteActivity, getGoals, getComplianceState } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +66,8 @@ export default function KidDetailPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [complianceState, setComplianceState] = useState("CA");
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -99,6 +101,18 @@ export default function KidDetailPage() {
           (a: any) => a.child_name === kidData?.name
         );
         setActivities(kidActivities as Activity[]);
+
+        // Load goals
+        const goalsData = await getGoals(user.id, kidData?.name);
+        setGoals(goalsData || []);
+
+        // Load compliance state
+        if (kidData?.name) {
+          const complianceData = await getComplianceState(user.id, kidData.name);
+          if (complianceData?.state) {
+            setComplianceState(complianceData.state);
+          }
+        }
 
         // Initialize date range (last 30 days)
         const today = new Date();
@@ -294,6 +308,78 @@ SUMMARY:
           >
             Compliance
           </Link>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Subjects & Compliance Card */}
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              Subjects & Compliance
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <p style={{ color: "#666" }} className="text-sm font-semibold mb-2">
+                  Subjects Logged
+                </p>
+                <p style={{ color: COLORS.primary }} className="text-3xl font-bold">
+                  {new Set(activities.map((a) => a.subject)).size}
+                </p>
+              </div>
+              <div>
+                <p style={{ color: "#666" }} className="text-sm font-semibold mb-2">
+                  Compliance State
+                </p>
+                <p style={{ color: COLORS.secondary }} className="text-lg font-bold">
+                  {complianceState}
+                </p>
+                <Link
+                  href={`/dashboard/${kid.id}/compliance`}
+                  style={{ color: COLORS.primary }}
+                  className="text-xs font-medium hover:underline mt-2 block"
+                >
+                  View Requirements →
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Goals Card */}
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              Monthly Goals
+            </h3>
+            {goals.length === 0 ? (
+              <p style={{ color: "#999" }} className="text-sm mb-4">
+                No goals set
+              </p>
+            ) : (
+              <div className="space-y-3 mb-4">
+                {goals.slice(0, 3).map((g) => (
+                  <div key={g.id} className="flex justify-between items-center">
+                    <span style={{ color: COLORS.dark }} className="text-sm font-medium">
+                      {g.subject}
+                    </span>
+                    <span style={{ color: COLORS.primary }} className="text-sm font-bold">
+                      {g.monthly_hours}h
+                    </span>
+                  </div>
+                ))}
+                {goals.length > 3 && (
+                  <p style={{ color: "#999" }} className="text-xs italic">
+                    +{goals.length - 3} more
+                  </p>
+                )}
+              </div>
+            )}
+            <Link
+              href={`/dashboard/${kid.id}/goals`}
+              style={{ color: COLORS.primary }}
+              className="text-xs font-medium hover:underline block"
+            >
+              Manage Goals →
+            </Link>
+          </div>
         </div>
 
         {/* Quick Log Form */}
