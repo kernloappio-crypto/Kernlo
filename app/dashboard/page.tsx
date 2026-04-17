@@ -254,49 +254,82 @@ export default function DashboardPage() {
       return;
     }
 
-    const reportContent = `
+    // Prepare activity summary for AI
+    const activitySummary = filteredActivities
+      .map((a) => `${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}`)
+      .join("\n");
+
+    const prompt = `Generate a professional, comprehensive homeschool progress report for ${reportKid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
+
+Subjects covered: ${selectedSubjects.join(", ")}
+Total activities logged: ${filteredActivities.length}
+Total hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+
+Activity log:
+${activitySummary}
+
+Create a narrative-style report that:
+1. Opens with a summary of learning progress
+2. Details accomplishments in each subject
+3. Highlights engagement and effort
+4. Notes any challenges or areas for growth
+5. Concludes with recommendations for continued learning
+
+Format as professional homeschool compliance documentation.`;
+
+    try {
+      const response = await fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          studentName: reportKid.name,
+          startDate: reportStartDate,
+          endDate: reportEndDate,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Report generation failed");
+      const data = await response.json();
+
+      const reportContent = `
 =====================================
-  COMPREHENSIVE REPORT
+  COMPREHENSIVE PROGRESS REPORT
 =====================================
 
 Student: ${reportKid.name}
 Period: ${reportStartDate} to ${reportEndDate}
 Generated: ${new Date().toLocaleDateString()}
 
-SUBJECTS COVERED:
-${selectedSubjects.map((s) => `  • ${s}`).join("\n")}
+${data.narrative}
 
-DETAILED ACTIVITIES:
-${filteredActivities
-  .map(
-    (a) => `
-  ${a.date} - ${a.subject}
-    Duration: ${a.duration} hours
-    Platform: ${a.platform}
-    ${a.notes ? `Notes: ${a.notes}` : ""}
-`
-  )
-  .join("\n")}
+=====================================
+ACTIVITY SUMMARY
+=====================================
 
-SUMMARY:
-  Total Activities: ${filteredActivities.length}
-  Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+Subjects: ${selectedSubjects.join(", ")}
+Total Activities: ${filteredActivities.length}
+Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
 
 =====================================
     `;
 
-    const element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(reportContent)
-    );
-    element.setAttribute("download", `${reportKid.name}-report-${reportStartDate}-${reportEndDate}.txt`);
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+      const element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:text/plain;charset=utf-8," + encodeURIComponent(reportContent)
+      );
+      element.setAttribute("download", `${reportKid.name}-report-${reportStartDate}-${reportEndDate}.txt`);
+      element.style.display = "none";
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
 
-    setShowReportGen(false);
+      setShowReportGen(false);
+    } catch (err) {
+      console.error("Error generating report:", err);
+      alert("Failed to generate report. Please try again.");
+    }
   }
 
   async function handleLogout() {
