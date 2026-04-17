@@ -163,13 +163,14 @@ export default function CompliancePage() {
   }
 
   function calculateCompliance(): { [key: string]: { hours: number; required: number; met: boolean } } {
-    const requirements = STATE_REQUIREMENTS[selectedState] || {};
+    const stateReq = STATE_REQUIREMENTS[selectedState] || {};
+    const subjects = stateReq.subjects || {};
     const compliance: { [key: string]: { hours: number; required: number; met: boolean } } = {};
 
-    Object.keys(requirements).forEach((subject) => {
+    Object.keys(subjects).forEach((subject) => {
       const subjectActivities = activities.filter((a) => a.subject === subject);
       const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
-      const required = requirements[subject];
+      const required = subjects[subject] || 0;
       compliance[subject] = {
         hours,
         required,
