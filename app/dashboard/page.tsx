@@ -318,11 +318,11 @@ SUMMARY:
   };
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Navbar />
       
       {/* Header with Quick Log and Report */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="h-16">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="h-16">
         <div className="h-full px-8 py-4 flex items-center justify-between">
           <div>
             <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
@@ -365,7 +365,7 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 4rem)" }} className="flex overflow-hidden">
+      <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="flex">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
@@ -795,6 +795,6 @@ SUMMARY:
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
