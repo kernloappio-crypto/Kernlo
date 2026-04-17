@@ -322,7 +322,7 @@ SUMMARY:
       <Navbar />
       
       {/* Header with Quick Log and Report */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-0 z-40">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="fixed top-0 left-0 right-0 z-40">
         <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
           <div>
             <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
@@ -365,7 +365,7 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 77px)" }} className="flex overflow-hidden">
+      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 77px)", marginTop: "77px" }} className="flex overflow-hidden">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
