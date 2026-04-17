@@ -324,6 +324,14 @@ Format as professional homeschool compliance documentation.`;
               notes: `Report for ${reportStartDate} to ${reportEndDate}`,
             },
           ]);
+
+        // Refetch reports to update display
+        const { data: updatedReports } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("user_id", user?.id)
+          .eq("child_name", kid.name);
+        setReports((updatedReports as Report[]) || []);
       } catch (err) {
         console.error("Failed to save report to DB:", err);
       }
