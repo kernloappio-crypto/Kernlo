@@ -140,6 +140,9 @@ export default function KidDetailPage() {
           const complianceData = await getComplianceState(user.id, kidData.name);
           if (complianceData?.state) {
             setComplianceState(complianceData.state);
+          } else {
+            // Default to CA if no state saved yet
+            setComplianceState("CA");
           }
         }
 

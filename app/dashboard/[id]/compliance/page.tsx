@@ -123,11 +123,17 @@ export default function CompliancePage() {
   async function handleStateChange(state: string) {
     setSelectedState(state);
     try {
-      if (kid) {
-        await setComplianceState(userId, state, kid.name);
+      if (kid && userId) {
+        const result = await setComplianceState(userId, state, kid.name);
+        if (result) {
+          console.log("State saved successfully:", state);
+        }
+      } else {
+        console.warn("Missing kid or userId:", { kid, userId });
       }
     } catch (err) {
       console.error("Error setting state:", err);
+      alert("Failed to save state. Please try again.");
     }
   }
 
