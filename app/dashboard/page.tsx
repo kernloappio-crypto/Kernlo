@@ -870,6 +870,10 @@ Format as professional homeschool compliance documentation.`;
               </div>
             </div>
 
+            <p style={{ color: "#ff6b6b" }} className="text-xs mb-4 p-3 bg-red-50 rounded border border-red-200">
+              ⚠️ Report generation takes ~30 seconds. Please click once and wait.
+            </p>
+
             <div className="flex gap-3">
               <button
                 onClick={handleGenerateReport}
