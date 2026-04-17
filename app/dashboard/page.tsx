@@ -26,6 +26,13 @@ interface Activity {
   notes?: string;
 }
 
+interface Goal {
+  id: string;
+  child_name: string;
+  subject: string;
+  monthly_hours: number;
+}
+
 const COLORS = {
   primary: "#0066cc",
   secondary: "#00d4ff",
@@ -47,10 +54,18 @@ const SUBJECTS = [
   "Other",
 ];
 
+const COMPLIANCE_STATES = [
+  { state: "CA", hours: 175 },
+  { state: "TX", hours: 0 },
+  { state: "FL", hours: 1000 },
+  { state: "NY", hours: 900 },
+];
+
 export default function DashboardPage() {
   const [userId, setUserId] = useState("");
   const [kids, setKids] = useState<Kid[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   
@@ -113,6 +128,16 @@ export default function DashboardPage() {
 
       if (activitiesData) {
         setActivities(activitiesData);
+      }
+
+      // Load all goals
+      const { data: goalsData } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (goalsData) {
+        setGoals(goalsData);
       }
 
       // Initialize date range (last 30 days)
@@ -283,20 +308,68 @@ SUMMARY:
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  // Calculate overall stats
-  const totalHours = activities.reduce((sum, a) => sum + a.duration, 0);
-  const totalActivities = activities.length;
-  const uniqueSubjects = new Set(activities.map((a) => a.subject)).size;
-  const recentActivities = activities.slice(0, 10);
+  // Helper functions for kid stats
+  const getKidStats = (kidName: string) => {
+    const kidActivities = activities.filter((a) => a.child_name === kidName);
+    const kidGoals = goals.filter((g) => g.child_name === kidName);
+    const totalHours = kidActivities.reduce((sum, a) => sum + a.duration, 0);
+    const subjects = new Set(kidActivities.map((a) => a.subject)).size;
+    return { activities: kidActivities.length, hours: totalHours, subjects, goals: kidGoals };
+  };
 
   return (
     <>
       <Navbar />
+      
+      {/* Header with Quick Log and Report */}
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+              Parent Dashboard
+            </h1>
+            <p style={{ color: "#666" }} className="text-sm">
+              Manage all your kids' homeschool progress
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (kids.length === 0) {
+                  alert("Please add a kid first");
+                  return;
+                }
+                setQuickLogKid(quickLogKid || kids[0]);
+                setShowQuickLog(true);
+              }}
+              style={{ backgroundColor: COLORS.primary }}
+              className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm"
+            >
+              + Quick Log
+            </button>
+            <button
+              onClick={() => {
+                if (kids.length === 0) {
+                  alert("Please add a kid first");
+                  return;
+                }
+                setReportKid(reportKid || kids[0]);
+                setShowReportGen(true);
+              }}
+              style={{ backgroundColor: COLORS.secondary }}
+              className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm"
+            >
+              📄 Report
+            </button>
+          </div>
+        </div>
+      </div>
+
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
-          className="w-72 min-h-screen p-6 flex flex-col"
+          className="w-64 min-h-screen p-6 flex flex-col"
         >
           <div className="mb-8">
             <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
@@ -304,41 +377,18 @@ SUMMARY:
             </h2>
             <div className="space-y-2 mb-4">
               {kids.map((kid) => (
-                <div key={kid.id}>
-                  <Link
-                    href={`/dashboard/${kid.id}`}
-                    style={{
-                      backgroundColor: COLORS.primary,
-                      color: "white",
-                    }}
-                    className="block w-full px-4 py-3 text-left rounded-lg hover:opacity-90 transition font-medium text-sm"
-                  >
-                    {kid.name}
-                    {kid.age && <span className="text-xs opacity-90 ml-2">({kid.age})</span>}
-                  </Link>
-                  <div className="flex gap-2 mt-2 pl-2">
-                    <button
-                      onClick={() => {
-                        setQuickLogKid(kid);
-                        setShowQuickLog(true);
-                      }}
-                      style={{ color: COLORS.primary }}
-                      className="text-xs font-medium hover:underline"
-                    >
-                      + Log
-                    </button>
-                    <button
-                      onClick={() => {
-                        setReportKid(kid);
-                        setShowReportGen(true);
-                      }}
-                      style={{ color: COLORS.primary }}
-                      className="text-xs font-medium hover:underline"
-                    >
-                      📄 Report
-                    </button>
-                  </div>
-                </div>
+                <Link
+                  key={kid.id}
+                  href={`/dashboard/${kid.id}`}
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    color: "white",
+                  }}
+                  className="block w-full px-4 py-3 text-left rounded-lg hover:opacity-90 transition font-medium text-sm"
+                >
+                  {kid.name}
+                  {kid.age && <span className="text-xs opacity-90 ml-2">({kid.age})</span>}
+                </Link>
               ))}
             </div>
             {kids.length < 5 && (
@@ -399,115 +449,117 @@ SUMMARY:
           </div>
         </div>
 
-        {/* Right Content - Dashboard Overview */}
+        {/* Right Content - Kid Cards */}
         <div className="flex-1 p-8">
           <div className="max-w-6xl">
-            <div className="mb-8">
-              <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold mb-2">
-                Parent Dashboard
-              </h1>
-              <p style={{ color: "#666" }} className="text-sm">
-                Welcome back! Here's an overview of all your kids' progress.
-              </p>
-            </div>
+            {kids.length === 0 ? (
+              <p style={{ color: "#999" }}>No kids added yet. Add a kid to get started!</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {kids.map((kid) => {
+                  const stats = getKidStats(kid.name);
+                  const kidGoals = stats.goals;
+                  const kidActivities = activities.filter((a) => a.child_name === kid.name);
+                  const totalGoalHours = kidGoals.reduce((sum, g) => sum + g.monthly_hours, 0);
+                  const loggedHours = kidActivities.reduce((sum, a) => sum + a.duration, 0);
+                  const progressPercent = totalGoalHours > 0 ? Math.min(100, (loggedHours / totalGoalHours) * 100) : 0;
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-6 mb-8">
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Total Activities
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-                  {totalActivities}
-                </p>
-              </div>
+                  return (
+                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded-lg shadow-sm">
+                      {/* Kid Header */}
+                      <h3 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+                        {kid.name}
+                      </h3>
 
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Total Hours
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
-                  {totalHours.toFixed(1)}h
-                </p>
-              </div>
-
-              <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-                <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-                  Subjects
-                </p>
-                <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
-                  {uniqueSubjects}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex gap-4 mb-8">
-              <button
-                onClick={() => {
-                  if (kids.length === 0) {
-                    alert("Please add a kid first");
-                    return;
-                  }
-                  setQuickLogKid(quickLogKid || kids[0]);
-                  setShowQuickLog(true);
-                }}
-                style={{ backgroundColor: COLORS.primary }}
-                className="px-6 py-3 text-white rounded-lg hover:opacity-90 font-medium"
-              >
-                + Quick Log
-              </button>
-              <button
-                onClick={() => {
-                  if (kids.length === 0) {
-                    alert("Please add a kid first");
-                    return;
-                  }
-                  setReportKid(reportKid || kids[0]);
-                  setShowReportGen(true);
-                }}
-                style={{ backgroundColor: COLORS.secondary }}
-                className="px-6 py-3 text-white rounded-lg hover:opacity-90 font-medium"
-              >
-                📄 Generate Report
-              </button>
-            </div>
-
-            {/* Recent Activities */}
-            <div>
-              <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
-                Recent Activities
-              </h2>
-              {recentActivities.length === 0 ? (
-                <p style={{ color: "#999" }}>No activities yet. Start logging!</p>
-              ) : (
-                <div className="space-y-3">
-                  {recentActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }}
-                      className="p-4 rounded"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p style={{ color: COLORS.dark }} className="font-semibold">
-                            {activity.child_name} - {activity.subject}
-                          </p>
-                          <p style={{ color: "#666" }} className="text-sm">
-                            {activity.duration} hours • {activity.platform} • {activity.date}
-                          </p>
-                          {activity.notes && (
-                            <p style={{ color: "#999" }} className="text-sm italic mt-1">
-                              {activity.notes}
-                            </p>
-                          )}
+                      {/* Quick Stats */}
+                      <div className="space-y-3 mb-4">
+                        <div className="flex justify-between items-center text-sm">
+                          <span style={{ color: "#666" }}>Activities Logged</span>
+                          <span style={{ color: COLORS.primary }} className="font-semibold">
+                            {stats.activities}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span style={{ color: "#666" }}>Total Hours</span>
+                          <span style={{ color: COLORS.secondary }} className="font-semibold">
+                            {stats.hours.toFixed(1)}h
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span style={{ color: "#666" }}>Subjects</span>
+                          <span style={{ color: COLORS.accent1 }} className="font-semibold">
+                            {stats.subjects}
+                          </span>
                         </div>
                       </div>
+
+                      {/* Goals Progress */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                          MONTHLY GOALS: {kidGoals.length}
+                        </p>
+                        {kidGoals.length > 0 ? (
+                          <div className="space-y-2">
+                            {kidGoals.slice(0, 2).map((g) => (
+                              <div key={g.id} className="text-xs">
+                                <p style={{ color: COLORS.dark }} className="font-medium">
+                                  {g.subject}: {g.monthly_hours}h
+                                </p>
+                              </div>
+                            ))}
+                            {kidGoals.length > 2 && (
+                              <p style={{ color: "#999" }} className="text-xs italic">
+                                +{kidGoals.length - 2} more
+                              </p>
+                            )}
+                            {totalGoalHours > 0 && (
+                              <div className="mt-2">
+                                <div style={{ backgroundColor: "#e5e7eb", height: "6px", borderRadius: "3px" }}>
+                                  <div
+                                    style={{
+                                      backgroundColor: COLORS.accent3,
+                                      height: "100%",
+                                      borderRadius: "3px",
+                                      width: `${progressPercent}%`,
+                                    }}
+                                  />
+                                </div>
+                                <p style={{ color: "#999" }} className="text-xs mt-1">
+                                  {loggedHours.toFixed(1)}h / {totalGoalHours}h
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p style={{ color: "#999" }} className="text-xs">
+                            No goals set
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Compliance Quick View */}
+                      <div className="mb-4">
+                        <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                          COMPLIANCE
+                        </p>
+                        <p style={{ color: COLORS.primary }} className="text-xs">
+                          ✅ Tracking enabled
+                        </p>
+                      </div>
+
+                      {/* View Dashboard Link */}
+                      <Link
+                        href={`/dashboard/${kid.id}`}
+                        style={{ borderColor: COLORS.primary, color: COLORS.primary }}
+                        className="block text-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
+                      >
+                        View Full Dashboard
+                      </Link>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -521,6 +573,25 @@ SUMMARY:
             </h2>
 
             <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  Kid
+                </label>
+                <select
+                  value={quickLogKid.id}
+                  onChange={(e) => {
+                    const kid = kids.find((k) => k.id === e.target.value);
+                    if (kid) setQuickLogKid(kid);
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  {kids.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
                   Date
@@ -612,10 +683,30 @@ SUMMARY:
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              Generate Report - {reportKid.name}
+              Generate Report
             </h2>
 
             <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  Kid
+                </label>
+                <select
+                  value={reportKid.id}
+                  onChange={(e) => {
+                    const kid = kids.find((k) => k.id === e.target.value);
+                    if (kid) setReportKid(kid);
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  {kids.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
                   Start Date

@@ -93,18 +93,18 @@ export default function KidDetailPage() {
           setKid(kidData as Kid);
         }
 
-        // Initialize date range (last 30 days)
-        const today = new Date();
-        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        setReportEndDate(today.toISOString().split("T")[0]);
-        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
-
         // Load activities
         const activitiesData = await getActivities(user.id);
         const kidActivities = activitiesData.filter(
           (a: any) => a.child_name === kidData?.name
         );
         setActivities(kidActivities as Activity[]);
+
+        // Initialize date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        setReportEndDate(today.toISOString().split("T")[0]);
+        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
         setLoading(false);
       } catch (err) {
@@ -163,21 +163,12 @@ export default function KidDetailPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   const handleGenerateComprehensiveReport = () => {
     if (!kid || selectedSubjects.length === 0 || !activities.length) {
       alert("Need activities and selected subjects to generate report");
       return;
     }
 
-    // Filter activities by date range and selected subjects
     const filteredActivities = activities.filter(
       (a) =>
         new Date(a.date) >= new Date(reportStartDate) &&
@@ -190,7 +181,6 @@ export default function KidDetailPage() {
       return;
     }
 
-    // Generate simple text report (since we don't have jsPDF)
     const reportContent = `
 =====================================
   COMPREHENSIVE REPORT
@@ -222,7 +212,6 @@ SUMMARY:
 =====================================
     `;
 
-    // Download as text file
     const element = document.createElement("a");
     element.setAttribute(
       "href",
@@ -237,6 +226,14 @@ SUMMARY:
     setShowComprehensiveReport(false);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   if (!kid) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -245,51 +242,44 @@ SUMMARY:
     );
   }
 
-  // Calculate stats
-  const totalHours = activities.reduce((sum, a) => sum + a.duration, 0);
-  const uniqueSubjects = new Set(activities.map((a) => a.subject)).size;
-  const totalActivities = activities.length;
-
   return (
     <>
       <Navbar />
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
-      {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <Link href="/dashboard" style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
-            ← Back to Dashboard
-          </Link>
-          <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
-            {kid.name}
-          </h1>
-          {kid.age && (
-            <p style={{ color: "#666" }} className="text-sm mt-2">
-              Age {kid.age}
-              {kid.grade && ` • Grade ${kid.grade}`}
-            </p>
-          )}
+      {/* Header with Buttons */}
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <Link href="/dashboard" style={{ color: COLORS.primary }} className="text-sm font-medium mb-2 block">
+              ← Back to Dashboard
+            </Link>
+            <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+              {kid.name}
+            </h1>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowQuickLog(!showQuickLog)}
+              style={{ backgroundColor: COLORS.primary }}
+              className="px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm"
+            >
+              {showQuickLog ? "Cancel" : "+ Log Activity"}
+            </button>
+            <button
+              onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
+              style={{ backgroundColor: COLORS.secondary }}
+              className="px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm"
+            >
+              {showComprehensiveReport ? "Cancel" : "📄 Report"}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Quick Log Button & Report Button */}
+        {/* Navigation Links */}
         <div className="flex gap-3">
-          <button
-            onClick={() => setShowQuickLog(!showQuickLog)}
-            style={{ backgroundColor: COLORS.primary }}
-            className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
-          >
-            {showQuickLog ? "Cancel" : "+ Log Activity"}
-          </button>
-          <button
-            onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
-            style={{ backgroundColor: COLORS.secondary }}
-            className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
-          >
-            {showComprehensiveReport ? "Cancel" : "📄 Report"}
-          </button>
           <Link
             href={`/dashboard/${kid.id}/goals`}
             style={{ borderColor: COLORS.primary, color: COLORS.primary }}
@@ -304,36 +294,6 @@ SUMMARY:
           >
             Compliance
           </Link>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-6 my-8">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-              Total Activities
-            </p>
-            <p className="text-4xl font-bold" style={{ color: COLORS.primary }}>
-              {totalActivities}
-            </p>
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-              Total Hours
-            </p>
-            <p className="text-4xl font-bold" style={{ color: COLORS.secondary }}>
-              {totalHours.toFixed(1)}h
-            </p>
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
-            <p style={{ color: "#666" }} className="text-sm font-medium mb-2">
-              Subjects
-            </p>
-            <p className="text-4xl font-bold" style={{ color: COLORS.accent1 }}>
-              {uniqueSubjects}
-            </p>
-          </div>
         </div>
 
         {/* Quick Log Form */}
@@ -482,7 +442,7 @@ SUMMARY:
       </div>
 
       {/* Comprehensive Report Modal */}
-      {showComprehensiveReport && (
+      {showComprehensiveReport && kid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
@@ -498,8 +458,7 @@ SUMMARY:
                   type="date"
                   value={reportStartDate}
                   onChange={(e) => setReportStartDate(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
 
@@ -511,8 +470,7 @@ SUMMARY:
                   type="date"
                   value={reportEndDate}
                   onChange={(e) => setReportEndDate(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
 
