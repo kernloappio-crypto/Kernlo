@@ -50,7 +50,9 @@ export default function SignupPage() {
   }
 
   return (
-    <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4">
+    <>
+      <style>{`body { background-color: #1a1a2e !important; }`}</style>
+      <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4">
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
         className="p-8 w-full max-w-sm border border-gray-200 shadow-lg"
@@ -160,5 +162,6 @@ export default function SignupPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }
