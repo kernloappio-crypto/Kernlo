@@ -292,38 +292,66 @@ Format as professional homeschool compliance documentation.`;
       if (!response.ok) throw new Error("Report generation failed");
       const data = await response.json();
 
-      const reportContent = `
-=====================================
-  COMPREHENSIVE PROGRESS REPORT
-=====================================
+      // Generate PDF using jsPDF
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginLeft = 15;
+      const marginRight = 15;
+      const marginTop = 15;
+      let yPosition = marginTop;
 
-Student: ${reportKid.name}
-Period: ${reportStartDate} to ${reportEndDate}
-Generated: ${new Date().toLocaleDateString()}
+      // Title
+      doc.setFontSize(18);
+      doc.setFont(undefined, "bold");
+      doc.text("COMPREHENSIVE PROGRESS REPORT", marginLeft, yPosition);
+      yPosition += 10;
 
-${data.narrative}
+      // Student info
+      doc.setFontSize(11);
+      doc.setFont(undefined, "normal");
+      doc.text(`Student: ${reportKid.name}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Period: ${reportStartDate} to ${reportEndDate}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, marginLeft, yPosition);
+      yPosition += 12;
 
-=====================================
-ACTIVITY SUMMARY
-=====================================
+      // Narrative (with text wrapping)
+      doc.setFontSize(10);
+      const narrativeLines = (doc.splitTextToSize(data.narrative, pageWidth - marginLeft - marginRight)) as string[];
+      narrativeLines.forEach((line) => {
+        if (yPosition > pageHeight - 20) {
+          doc.addPage();
+          yPosition = marginTop;
+        }
+        doc.text(line, marginLeft, yPosition);
+        yPosition += 5;
+      });
 
-Subjects: ${selectedSubjects.join(", ")}
-Total Activities: ${filteredActivities.length}
-Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+      yPosition += 8;
 
-=====================================
-    `;
+      // Activity Summary
+      doc.setFontSize(11);
+      doc.setFont(undefined, "bold");
+      if (yPosition > pageHeight - 40) {
+        doc.addPage();
+        yPosition = marginTop;
+      }
+      doc.text("ACTIVITY SUMMARY", marginLeft, yPosition);
+      yPosition += 8;
 
-      const element = document.createElement("a");
-      element.setAttribute(
-        "href",
-        "data:text/plain;charset=utf-8," + encodeURIComponent(reportContent)
-      );
-      element.setAttribute("download", `${reportKid.name}-report-${reportStartDate}-${reportEndDate}.txt`);
-      element.style.display = "none";
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      doc.setFontSize(10);
+      doc.setFont(undefined, "normal");
+      doc.text(`Subjects: ${selectedSubjects.join(", ")}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Total Activities: ${filteredActivities.length}`, marginLeft, yPosition);
+      yPosition += 6;
+      doc.text(`Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}`, marginLeft, yPosition);
+
+      // Download PDF
+      doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
       setShowReportGen(false);
     } catch (err) {
