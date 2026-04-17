@@ -7,8 +7,8 @@ const COLORS = {
 
 export default function Navbar() {
   return (
-    <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 left-0 right-0 z-50">
+      <div className="px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <div style={{ color: COLORS.primary }} className="text-2xl font-bold hover:opacity-80 transition">
             kernlo
