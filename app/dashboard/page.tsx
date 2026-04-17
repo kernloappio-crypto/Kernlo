@@ -485,7 +485,6 @@ SUMMARY:
                               });
                               return Object.entries(subjectHours)
                                 .sort(([, a], [, b]) => b - a)
-                                .slice(0, 3)
                                 .map(([subject, hours]) => (
                                   <div key={subject} className="flex justify-between items-center text-xs">
                                     <span style={{ color: COLORS.dark }} className="font-medium">
@@ -496,17 +495,6 @@ SUMMARY:
                                     </span>
                                   </div>
                                 ));
-                            })()}
-                            {(() => {
-                              const subjectHours: { [key: string]: number } = {};
-                              kidActivities.forEach((a) => {
-                                subjectHours[a.subject] = (subjectHours[a.subject] || 0) + a.duration;
-                              });
-                              return Object.keys(subjectHours).length > 3 ? (
-                                <p style={{ color: "#999" }} className="text-xs italic">
-                                  +{Object.keys(subjectHours).length - 3} more subjects
-                                </p>
-                              ) : null;
                             })()}
                           </div>
                         </div>
