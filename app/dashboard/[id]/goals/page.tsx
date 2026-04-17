@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { signOut } from "@/lib/supabase-auth";
 import { getGoals, addGoal, deleteGoal, getActivities } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +56,6 @@ export default function GoalsPage() {
   const kidId = params.id as string;
 
   const [userId, setUserId] = useState("");
-  const [email, setEmail] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -79,7 +77,6 @@ export default function GoalsPage() {
         }
 
         setUserId(user.id);
-        setEmail(user.email || "");
 
         // Load kid
         const { data: kidData } = await supabase
@@ -154,11 +151,6 @@ export default function GoalsPage() {
     const goal = goals.find((g) => g.subject === subject);
     const progress = goal ? Math.round((hours / goal.monthly_hours) * 100) : 0;
     return { progress: Math.min(progress, 100), hours };
-  }
-
-  async function handleLogout() {
-    await signOut();
-    router.push("/");
   }
 
   if (loading) {
@@ -322,19 +314,6 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      {/* Logout Section at Bottom */}
-      <div className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200">
-        <button
-          onClick={handleLogout}
-          style={{ color: COLORS.primary }}
-          className="text-sm font-medium hover:opacity-70"
-        >
-          Logout
-        </button>
-        <p style={{ color: "#999" }} className="text-xs mt-3">
-          {email}
-        </p>
-      </div>
     </main>
     </>
   );

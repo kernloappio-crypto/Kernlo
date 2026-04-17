@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { signOut } from "@/lib/supabase-auth";
 import { getActivities, addActivity, deleteActivity, getGoals, getComplianceState } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
@@ -103,7 +102,6 @@ export default function KidDetailPage() {
   const kidId = params.id as string;
 
   const [userId, setUserId] = useState("");
-  const [email, setEmail] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +131,6 @@ export default function KidDetailPage() {
         }
 
         setUserId(user.id);
-        setEmail(user.email || "");
 
         // Load kid data
         const { data: kidData } = await supabase
@@ -230,11 +227,6 @@ export default function KidDetailPage() {
       console.error("Error deleting activity:", err);
       alert("Failed to delete activity");
     }
-  }
-
-  async function handleLogout() {
-    await signOut();
-    router.push("/");
   }
 
   const handleGenerateComprehensiveReport = () => {
@@ -706,19 +698,6 @@ SUMMARY:
         </div>
       )}
 
-      {/* Logout Section at Bottom */}
-      <div className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200">
-        <button
-          onClick={handleLogout}
-          style={{ color: COLORS.primary }}
-          className="text-sm font-medium hover:opacity-70"
-        >
-          Logout
-        </button>
-        <p style={{ color: "#999" }} className="text-xs mt-3">
-          {email}
-        </p>
-      </div>
     </main>
     </>
   );
