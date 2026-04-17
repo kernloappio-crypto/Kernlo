@@ -471,28 +471,6 @@ SUMMARY:
                         {kid.name}
                       </h3>
 
-                      {/* Quick Stats */}
-                      <div className="space-y-3 mb-4">
-                        <div className="flex justify-between items-center text-sm">
-                          <span style={{ color: "#666" }}>Activities Logged</span>
-                          <span style={{ color: COLORS.primary }} className="font-semibold">
-                            {stats.activities}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span style={{ color: "#666" }}>Total Hours</span>
-                          <span style={{ color: COLORS.secondary }} className="font-semibold">
-                            {stats.hours.toFixed(1)}h
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span style={{ color: "#666" }}>Subjects</span>
-                          <span style={{ color: COLORS.accent1 }} className="font-semibold">
-                            {stats.subjects}
-                          </span>
-                        </div>
-                      </div>
-
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
                         <div className="mb-4 pb-4 border-b border-gray-200">
