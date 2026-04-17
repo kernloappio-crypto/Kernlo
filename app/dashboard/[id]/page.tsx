@@ -637,33 +637,39 @@ SUMMARY:
               <p style={{ color: "#333" }}>No reports generated yet.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {reports
                 .sort((a, b) => new Date(b.generated_date).getTime() - new Date(a.generated_date).getTime())
                 .map((report) => (
                   <div
                     key={report.id}
-                    style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.secondary}` }}
-                    className="p-4 rounded-lg border border-gray-200 flex items-center justify-between"
+                    style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }}
+                    className="p-3 flex items-center justify-between hover:bg-gray-50"
                   >
-                    <div>
-                      <p style={{ color: COLORS.dark }} className="text-sm font-semibold">
-                        📄 Report: {report.start_date} to {report.end_date}
-                      </p>
-                      <p style={{ color: "#555" }} className="text-xs mt-1">
-                        Generated {new Date(report.generated_date).toLocaleDateString()}
-                      </p>
+                    <div className="flex-1 flex items-center gap-4">
+                      <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
+                        {new Date(report.generated_date).toLocaleDateString()}
+                      </span>
+                      <span style={{ backgroundColor: COLORS.light, color: COLORS.secondary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
+                        Report
+                      </span>
+                      <span style={{ color: "#333" }} className="text-sm">
+                        {report.start_date} to {report.end_date}
+                      </span>
+                      {report.subjects && (
+                        <span style={{ color: "#555" }} className="text-xs">
+                          {report.subjects.split(",").length} subjects
+                        </span>
+                      )}
                     </div>
-                    {report.pdf_data && (
-                      <a
-                        href={report.pdf_data}
-                        download={`${kid?.name}-report-${report.start_date}-${report.end_date}.pdf`}
-                        style={{ color: COLORS.primary }}
-                        className="text-sm font-medium hover:opacity-70"
-                      >
-                        Download
-                      </a>
-                    )}
+                    <a
+                      href={`/api/download-report/${report.id}`}
+                      download={`${kid?.name}-report-${report.start_date}-${report.end_date}.pdf`}
+                      style={{ color: COLORS.primary }}
+                      className="text-xs font-medium hover:opacity-70 flex-shrink-0 ml-2"
+                    >
+                      Download
+                    </a>
                   </div>
                 ))}
             </div>

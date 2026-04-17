@@ -350,16 +350,16 @@ Format as professional homeschool compliance documentation.`;
       yPosition += 6;
       doc.text(`Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}`, marginLeft, yPosition);
 
-      // Convert PDF to base64 for storage
-      const pdfData = doc.output("datauristring");
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
 
-      // Save report to Supabase
+      // Save report to Supabase (without PDF data for now - just text content)
       try {
         const { data: insertData, error: insertError } = await supabase
           .from("reports")
           .insert([
             {
-              user_id: (await supabase.auth.getUser()).data.user?.id,
+              user_id: user?.id,
               child_name: reportKid.name,
               report_type: "comprehensive",
               generated_date: new Date().toISOString(),
@@ -367,7 +367,7 @@ Format as professional homeschool compliance documentation.`;
               report_content: data.narrative,
               start_date: reportStartDate,
               end_date: reportEndDate,
-              pdf_data: pdfData,
+              notes: `Report for ${reportStartDate} to ${reportEndDate}`,
             },
           ]);
 
