@@ -493,6 +493,47 @@ SUMMARY:
                         </div>
                       </div>
 
+                      {/* Subjects Breakdown */}
+                      {kidActivities.length > 0 && (
+                        <div className="mb-4 pb-4 border-b border-gray-200">
+                          <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                            SUBJECTS BY HOURS
+                          </p>
+                          <div className="space-y-2">
+                            {(() => {
+                              const subjectHours: { [key: string]: number } = {};
+                              kidActivities.forEach((a) => {
+                                subjectHours[a.subject] = (subjectHours[a.subject] || 0) + a.duration;
+                              });
+                              return Object.entries(subjectHours)
+                                .sort(([, a], [, b]) => b - a)
+                                .slice(0, 3)
+                                .map(([subject, hours]) => (
+                                  <div key={subject} className="flex justify-between items-center text-xs">
+                                    <span style={{ color: COLORS.dark }} className="font-medium">
+                                      {subject}
+                                    </span>
+                                    <span style={{ color: COLORS.primary }} className="font-semibold">
+                                      {hours.toFixed(1)}h
+                                    </span>
+                                  </div>
+                                ));
+                            })()}
+                            {(() => {
+                              const subjectHours: { [key: string]: number } = {};
+                              kidActivities.forEach((a) => {
+                                subjectHours[a.subject] = (subjectHours[a.subject] || 0) + a.duration;
+                              });
+                              return Object.keys(subjectHours).length > 3 ? (
+                                <p style={{ color: "#999" }} className="text-xs italic">
+                                  +{Object.keys(subjectHours).length - 3} more subjects
+                                </p>
+                              ) : null;
+                            })()}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Goals Progress */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
                         <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
