@@ -322,8 +322,8 @@ SUMMARY:
       <Navbar />
       
       {/* Header with Quick Log and Report */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="fixed top-0 left-0 right-0 z-40">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-16 z-40">
+        <div className="px-8 py-4 flex items-center justify-between">
           <div>
             <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
               Parent Dashboard
@@ -365,14 +365,14 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 77px)", marginTop: "77px" }} className="flex overflow-hidden">
+      <main style={{ backgroundColor: COLORS.light, height: "100vh" }} className="flex overflow-hidden">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
-          className="w-64 h-full p-6 flex flex-col"
+          className="w-64 h-full p-6 flex flex-col overflow-hidden"
         >
           {/* Kids Section */}
-          <div className="mb-8">
+          <div className="mb-8 flex-1 overflow-y-auto">
             <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Your Kids
             </h2>
