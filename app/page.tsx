@@ -88,10 +88,12 @@ export default function LandingPage() {
               width="100%"
               height="auto"
               controls
+              autoPlay
               muted
+              loop
               playsInline
               style={{ display: "block", backgroundColor: "#000" }}
-              preload="metadata"
+              preload="auto"
             >
               <source src="/videos/kernlo-whiteboard.mp4" type="video/mp4" />
               Your browser does not support the video tag.
