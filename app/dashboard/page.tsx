@@ -304,13 +304,13 @@ Format as professional homeschool compliance documentation.`;
 
       // Title
       doc.setFontSize(18);
-      doc.setFont(undefined, "bold");
+      doc.setFont("helvetica", "bold");
       doc.text("COMPREHENSIVE PROGRESS REPORT", marginLeft, yPosition);
       yPosition += 10;
 
       // Student info
       doc.setFontSize(11);
-      doc.setFont(undefined, "normal");
+      doc.setFont("helvetica", "normal");
       doc.text(`Student: ${reportKid.name}`, marginLeft, yPosition);
       yPosition += 6;
       doc.text(`Period: ${reportStartDate} to ${reportEndDate}`, marginLeft, yPosition);
@@ -334,7 +334,7 @@ Format as professional homeschool compliance documentation.`;
 
       // Activity Summary
       doc.setFontSize(11);
-      doc.setFont(undefined, "bold");
+      doc.setFont("helvetica", "bold");
       if (yPosition > pageHeight - 40) {
         doc.addPage();
         yPosition = marginTop;
@@ -343,7 +343,7 @@ Format as professional homeschool compliance documentation.`;
       yPosition += 8;
 
       doc.setFontSize(10);
-      doc.setFont(undefined, "normal");
+      doc.setFont("helvetica", "normal");
       doc.text(`Subjects: ${selectedSubjects.join(", ")}`, marginLeft, yPosition);
       yPosition += 6;
       doc.text(`Total Activities: ${filteredActivities.length}`, marginLeft, yPosition);
