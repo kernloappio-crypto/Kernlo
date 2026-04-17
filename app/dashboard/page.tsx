@@ -386,10 +386,10 @@ Format as professional homeschool compliance documentation.`;
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="h-16">
         <div className="h-full px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+            <h1 style={{ color: "#1a1a2e" }} className="text-2xl font-bold">
               Parent Dashboard
             </h1>
-            <p style={{ color: "#666" }} className="text-sm">
+            <p style={{ color: "#333" }} className="text-sm">
               Manage all your kids' homeschool progress
             </p>
           </div>
@@ -434,7 +434,7 @@ Format as professional homeschool compliance documentation.`;
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
-            <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg font-bold mb-4">
               Your Kids
             </h2>
             <div className="space-y-2 mb-4">
@@ -506,7 +506,7 @@ Format as professional homeschool compliance documentation.`;
             >
               Logout
             </button>
-            <p style={{ color: "#999" }} className="text-xs mt-3">
+            <p style={{ color: "#555" }} className="text-xs mt-3">
               {email}
             </p>
           </div>
@@ -516,7 +516,7 @@ Format as professional homeschool compliance documentation.`;
         <div className="flex-1 p-8 overflow-y-auto">
           <div className="max-w-6xl">
             {kids.length === 0 ? (
-              <p style={{ color: "#999" }}>No kids added yet. Add a kid to get started!</p>
+              <p style={{ color: "#555" }}>No kids added yet. Add a kid to get started!</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {kids.map((kid) => {
@@ -530,14 +530,14 @@ Format as professional homeschool compliance documentation.`;
                   return (
                     <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded-lg shadow-sm">
                       {/* Kid Header */}
-                      <h3 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+                      <h3 style={{ color: "#1a1a2e" }} className="text-xl font-bold mb-4">
                         {kid.name}
                       </h3>
 
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
                         <div className="mb-4 pb-4 border-b border-gray-200">
-                          <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
                             SUBJECTS BY HOURS
                           </p>
                           <div className="space-y-2">
@@ -550,7 +550,7 @@ Format as professional homeschool compliance documentation.`;
                                 .sort(([, a], [, b]) => b - a)
                                 .map(([subject, hours]) => (
                                   <div key={subject} className="flex justify-between items-center text-xs">
-                                    <span style={{ color: COLORS.dark }} className="font-medium">
+                                    <span style={{ color: "#1a1a2e" }} className="font-medium">
                                       {subject}
                                     </span>
                                     <span style={{ color: COLORS.primary }} className="font-semibold">
@@ -565,20 +565,20 @@ Format as professional homeschool compliance documentation.`;
 
                       {/* Goals Progress */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
                           MONTHLY GOALS: {kidGoals.length}
                         </p>
                         {kidGoals.length > 0 ? (
                           <div className="space-y-2">
                             {kidGoals.slice(0, 2).map((g) => (
                               <div key={g.id} className="text-xs">
-                                <p style={{ color: COLORS.dark }} className="font-medium">
+                                <p style={{ color: "#1a1a2e" }} className="font-medium">
                                   {g.subject}: {g.monthly_hours}h
                                 </p>
                               </div>
                             ))}
                             {kidGoals.length > 2 && (
-                              <p style={{ color: "#999" }} className="text-xs italic">
+                              <p style={{ color: "#555" }} className="text-xs italic">
                                 +{kidGoals.length - 2} more
                               </p>
                             )}
@@ -594,14 +594,14 @@ Format as professional homeschool compliance documentation.`;
                                     }}
                                   />
                                 </div>
-                                <p style={{ color: "#999" }} className="text-xs mt-1">
+                                <p style={{ color: "#555" }} className="text-xs mt-1">
                                   {loggedHours.toFixed(1)}h / {totalGoalHours}h
                                 </p>
                               </div>
                             )}
                           </div>
                         ) : (
-                          <p style={{ color: "#999" }} className="text-xs">
+                          <p style={{ color: "#555" }} className="text-xs">
                             No goals set
                           </p>
                         )}
@@ -609,7 +609,7 @@ Format as professional homeschool compliance documentation.`;
 
                       {/* Compliance Quick View */}
                       <div className="mb-4">
-                        <p style={{ color: "#666" }} className="text-xs font-semibold mb-2">
+                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
                           COMPLIANCE
                         </p>
                         <p style={{ color: COLORS.primary }} className="text-xs">
@@ -638,13 +638,13 @@ Format as professional homeschool compliance documentation.`;
       {showQuickLog && quickLogKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+            <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-6">
               Quick Log - {quickLogKid.name}
             </h2>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Kid
                 </label>
                 <select
@@ -663,7 +663,7 @@ Format as professional homeschool compliance documentation.`;
                 </select>
               </div>
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Date
                 </label>
                 <input
@@ -674,7 +674,7 @@ Format as professional homeschool compliance documentation.`;
                 />
               </div>
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Subject
                 </label>
                 <select
@@ -691,7 +691,7 @@ Format as professional homeschool compliance documentation.`;
                 </select>
               </div>
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Duration (hours)
                 </label>
                 <input
@@ -704,7 +704,7 @@ Format as professional homeschool compliance documentation.`;
                 />
               </div>
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Platform
                 </label>
                 <input
@@ -716,7 +716,7 @@ Format as professional homeschool compliance documentation.`;
                 />
               </div>
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Notes
                 </label>
                 <textarea
@@ -752,13 +752,13 @@ Format as professional homeschool compliance documentation.`;
       {showReportGen && reportKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
+            <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-6">
               Generate Report
             </h2>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Kid
                 </label>
                 <select
@@ -778,7 +778,7 @@ Format as professional homeschool compliance documentation.`;
               </div>
 
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Start Date
                 </label>
                 <input
@@ -790,7 +790,7 @@ Format as professional homeschool compliance documentation.`;
               </div>
 
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   End Date
                 </label>
                 <input
@@ -802,12 +802,12 @@ Format as professional homeschool compliance documentation.`;
               </div>
 
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-3">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
                   Subjects
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
                   {Array.from(new Set(activities.filter((a) => a.child_name === reportKid.name).map((a) => a.subject))).length === 0 ? (
-                    <p style={{ color: "#999" }} className="text-sm">
+                    <p style={{ color: "#555" }} className="text-sm">
                       No subjects found. Log activities first.
                     </p>
                   ) : (

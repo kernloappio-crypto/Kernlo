@@ -205,7 +205,7 @@ export default function GoalsPage() {
 
             <div className="space-y-4 mb-4">
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Subject
                 </label>
                 <select
@@ -224,7 +224,7 @@ export default function GoalsPage() {
               </div>
 
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Hours per Month
                 </label>
                 <input
@@ -258,7 +258,7 @@ export default function GoalsPage() {
 
           {goals.length === 0 ? (
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
-              <p style={{ color: "#666" }}>No goals set yet.</p>
+              <p style={{ color: "#333" }}>No goals set yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -278,7 +278,7 @@ export default function GoalsPage() {
                         <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                           {goal.subject}
                         </h3>
-                        <p style={{ color: "#666" }} className="text-sm">
+                        <p style={{ color: "#333" }} className="text-sm">
                           {hours.toFixed(1)}h / {goal.monthly_hours}h
                         </p>
                       </div>
@@ -303,7 +303,7 @@ export default function GoalsPage() {
                       />
                     </div>
 
-                    <p style={{ color: "#666" }} className="text-sm mt-2">
+                    <p style={{ color: "#333" }} className="text-sm mt-2">
                       {progress}% complete
                     </p>
                   </div>

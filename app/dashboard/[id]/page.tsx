@@ -418,7 +418,7 @@ SUMMARY:
                   });
                 })()
               ) : (
-                <p style={{ color: "#999" }} className="text-xs italic">
+                <p style={{ color: "#555" }} className="text-xs italic">
                   {complianceState} is curriculum-based (no specific hour requirements). Continue logging activities to demonstrate a comprehensive program.
                 </p>
               )}
@@ -431,7 +431,7 @@ SUMMARY:
               Monthly Goals
             </h3>
             {goals.length === 0 ? (
-              <p style={{ color: "#999" }} className="text-sm mb-4">
+              <p style={{ color: "#555" }} className="text-sm mb-4">
                 No goals set
               </p>
             ) : (
@@ -447,7 +447,7 @@ SUMMARY:
                   </div>
                 ))}
                 {goals.length > 3 && (
-                  <p style={{ color: "#999" }} className="text-xs italic">
+                  <p style={{ color: "#555" }} className="text-xs italic">
                     +{goals.length - 3} more
                   </p>
                 )}
@@ -472,7 +472,7 @@ SUMMARY:
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Date
                 </label>
                 <input
@@ -485,7 +485,7 @@ SUMMARY:
               </div>
 
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Subject
                 </label>
                 <select
@@ -504,7 +504,7 @@ SUMMARY:
               </div>
 
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Duration (hours)
                 </label>
                 <input
@@ -520,7 +520,7 @@ SUMMARY:
               </div>
 
               <div>
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Platform
                 </label>
                 <input
@@ -534,7 +534,7 @@ SUMMARY:
               </div>
 
               <div className="md:col-span-2">
-                <label style={{ color: "#666" }} className="text-sm font-medium block mb-2">
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                   Notes (optional)
                 </label>
                 <textarea
@@ -566,7 +566,7 @@ SUMMARY:
 
           {activities.length === 0 ? (
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
-              <p style={{ color: "#666" }}>No activities logged yet.</p>
+              <p style={{ color: "#333" }}>No activities logged yet.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -577,20 +577,20 @@ SUMMARY:
                   className="p-3 flex items-center justify-between hover:bg-gray-50"
                 >
                   <div className="flex-1 flex items-center gap-4">
-                    <span style={{ color: "#999" }} className="text-xs w-24 flex-shrink-0">
+                    <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
                       {new Date(activity.date).toLocaleDateString()}
                     </span>
                     <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
                       {activity.subject}
                     </span>
-                    <span style={{ color: "#666" }} className="text-sm">
+                    <span style={{ color: "#333" }} className="text-sm">
                       {activity.duration}h
                     </span>
-                    <span style={{ color: "#999" }} className="text-xs">
+                    <span style={{ color: "#555" }} className="text-xs">
                       {activity.platform}
                     </span>
                     {activity.notes && (
-                      <span style={{ color: "#666" }} className="text-xs italic truncate">
+                      <span style={{ color: "#333" }} className="text-xs italic truncate">
                         {activity.notes}
                       </span>
                     )}
@@ -648,7 +648,7 @@ SUMMARY:
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
                   {Array.from(new Set(activities.map((a) => a.subject))).length === 0 ? (
-                    <p style={{ color: "#999" }} className="text-sm">
+                    <p style={{ color: "#555" }} className="text-sm">
                       No subjects found. Log activities first.
                     </p>
                   ) : (

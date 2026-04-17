@@ -260,7 +260,7 @@ export default function CompliancePage() {
           <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-2">
             {STATE_REQUIREMENTS[selectedState]?.name} Requirements
           </h2>
-          <p style={{ color: "#666" }} className="text-sm mb-4">
+          <p style={{ color: "#333" }} className="text-sm mb-4">
             {STATE_REQUIREMENTS[selectedState]?.description}
           </p>
           {STATE_REQUIREMENTS[selectedState]?.notes && (
@@ -268,7 +268,7 @@ export default function CompliancePage() {
               <p style={{ color: COLORS.dark }} className="font-medium mb-1">
                 Important Note:
               </p>
-              <p style={{ color: "#666" }}>
+              <p style={{ color: "#333" }}>
                 {STATE_REQUIREMENTS[selectedState]?.notes}
               </p>
             </div>
@@ -297,7 +297,7 @@ export default function CompliancePage() {
                         <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                           {subject}
                         </h3>
-                        <p style={{ color: "#666" }} className="text-sm">
+                        <p style={{ color: "#333" }} className="text-sm">
                           {data.hours.toFixed(1)} / {data.required} hours
                         </p>
                       </div>
@@ -324,7 +324,7 @@ export default function CompliancePage() {
                       />
                     </div>
 
-                    <p style={{ color: "#666" }} className="text-sm mt-2">
+                    <p style={{ color: "#333" }} className="text-sm mt-2">
                       {percentage}% complete
                     </p>
                   </div>
@@ -337,7 +337,7 @@ export default function CompliancePage() {
             <p style={{ color: "#e65100" }} className="font-semibold mb-2">
               Curriculum-Based State
             </p>
-            <p style={{ color: "#666" }} className="text-sm">
+            <p style={{ color: "#333" }} className="text-sm">
               {selectedState} requires a bona fide curriculum with core subjects. While there are no specific hour minimums, logging your activities helps demonstrate a comprehensive educational program.
             </p>
           </div>
