@@ -25,7 +25,8 @@ interface Report {
   generated_date: string;
   start_date: string;
   end_date: string;
-  pdf_data?: string;
+  subjects?: string;
+  report_content?: string;
 }
 
 interface Kid {
