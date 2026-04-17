@@ -212,18 +212,27 @@ export async function deleteReport(reportId: string) {
 
 // ============ COMPLIANCE STATE ============
 
-export async function setComplianceState(userId: string, state: string) {
-  // Delete existing state
-  await supabase
-    .from('compliance_state')
-    .delete()
-    .eq('user_id', userId);
+export async function setComplianceState(userId: string, state: string, childName?: string) {
+  // Delete existing state for this kid (or user if no childName)
+  if (childName) {
+    await supabase
+      .from('compliance_state')
+      .delete()
+      .eq('user_id', userId)
+      .eq('child_name', childName);
+  } else {
+    await supabase
+      .from('compliance_state')
+      .delete()
+      .eq('user_id', userId);
+  }
 
   // Insert new state
   const { data, error } = await supabase
     .from('compliance_state')
     .insert({
       user_id: userId,
+      child_name: childName || null,
       state,
     })
     .select();
@@ -232,12 +241,19 @@ export async function setComplianceState(userId: string, state: string) {
   return data?.[0];
 }
 
-export async function getComplianceState(userId: string) {
-  const { data, error } = await supabase
+export async function getComplianceState(userId: string, childName?: string) {
+  let query = supabase
     .from('compliance_state')
     .select('*')
-    .eq('user_id', userId)
-    .single();
+    .eq('user_id', userId);
+
+  if (childName) {
+    query = query.eq('child_name', childName);
+  } else {
+    query = query.is('child_name', null);
+  }
+
+  const { data, error } = await query.single();
 
   if (error && error.code !== 'PGRST116') {
     // PGRST116 = no rows found, which is okay

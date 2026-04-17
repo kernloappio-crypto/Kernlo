@@ -98,9 +98,11 @@ export default function CompliancePage() {
         }
 
         // Load compliance state
-        const complianceData = await getComplianceState(user.id);
-        if (complianceData?.state) {
-          setSelectedState(complianceData.state);
+        if (kidData?.name) {
+          const complianceData = await getComplianceState(user.id, kidData.name);
+          if (complianceData?.state) {
+            setSelectedState(complianceData.state);
+          }
         }
 
         // Load activities
@@ -121,7 +123,9 @@ export default function CompliancePage() {
   async function handleStateChange(state: string) {
     setSelectedState(state);
     try {
-      await setComplianceState(userId, state);
+      if (kid) {
+        await setComplianceState(userId, state, kid.name);
+      }
     } catch (err) {
       console.error("Error setting state:", err);
     }
