@@ -19,6 +19,15 @@ interface Activity {
   notes?: string;
 }
 
+interface Report {
+  id: string;
+  child_name: string;
+  generated_date: string;
+  start_date: string;
+  end_date: string;
+  pdf_data?: string;
+}
+
 interface Kid {
   id: string;
   name: string;
@@ -104,6 +113,7 @@ export default function KidDetailPage() {
   const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
@@ -150,6 +160,14 @@ export default function KidDetailPage() {
           (a: any) => a.child_name === kidData?.name
         );
         setActivities(kidActivities as Activity[]);
+
+        // Load reports
+        const { data: reportsData } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("child_name", kidData?.name);
+        setReports((reportsData as Report[]) || []);
 
         // Load goals
         const goalsData = await getGoals(user.id, kidData?.name);
@@ -604,6 +622,50 @@ SUMMARY:
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Generated Reports Section */}
+        <div className="mt-8">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
+            Generated Reports
+          </h2>
+
+          {reports.length === 0 ? (
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
+              <p style={{ color: "#333" }}>No reports generated yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reports
+                .sort((a, b) => new Date(b.generated_date).getTime() - new Date(a.generated_date).getTime())
+                .map((report) => (
+                  <div
+                    key={report.id}
+                    style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.secondary}` }}
+                    className="p-4 rounded-lg border border-gray-200 flex items-center justify-between"
+                  >
+                    <div>
+                      <p style={{ color: COLORS.dark }} className="text-sm font-semibold">
+                        📄 Report: {report.start_date} to {report.end_date}
+                      </p>
+                      <p style={{ color: "#555" }} className="text-xs mt-1">
+                        Generated {new Date(report.generated_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {report.pdf_data && (
+                      <a
+                        href={report.pdf_data}
+                        download={`${kid?.name}-report-${report.start_date}-${report.end_date}.pdf`}
+                        style={{ color: COLORS.primary }}
+                        className="text-sm font-medium hover:opacity-70"
+                      >
+                        Download
+                      </a>
+                    )}
+                  </div>
+                ))}
             </div>
           )}
         </div>

@@ -350,6 +350,32 @@ Format as professional homeschool compliance documentation.`;
       yPosition += 6;
       doc.text(`Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}`, marginLeft, yPosition);
 
+      // Convert PDF to base64 for storage
+      const pdfData = doc.output("datauristring");
+
+      // Save report to Supabase
+      try {
+        const { data: insertData, error: insertError } = await supabase
+          .from("reports")
+          .insert([
+            {
+              user_id: (await supabase.auth.getUser()).data.user?.id,
+              child_name: reportKid.name,
+              report_type: "comprehensive",
+              generated_date: new Date().toISOString(),
+              subjects: selectedSubjects.join(","),
+              report_content: data.narrative,
+              start_date: reportStartDate,
+              end_date: reportEndDate,
+              pdf_data: pdfData,
+            },
+          ]);
+
+        if (insertError) console.error("Error saving report:", insertError);
+      } catch (err) {
+        console.error("Failed to save report to DB:", err);
+      }
+
       // Download PDF
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
