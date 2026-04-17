@@ -188,22 +188,18 @@ export default function CompliancePage() {
             Select Your State
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <select
+            value={selectedState}
+            onChange={(e) => handleStateChange(e.target.value)}
+            style={{ borderColor: COLORS.primary, color: COLORS.dark }}
+            className="w-full px-4 py-3 border rounded-lg font-medium text-base"
+          >
             {Object.keys(STATE_REQUIREMENTS).map((state) => (
-              <button
-                key={state}
-                onClick={() => handleStateChange(state)}
-                style={{
-                  backgroundColor: selectedState === state ? COLORS.primary : "white",
-                  color: selectedState === state ? "white" : COLORS.dark,
-                  borderColor: selectedState === state ? COLORS.primary : "#e5e7eb",
-                }}
-                className="px-4 py-2 rounded-lg border font-medium transition"
-              >
+              <option key={state} value={state}>
                 {state}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         {/* Compliance Status */}
