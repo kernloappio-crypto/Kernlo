@@ -365,7 +365,7 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 16rem)" }} className="flex overflow-hidden">
+      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 4rem)" }} className="flex overflow-hidden">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
