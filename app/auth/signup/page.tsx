@@ -51,7 +51,11 @@ export default function SignupPage() {
 
   return (
     <>
-      <style>{`body { background-color: #1a1a2e !important; }`}</style>
+      <style>{`
+        body { background-color: #1a1a2e !important; }
+        div[class*="bg-gradient"] { background: #1a1a2e !important; }
+        div[class*="from-slate"] { background: #1a1a2e !important; }
+      `}</style>
       <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4">
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
