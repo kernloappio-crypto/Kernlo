@@ -371,8 +371,8 @@ SUMMARY:
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
           className="w-64 h-full p-6 flex flex-col"
         >
-          {/* Scrollable Kids Section */}
-          <div className="overflow-y-auto flex-1 mb-8">
+          {/* Kids Section */}
+          <div className="mb-8">
             <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Your Kids
             </h2>
@@ -436,8 +436,8 @@ SUMMARY:
             )}
           </div>
 
-          {/* Fixed Logout Section */}
-          <div className="pt-4 border-t flex-shrink-0">
+          {/* Logout Section */}
+          <div className="pt-4 border-t">
             <button
               onClick={handleLogout}
               style={{ color: COLORS.primary }}
