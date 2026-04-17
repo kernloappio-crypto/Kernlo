@@ -470,6 +470,7 @@ Format as professional homeschool compliance documentation.`;
                   value={newKidName}
                   onChange={(e) => setNewKidName(e.target.value)}
                   placeholder="Name"
+                  style={{ color: "#1a1a2e" }}
                   className="w-full px-3 py-2 border rounded mb-2 text-sm"
                 />
                 <input
@@ -477,6 +478,7 @@ Format as professional homeschool compliance documentation.`;
                   value={newKidAge}
                   onChange={(e) => setNewKidAge(e.target.value)}
                   placeholder="Age"
+                  style={{ color: "#1a1a2e" }}
                   className="w-full px-3 py-2 border rounded mb-2 text-sm"
                 />
                 <input
@@ -484,6 +486,7 @@ Format as professional homeschool compliance documentation.`;
                   value={newKidGrade}
                   onChange={(e) => setNewKidGrade(e.target.value)}
                   placeholder="Grade"
+                  style={{ color: "#1a1a2e" }}
                   className="w-full px-3 py-2 border rounded mb-2 text-sm"
                 />
                 <button
