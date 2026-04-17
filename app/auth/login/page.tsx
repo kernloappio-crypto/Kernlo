@@ -46,10 +46,10 @@ export default function LoginPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main style={{ backgroundColor: "#0066cc" }} className="min-h-screen flex items-center justify-center p-4">
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
-        className="p-8 max-w-md w-full border border-gray-200"
+        className="p-6 w-full max-w-sm border border-gray-200 shadow-lg"
       >
         <div className="mb-8">
           <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
