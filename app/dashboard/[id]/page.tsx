@@ -569,35 +569,36 @@ SUMMARY:
               <p style={{ color: "#666" }}>No activities logged yet.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {activities.map((activity) => (
                 <div
                   key={activity.id}
-                  style={{ backgroundColor: "white", borderRadius: "12px" }}
-                  className="p-4 border border-gray-200 flex items-start justify-between"
+                  style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }}
+                  className="p-3 flex items-center justify-between hover:bg-gray-50"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium">
-                        {activity.subject}
-                      </span>
-                      <span style={{ color: "#666" }} className="text-sm">
-                        {activity.duration}h • {activity.platform}
-                      </span>
-                    </div>
-                    {activity.notes && (
-                      <p style={{ color: "#666" }} className="text-sm">
-                        {activity.notes}
-                      </p>
-                    )}
-                    <p style={{ color: "#999" }} className="text-xs mt-2">
+                  <div className="flex-1 flex items-center gap-4">
+                    <span style={{ color: "#999" }} className="text-xs w-24 flex-shrink-0">
                       {new Date(activity.date).toLocaleDateString()}
-                    </p>
+                    </span>
+                    <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
+                      {activity.subject}
+                    </span>
+                    <span style={{ color: "#666" }} className="text-sm">
+                      {activity.duration}h
+                    </span>
+                    <span style={{ color: "#999" }} className="text-xs">
+                      {activity.platform}
+                    </span>
+                    {activity.notes && (
+                      <span style={{ color: "#666" }} className="text-xs italic truncate">
+                        {activity.notes}
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => handleDeleteActivity(activity.id)}
                     style={{ color: "#ff6b6b" }}
-                    className="text-sm font-medium hover:opacity-70"
+                    className="text-xs font-medium hover:opacity-70 flex-shrink-0 ml-2"
                   >
                     Delete
                   </button>
