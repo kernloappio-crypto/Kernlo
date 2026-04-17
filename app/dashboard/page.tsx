@@ -322,8 +322,8 @@ SUMMARY:
       <Navbar />
       
       {/* Header with Quick Log and Report */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-16 z-40">
-        <div className="px-8 py-4 flex items-center justify-between">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="h-16">
+        <div className="h-full px-8 py-4 flex items-center justify-between">
           <div>
             <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
               Parent Dashboard
@@ -365,7 +365,7 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, height: "100vh" }} className="flex overflow-hidden">
+      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 16rem)" }} className="flex overflow-hidden">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
