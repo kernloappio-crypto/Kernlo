@@ -437,7 +437,7 @@ SUMMARY:
           </div>
 
           {/* Logout Section */}
-          <div className="pt-4 border-t">
+          <div className="mt-auto pt-4 border-t">
             <button
               onClick={handleLogout}
               style={{ color: COLORS.primary }}
