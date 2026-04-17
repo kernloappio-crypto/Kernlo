@@ -123,7 +123,6 @@ export default function KidDetailPage() {
   const [logPlatform, setLogPlatform] = useState("");
   const [logNotes, setLogNotes] = useState("");
   const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
-  const [generatingReport, setGeneratingReport] = useState(false);
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -255,8 +254,6 @@ export default function KidDetailPage() {
       return;
     }
 
-    setGeneratingReport(true);
-
     const filteredActivities = activities.filter(
       (a) =>
         new Date(a.date) >= new Date(reportStartDate) &&
@@ -377,12 +374,10 @@ Format as professional homeschool compliance documentation.`;
       doc.save(`${kid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
       setShowComprehensiveReport(false);
-      setGeneratingReport(false);
       setReports([...reports]); // Trigger re-render
     } catch (err) {
       console.error("Error generating report:", err);
       alert("Failed to generate report. Please try again.");
-      setGeneratingReport(false);
     }
   };
 
@@ -845,24 +840,6 @@ Format as professional homeschool compliance documentation.`;
         </div>
       )}
 
-      {/* Loading Modal - Report Generation */}
-      {generatingReport && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.7)" }} className="fixed inset-0 flex items-center justify-center z-50">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center">
-            <div className="mb-4">
-              <div className="inline-block">
-                <div style={{ width: "40px", height: "40px", borderRadius: "50%", border: `4px solid ${COLORS.light}`, borderTop: `4px solid ${COLORS.primary}` }} className="animate-spin"></div>
-              </div>
-            </div>
-            <h2 style={{ color: "#1a1a2e" }} className="text-xl font-bold mb-2">
-              Generating Report...
-            </h2>
-            <p style={{ color: "#555" }} className="text-sm">
-              This may take 15-20 seconds
-            </p>
-          </div>
-        </div>
-      )}
     </main>
     </>
   );
