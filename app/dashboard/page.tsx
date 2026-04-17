@@ -365,11 +365,11 @@ SUMMARY:
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }} className="flex">
+      <main style={{ backgroundColor: COLORS.light, height: "calc(100vh - 77px)" }} className="flex overflow-hidden">
         {/* Left Sidebar - Kids Navigation */}
         <div
           style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
-          className="w-64 min-h-screen p-6 flex flex-col"
+          className="w-64 h-full p-6 flex flex-col overflow-y-auto"
         >
           <div className="mb-8">
             <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
@@ -450,7 +450,7 @@ SUMMARY:
         </div>
 
         {/* Right Content - Kid Cards */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-8 overflow-y-auto">
           <div className="max-w-6xl">
             {kids.length === 0 ? (
               <p style={{ color: "#999" }}>No kids added yet. Add a kid to get started!</p>
