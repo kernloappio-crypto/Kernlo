@@ -681,25 +681,27 @@ SUMMARY:
 
             <div className="space-y-4 mb-6">
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={reportStartDate}
                   onChange={(e) => setReportStartDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
 
               <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   End Date
                 </label>
                 <input
                   type="date"
                   value={reportEndDate}
                   onChange={(e) => setReportEndDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
               </div>
@@ -751,7 +753,8 @@ SUMMARY:
               </button>
               <button
                 onClick={() => setShowComprehensiveReport(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50"
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2 border text-sm font-medium rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
