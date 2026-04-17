@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/supabase-auth";
-import Navbar from "@/components/Navbar";
 
 export const dynamic = "force-dynamic";
 
@@ -51,17 +50,18 @@ export default function SignupPage() {
   }
 
   return (
-    <>
-      <Navbar />
-      <main style={{ backgroundColor: "#0066cc" }} className="min-h-screen flex items-center justify-center p-4">
+    <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4">
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
-        className="p-6 w-full max-w-sm border border-gray-200 shadow-lg"
+        className="p-8 w-full max-w-sm border border-gray-200 shadow-lg"
       >
-        <div className="mb-8">
-          <h1 style={{ color: "#1a1a2e" }} className="text-3xl font-bold mb-2">
-            Get Started
+        <div className="mb-8 pb-6" style={{ borderBottom: "1px solid #e5e7eb" }}>
+          <h1 style={{ color: "#0066cc" }} className="text-2xl font-bold mb-4">
+            kernlo
           </h1>
+          <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-2">
+            Get Started
+          </h2>
           <p style={{ color: "#666" }} className="text-sm">
             Create your account
           </p>
@@ -159,7 +159,6 @@ export default function SignupPage() {
           </Link>
         </div>
       </div>
-      </main>
-    </>
+    </main>
   );
 }
