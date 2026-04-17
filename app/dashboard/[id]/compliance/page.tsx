@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
+import { signOut } from "@/lib/supabase-auth";
 import { getActivities, getComplianceState, setComplianceState } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +92,7 @@ export default function CompliancePage() {
   const kidId = params.id as string;
 
   const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedState, setSelectedState] = useState("CA");
@@ -109,6 +111,7 @@ export default function CompliancePage() {
         }
 
         setUserId(user.id);
+        setEmail(user.email || "");
 
         // Load kid
         const { data: kidData } = await supabase
@@ -160,6 +163,11 @@ export default function CompliancePage() {
       console.error("Error setting state:", err);
       alert("Failed to save state. Please try again.");
     }
+  }
+
+  async function handleLogout() {
+    await signOut();
+    router.push("/");
   }
 
   function calculateCompliance(): { [key: string]: { hours: number; required: number; met: boolean } } {
@@ -342,6 +350,20 @@ export default function CompliancePage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Logout Section at Bottom */}
+      <div className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200">
+        <button
+          onClick={handleLogout}
+          style={{ color: COLORS.primary }}
+          className="text-sm font-medium hover:opacity-70"
+        >
+          Logout
+        </button>
+        <p style={{ color: "#999" }} className="text-xs mt-3">
+          {email}
+        </p>
       </div>
     </main>
     </>
