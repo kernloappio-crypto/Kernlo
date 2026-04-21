@@ -17,7 +17,14 @@ export default function SignupPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    e.stopPropagation();
+    console.log("handleSignup called", { email });
     setError("");
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords don't match");
@@ -30,6 +37,7 @@ export default function SignupPage() {
     }
 
     setLoading(true);
+    console.log("Loading set to true");
 
     try {
       console.log("Signup attempt:", { email, passwordLength: password.length });
@@ -120,7 +128,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form onSubmit={handleSignup} className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6">
           <div>
             <label
               style={{ color: "#666" }}
@@ -176,14 +184,15 @@ export default function SignupPage() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={handleSignup}
             disabled={loading}
             style={{ backgroundColor: "#0066cc" }}
             className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
-        </form>
+        </div>
 
         <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6 text-center">
           <p style={{ color: "#666" }} className="text-sm mb-2">
