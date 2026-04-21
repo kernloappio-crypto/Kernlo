@@ -25,6 +25,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   async function handleSignup(e: React.FormEvent) {
@@ -65,12 +66,13 @@ export default function SignupPage() {
         return;
       }
 
-      console.log("Signup success, user created:", result.user?.id);
-      alert("🎉 Welcome! Check your email to verify your account, then sign in.");
-      // Redirect to login so they can sign in with verified account
+      console.log("✅ Signup success, user created:", result.user?.id);
+      setSuccess(true);
+      setLoading(false);
+      // Don't redirect - just show success message
       setTimeout(() => {
         router.push("/auth/login");
-      }, 1000);
+      }, 3000);
     } catch (err) {
       console.error("Signup catch error:", err);
       setError("An error occurred. Please try again.");
@@ -101,6 +103,23 @@ export default function SignupPage() {
             Create your account
           </p>
         </div>
+
+        {success && (
+          <div
+            style={{
+              backgroundColor: "#e8f5e9",
+              borderLeft: "4px solid #4caf50",
+            }}
+            className="p-4 rounded mb-6"
+          >
+            <p style={{ color: "#2e7d32" }} className="text-sm font-semibold">
+              ✅ Account created! Check your email for verification link.
+            </p>
+            <p style={{ color: "#666" }} className="text-xs mt-2">
+              Redirecting to sign in in 3 seconds...
+            </p>
+          </div>
+        )}
 
         {loading && (
           <div
@@ -140,7 +159,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        <div className="space-y-4 mb-6">
+        {!success && <div className="space-y-4 mb-6">
           <div>
             <label
               style={{ color: "#666" }}
@@ -204,9 +223,9 @@ export default function SignupPage() {
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
-        </div>
+        </div>}
 
-        <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6 text-center">
+        {!success && <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6 text-center">
           <p style={{ color: "#666" }} className="text-sm mb-2">
             Already have an account?
           </p>
@@ -217,7 +236,7 @@ export default function SignupPage() {
           >
             Sign In
           </Link>
-        </div>
+        </div>}
       </div>
     </main>
     </>
