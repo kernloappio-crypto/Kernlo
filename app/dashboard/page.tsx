@@ -96,8 +96,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const initUser = async () => {
-      // Give Supabase a moment to set the session on mobile
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Check for session first (more reliable on mobile than getUser)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If no session immediately, give Supabase time to load it
+      if (!session) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: { session: session2 } } = await supabase.auth.getSession();
+        if (!session2) {
+          router.push("/auth/login");
+          return;
+        }
+      }
       
       const { data: { user } } = await supabase.auth.getUser();
       
