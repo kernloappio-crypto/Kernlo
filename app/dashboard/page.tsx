@@ -104,8 +104,15 @@ export default function DashboardPage() {
         if (event === "INITIAL_SESSION") {
           // This fires on mount - check if we have a session
           if (!session?.user) {
-            console.log("No session on initial load, redirecting to login");
-            router.push("/auth/login");
+            console.log("No session on initial load, waiting 1s before redirect (session may be loading)");
+            // Wait 1 second for session to restore on mobile, then check again
+            setTimeout(async () => {
+              const { data: { session: latestSession } } = await supabase.auth.getSession();
+              if (!latestSession?.user) {
+                console.log("Still no session after wait, redirecting to login");
+                router.push("/auth/login");
+              }
+            }, 1000);
             return;
           }
         } else if (event === "SIGNED_OUT") {
