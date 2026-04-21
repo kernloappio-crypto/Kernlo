@@ -95,89 +95,71 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Use auth state listener for reliable mobile support
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth event:", event, "Session exists:", !!session?.user);
-
-        // Handle different auth events
-        if (event === "INITIAL_SESSION") {
-          // This fires on mount - check if we have a session
-          if (!session?.user) {
-            console.log("No session on initial load, waiting 1s before redirect (session may be loading)");
-            // Wait 1 second for session to restore on mobile, then check again
-            setTimeout(async () => {
-              const { data: { session: latestSession } } = await supabase.auth.getSession();
-              if (!latestSession?.user) {
-                console.log("Still no session after wait, redirecting to home");
-                router.push("/");
-              }
-            }, 1000);
-            return;
-          }
-        } else if (event === "SIGNED_OUT") {
-          // User explicitly signed out
-          console.log("User signed out, redirecting to home");
+    const initUser = async () => {
+      try {
+        // getSession() waits for session to restore from storage (mobile-friendly)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          console.log("No session found, redirecting to home");
           router.push("/");
           return;
         }
 
-        // If we have a user, load their data
-        if (session?.user) {
-          const user = session.user;
-          console.log("Loading data for user:", user.id);
-          setUserId(user.id);
-          setEmail(user.email || "");
+        const user = session.user;
+        console.log("User session found:", user.id);
+        setUserId(user.id);
+        setEmail(user.email || "");
 
-          // Load kids
-          const { data: kidsData } = await supabase
-            .from("kids")
-            .select("*")
-            .eq("user_id", user.id);
+        // Load kids
+        const { data: kidsData } = await supabase
+          .from("kids")
+          .select("*")
+          .eq("user_id", user.id);
 
-          if (kidsData) {
-            setKids(kidsData);
-            if (kidsData.length > 0) {
-              setQuickLogKid(kidsData[0]);
-              setReportKid(kidsData[0]);
-            }
+        if (kidsData) {
+          setKids(kidsData);
+          if (kidsData.length > 0) {
+            setQuickLogKid(kidsData[0]);
+            setReportKid(kidsData[0]);
           }
-
-          // Load all activities
-          const { data: activitiesData } = await supabase
-            .from("activities")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("date", { ascending: false });
-
-          if (activitiesData) {
-            setActivities(activitiesData);
-          }
-
-          // Load all goals
-          const { data: goalsData } = await supabase
-            .from("goals")
-            .select("*")
-            .eq("user_id", user.id);
-
-          if (goalsData) {
-            setGoals(goalsData);
-          }
-
-          // Initialize date range (last 30 days)
-          const today = new Date();
-          const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-          setReportEndDate(today.toISOString().split("T")[0]);
-          setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
-
-          setLoading(false);
         }
-      }
-    );
 
-    return () => {
-      subscription?.unsubscribe();
+        // Load all activities
+        const { data: activitiesData } = await supabase
+          .from("activities")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("date", { ascending: false });
+
+        if (activitiesData) {
+          setActivities(activitiesData);
+        }
+
+        // Load all goals
+        const { data: goalsData } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (goalsData) {
+          setGoals(goalsData);
+        }
+
+        // Initialize date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        setReportEndDate(today.toISOString().split("T")[0]);
+        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error initializing user:", error);
+        router.push("/");
+      }
     };
+
+    initUser();
   }, [router]);
 
 
