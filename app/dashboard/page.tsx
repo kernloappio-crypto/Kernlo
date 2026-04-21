@@ -95,75 +95,73 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const initUser = async () => {
-      // Check for session first (more reliable on mobile than getUser)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // If no session immediately, give Supabase time to load it
-      if (!session) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data: { session: session2 } } = await supabase.auth.getSession();
-        if (!session2) {
+    // Use auth state listener (more reliable than checking session in useEffect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!session) {
+          // No session - redirect to login
           router.push("/auth/login");
           return;
         }
-      }
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push("/auth/login");
-        return;
-      }
 
-      setUserId(user.id);
-      setEmail(user.email || "");
-      
-      // Load kids
-      const { data: kidsData } = await supabase
-        .from("kids")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (kidsData) {
-        setKids(kidsData);
-        if (kidsData.length > 0) {
-          setQuickLogKid(kidsData[0]);
-          setReportKid(kidsData[0]);
+        // Session exists - load data
+        const user = session.user;
+        if (!user) {
+          router.push("/auth/login");
+          return;
         }
+
+        setUserId(user.id);
+        setEmail(user.email || "");
+
+        // Load kids
+        const { data: kidsData } = await supabase
+          .from("kids")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (kidsData) {
+          setKids(kidsData);
+          if (kidsData.length > 0) {
+            setQuickLogKid(kidsData[0]);
+            setReportKid(kidsData[0]);
+          }
+        }
+
+        // Load all activities
+        const { data: activitiesData } = await supabase
+          .from("activities")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("date", { ascending: false });
+
+        if (activitiesData) {
+          setActivities(activitiesData);
+        }
+
+        // Load all goals
+        const { data: goalsData } = await supabase
+          .from("goals")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (goalsData) {
+          setGoals(goalsData);
+        }
+
+        // Initialize date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+        setReportEndDate(today.toISOString().split("T")[0]);
+        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+
+        setLoading(false);
       }
+    );
 
-      // Load all activities
-      const { data: activitiesData } = await supabase
-        .from("activities")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
-
-      if (activitiesData) {
-        setActivities(activitiesData);
-      }
-
-      // Load all goals
-      const { data: goalsData } = await supabase
-        .from("goals")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (goalsData) {
-        setGoals(goalsData);
-      }
-
-      // Initialize date range (last 30 days)
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      setReportEndDate(today.toISOString().split("T")[0]);
-      setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
-
-      setLoading(false);
+    return () => {
+      subscription?.unsubscribe();
     };
-    
-    initUser();
   }, [router]);
 
   async function handleAddKid() {
