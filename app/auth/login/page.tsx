@@ -62,26 +62,9 @@ export default function LoginPage() {
       }
 
       addLog("✅ Login successful!");
-      addLog("→ Redirecting to dashboard in 1 second...");
+      addLog("→ Redirecting to dashboard...");
       setLoading(false);
-      
-      // Redirect after 1 second
-      setTimeout(async () => {
-        // Store session in localStorage for mobile Safari compatibility (client-only)
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            localStorage.setItem('kernlo_session', JSON.stringify({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token,
-              user: session.user
-            }));
-          }
-        } catch (e) {
-          // Silent fail
-        }
-        router.push("/dashboard");
-      }, 1000);
+      router.push("/dashboard");
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
