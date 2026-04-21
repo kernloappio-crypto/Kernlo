@@ -109,16 +109,16 @@ export default function DashboardPage() {
             setTimeout(async () => {
               const { data: { session: latestSession } } = await supabase.auth.getSession();
               if (!latestSession?.user) {
-                console.log("Still no session after wait, redirecting to login");
-                router.push("/auth/login");
+                console.log("Still no session after wait, redirecting to home");
+                router.push("/");
               }
             }, 1000);
             return;
           }
         } else if (event === "SIGNED_OUT") {
           // User explicitly signed out
-          console.log("User signed out, redirecting to login");
-          router.push("/auth/login");
+          console.log("User signed out, redirecting to home");
+          router.push("/");
           return;
         }
 
