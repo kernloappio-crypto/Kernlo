@@ -55,14 +55,19 @@ export default function LoginPage() {
       if (!result.success) {
         const errorMsg = result.error || "Login failed";
         addLog(`❌ Error: ${errorMsg}`);
-        setError(errorMsg);
         setLoading(false);
+        setError(errorMsg);
+        // Keep error visible - don't redirect
         return;
       }
 
-      addLog("✅ Login successful, redirecting to dashboard...");
+      addLog("✅ Login successful!");
+      addLog("→ Redirecting to dashboard in 1 second...");
       setLoading(false);
-      router.push("/dashboard");
+      // Give user a moment to see success, then redirect
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
@@ -102,15 +107,28 @@ export default function LoginPage() {
             }}
             className="p-4 rounded mb-6"
           >
-            <p style={{ color: "#c62828" }} className="text-sm font-semibold">
-              ❌ Error: {error}
+            <p style={{ color: "#c62828" }} className="text-base font-bold mb-2">
+              ❌ Sign In Failed
+            </p>
+            <p style={{ color: "#c62828" }} className="text-sm mb-4">
+              {error}
+            </p>
+            <p style={{ color: "#999" }} className="text-xs mb-3">
+              Check your email and password, then try again.
             </p>
             <button
               onClick={() => setError("")}
-              style={{ color: "#0066cc" }}
-              className="text-xs font-medium mt-3 hover:underline"
+              style={{ 
+                color: "white", 
+                backgroundColor: "#0066cc",
+                padding: "8px 16px",
+                borderRadius: "4px",
+                fontWeight: "600",
+                border: "none"
+              }}
+              className="text-sm hover:opacity-90"
             >
-              Dismiss & Try Again
+              Try Again
             </button>
           </div>
         )}
