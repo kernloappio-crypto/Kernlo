@@ -95,62 +95,75 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push("/auth/login");
-        return;
-      }
+    let unsubscribe: any;
+    let sessionChecked = false;
 
-      setUserId(user.id);
-      setEmail(user.email || "");
-      
-      // Load kids
-      const { data: kidsData } = await supabase
-        .from("kids")
-        .select("*")
-        .eq("user_id", user.id);
+    // Use auth state listener for reliable mobile support
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, !!session);
 
-      if (kidsData) {
-        setKids(kidsData);
-        if (kidsData.length > 0) {
-          setQuickLogKid(kidsData[0]);
-          setReportKid(kidsData[0]);
+        if (session?.user) {
+          // User is authenticated
+          const user = session.user;
+          setUserId(user.id);
+          setEmail(user.email || "");
+      
+          // Load kids
+          const { data: kidsData } = await supabase
+            .from("kids")
+            .select("*")
+            .eq("user_id", user.id);
+
+          if (kidsData) {
+            setKids(kidsData);
+            if (kidsData.length > 0) {
+              setQuickLogKid(kidsData[0]);
+              setReportKid(kidsData[0]);
+            }
+          }
+
+          // Load all activities
+          const { data: activitiesData } = await supabase
+            .from("activities")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("date", { ascending: false });
+
+          if (activitiesData) {
+            setActivities(activitiesData);
+          }
+
+          // Load all goals
+          const { data: goalsData } = await supabase
+            .from("goals")
+            .select("*")
+            .eq("user_id", user.id);
+
+          if (goalsData) {
+            setGoals(goalsData);
+          }
+
+          // Initialize date range (last 30 days)
+          const today = new Date();
+          const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+          setReportEndDate(today.toISOString().split("T")[0]);
+          setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
+
+          setLoading(false);
+        } else if (sessionChecked) {
+          // No session and we've already checked once - redirect to login
+          console.log("No session, redirecting to login");
+          router.push("/auth/login");
         }
+
+        sessionChecked = true;
       }
+    );
 
-      // Load all activities
-      const { data: activitiesData } = await supabase
-        .from("activities")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
-
-      if (activitiesData) {
-        setActivities(activitiesData);
-      }
-
-      // Load all goals
-      const { data: goalsData } = await supabase
-        .from("goals")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (goalsData) {
-        setGoals(goalsData);
-      }
-
-      // Initialize date range (last 30 days)
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      setReportEndDate(today.toISOString().split("T")[0]);
-      setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
-
-      setLoading(false);
+    return () => {
+      subscription?.unsubscribe();
     };
-    
-    initUser();
   }, [router]);
 
 
