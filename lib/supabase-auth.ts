@@ -31,6 +31,8 @@ export async function signUp(email: string, password: string) {
     // Supabase returns user even if email confirmation required
     if (data.user) {
       console.log('✅ Signup successful. User created:', data.user.id);
+      // NOTE: User must verify email before they can sign in with password
+      // The email confirmation is required by Supabase auth config
       return { success: true, user: data.user };
     }
 

@@ -120,20 +120,31 @@ export default function SignupPage() {
               backgroundColor: "#e8f5e9",
               borderLeft: "4px solid #4caf50",
             }}
-            className="p-4 rounded mb-6"
+            className="p-6 rounded mb-6 text-center"
           >
-            <p style={{ color: "#2e7d32" }} className="text-sm font-semibold">
-              ✅ Account created! Check your email for verification link.
+            <p style={{ color: "#2e7d32" }} className="text-lg font-bold mb-2">
+              ✅ Account Created!
             </p>
-            <p style={{ color: "#666" }} className="text-xs mt-2 mb-3">
-              Click the verification link in your email, then sign in below.
+            <p style={{ color: "#666" }} className="text-sm mb-4">
+              Check your email for a verification link. Click it to confirm your account.
+            </p>
+            <p style={{ color: "#666" }} className="text-sm mb-6">
+              Once verified, come back here and sign in:
             </p>
             <Link
               href="/auth/login"
-              style={{ color: "white", backgroundColor: "#0066cc" }}
-              className="block text-center px-3 py-2 rounded font-medium text-sm hover:opacity-90"
+              style={{ 
+                color: "white", 
+                backgroundColor: "#0066cc",
+                display: "block",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                fontWeight: "600",
+                textDecoration: "none"
+              }}
+              className="hover:opacity-90"
             >
-              Go to Sign In
+              → Sign In Now
             </Link>
           </div>
         )}

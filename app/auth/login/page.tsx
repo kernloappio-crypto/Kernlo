@@ -12,11 +12,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`].slice(-10));
+  };
+
+  async function handleLogin() {
+    addLog("🔘 Sign In clicked");
     setError("");
+    
+    if (!email.trim()) {
+      const msg = "Email is required";
+      addLog(`❌ ${msg}`);
+      setError(msg);
+      return;
+    }
+
+    if (!password) {
+      const msg = "Password is required";
+      addLog(`❌ ${msg}`);
+      setError(msg);
+      return;
+    }
+
+    addLog("⏳ Calling signIn...");
+    setLoading(true);
 
     if (!email || !password) {
       setError("Email and password required");
@@ -27,16 +50,21 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(email, password);
+      addLog(`📨 Login result: ${result.success ? "SUCCESS" : "FAILED"}`);
 
       if (!result.success) {
-        setError(result.error || "Login failed");
+        const errorMsg = result.error || "Login failed";
+        addLog(`❌ Error: ${errorMsg}`);
+        setError(errorMsg);
         setLoading(false);
         return;
       }
 
+      addLog("✅ Login successful, redirecting to dashboard...");
+      setLoading(false);
       router.push("/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
+    } catch (err: any) {
+      addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
@@ -72,15 +100,36 @@ export default function LoginPage() {
               backgroundColor: "#ffebee",
               borderLeft: "4px solid #ff6b6b",
             }}
-            className="p-3 rounded mb-6"
+            className="p-4 rounded mb-6"
           >
-            <p style={{ color: "#c62828" }} className="text-sm">
-              {error}
+            <p style={{ color: "#c62828" }} className="text-sm font-semibold">
+              ❌ Error: {error}
+            </p>
+            <button
+              onClick={() => setError("")}
+              style={{ color: "#0066cc" }}
+              className="text-xs font-medium mt-3 hover:underline"
+            >
+              Dismiss & Try Again
+            </button>
+          </div>
+        )}
+
+        {loading && (
+          <div
+            style={{
+              backgroundColor: "#e3f2fd",
+              borderLeft: "4px solid #0066cc",
+            }}
+            className="p-4 rounded mb-6"
+          >
+            <p style={{ color: "#0066cc" }} className="text-sm font-semibold">
+              ⏳ Signing in... Please wait.
             </p>
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6">
           <div>
             <label
               style={{ color: "#666" }}
@@ -118,14 +167,37 @@ export default function LoginPage() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={handleLogin}
             disabled={loading}
             style={{ backgroundColor: "#0066cc" }}
             className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-        </form>
+        </div>
+
+        {/* Debug Logs */}
+        {debugLogs.length > 0 && (
+          <div
+            style={{
+              backgroundColor: "#f5f5f5",
+              borderTop: "1px solid #e5e7eb",
+              marginTop: "20px",
+              paddingTop: "10px",
+            }}
+            className="text-xs"
+          >
+            <p style={{ color: "#666", marginBottom: "8px", fontWeight: "bold" }}>
+              Debug Log:
+            </p>
+            {debugLogs.map((log, i) => (
+              <p key={i} style={{ color: "#666", margin: "2px 0", fontFamily: "monospace" }}>
+                {log}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6">
           <div className="text-center mb-4">
