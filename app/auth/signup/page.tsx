@@ -45,8 +45,11 @@ export default function SignupPage() {
       }
 
       console.log("Signup success, redirecting...");
-      alert("🎉 Welcome! Your 30-day free trial starts now. Full access to all features.");
-      router.push("/dashboard");
+      // Don't clear loading until redirect actually happens
+      setTimeout(() => {
+        alert("🎉 Welcome! Your 30-day free trial starts now. Full access to all features.");
+        router.push("/dashboard");
+      }, 500);
     } catch (err) {
       console.error("Signup catch error:", err);
       setError("An error occurred. Please try again.");
@@ -84,14 +87,21 @@ export default function SignupPage() {
               backgroundColor: "#ffebee",
               borderLeft: "4px solid #ff6b6b",
             }}
-            className="p-3 rounded mb-6"
+            className="p-4 rounded mb-6"
           >
             <p style={{ color: "#c62828" }} className="text-sm font-semibold">
-              Error: {error}
+              ❌ Error: {error}
             </p>
             <p style={{ color: "#999" }} className="text-xs mt-2">
               Try a different email or check your internet connection.
             </p>
+            <button
+              onClick={() => setError("")}
+              style={{ color: "#0066cc" }}
+              className="text-xs font-medium mt-3 hover:underline"
+            >
+              Dismiss & Try Again
+            </button>
           </div>
         )}
 
