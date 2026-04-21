@@ -81,10 +81,8 @@ export default function SignupPage() {
       addLog(`✅ Account created: ${result.user?.id}`);
       setSuccess(true);
       setLoading(false);
-      setTimeout(() => {
-        addLog("→ Redirecting to login...");
-        router.push("/auth/login");
-      }, 3000);
+      // Don't redirect - let user click the Sign In link manually
+      addLog("→ Waiting for user to verify email and sign in");
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
@@ -127,9 +125,16 @@ export default function SignupPage() {
             <p style={{ color: "#2e7d32" }} className="text-sm font-semibold">
               ✅ Account created! Check your email for verification link.
             </p>
-            <p style={{ color: "#666" }} className="text-xs mt-2">
-              Redirecting to sign in in 3 seconds...
+            <p style={{ color: "#666" }} className="text-xs mt-2 mb-3">
+              Click the verification link in your email, then sign in below.
             </p>
+            <Link
+              href="/auth/login"
+              style={{ color: "white", backgroundColor: "#0066cc" }}
+              className="block text-center px-3 py-2 rounded font-medium text-sm hover:opacity-90"
+            >
+              Go to Sign In
+            </Link>
           </div>
         )}
 
