@@ -32,18 +32,23 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      console.log("Signup attempt:", { email, passwordLength: password.length });
       const result = await signUp(email, password);
+      console.log("Signup result:", result);
 
       if (!result.success) {
-        setError(result.error || "Signup failed");
+        const errorMsg = result.error || "Signup failed";
+        console.error("Signup failed:", errorMsg);
+        setError(errorMsg);
         setLoading(false);
         return;
       }
 
+      console.log("Signup success, redirecting...");
       alert("🎉 Welcome! Your 30-day free trial starts now. Full access to all features.");
       router.push("/dashboard");
     } catch (err) {
-      console.error("Signup error:", err);
+      console.error("Signup catch error:", err);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
@@ -81,8 +86,11 @@ export default function SignupPage() {
             }}
             className="p-3 rounded mb-6"
           >
-            <p style={{ color: "#c62828" }} className="text-sm">
-              {error}
+            <p style={{ color: "#c62828" }} className="text-sm font-semibold">
+              Error: {error}
+            </p>
+            <p style={{ color: "#999" }} className="text-xs mt-2">
+              Try a different email or check your internet connection.
             </p>
           </div>
         )}
