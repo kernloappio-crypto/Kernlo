@@ -11,12 +11,11 @@ export const dynamic = "force-dynamic";
 
 export default function SignupPage() {
   useEffect(() => {
-    // Log that page loaded
-    console.log("SignupPage mounted");
+    addLog("✅ SignupPage mounted");
     
     // Catch unhandled errors
     const handleError = (event: ErrorEvent) => {
-      console.error("Unhandled error:", event.error);
+      addLog(`❌ Unhandled error: ${event.error}`);
     };
     
     window.addEventListener("error", handleError);
@@ -28,55 +27,66 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const router = useRouter();
+
+  // Add debug log
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`].slice(-10)); // Keep last 10
+  };
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     e.stopPropagation();
-    console.log("handleSignup called", { email });
+    addLog(`🔘 Button clicked: ${email}`);
     setError("");
 
     if (!email.trim()) {
-      setError("Email is required");
+      const msg = "Email is required";
+      addLog(`❌ ${msg}`);
+      setError(msg);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords don't match");
+      const msg = "Passwords don't match";
+      addLog(`❌ ${msg}`);
+      setError(msg);
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      const msg = "Password must be at least 6 characters";
+      addLog(`❌ ${msg}`);
+      setError(msg);
       return;
     }
 
+    addLog("⏳ Calling signUp...");
     setLoading(true);
-    console.log("Loading set to true");
 
     try {
-      console.log("Signup attempt:", { email, passwordLength: password.length });
       const result = await signUp(email, password);
-      console.log("Signup result:", result);
+      addLog(`📨 Signup result: ${result.success ? "SUCCESS" : "FAILED"}`);
 
       if (!result.success) {
         const errorMsg = result.error || "Signup failed";
-        console.error("Signup failed:", errorMsg);
+        addLog(`❌ Error: ${errorMsg}`);
         setError(errorMsg);
         setLoading(false);
-        // Keep form values visible for retry
         return;
       }
 
-      console.log("✅ Signup success, user created:", result.user?.id);
+      addLog(`✅ Account created: ${result.user?.id}`);
       setSuccess(true);
       setLoading(false);
-      // Don't redirect - just show success message
       setTimeout(() => {
+        addLog("→ Redirecting to login...");
         router.push("/auth/login");
       }, 3000);
-    } catch (err) {
-      console.error("Signup catch error:", err);
+    } catch (err: any) {
+      addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
@@ -239,6 +249,28 @@ export default function SignupPage() {
             Sign In
           </Link>
         </div>}
+
+        {/* Debug Logs - visible on mobile */}
+        {debugLogs.length > 0 && (
+          <div
+            style={{
+              backgroundColor: "#f5f5f5",
+              borderTop: "1px solid #e5e7eb",
+              marginTop: "20px",
+              paddingTop: "10px",
+            }}
+            className="text-xs"
+          >
+            <p style={{ color: "#666", marginBottom: "8px", fontWeight: "bold" }}>
+              Debug Log:
+            </p>
+            {debugLogs.map((log, i) => (
+              <p key={i} style={{ color: "#666", margin: "2px 0", fontFamily: "monospace" }}>
+                {log}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </main>
     </>
