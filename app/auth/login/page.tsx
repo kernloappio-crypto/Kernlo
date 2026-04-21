@@ -63,6 +63,22 @@ export default function LoginPage() {
 
       addLog("✅ Login successful!");
       addLog("→ Redirecting to dashboard in 1 second...");
+      
+      // Store session in localStorage for mobile Safari compatibility
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          localStorage.setItem('kernlo_session', JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            user: session.user
+          }));
+          addLog("✅ Session saved locally");
+        }
+      } catch (e) {
+        addLog("⚠️ Could not save session locally");
+      }
+      
       setLoading(false);
       // Give user a moment to see success, then redirect
       setTimeout(() => {

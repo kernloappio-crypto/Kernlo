@@ -96,7 +96,25 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      let user = null;
+      
+      // Try to get user from Supabase first
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      user = sbUser;
+      
+      // If no user and localStorage has a session, restore it
+      if (!user && typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('kernlo_session');
+          if (saved) {
+            const session = JSON.parse(saved);
+            user = session.user;
+            console.log("Restored user from localStorage:", user.id);
+          }
+        } catch (e) {
+          console.warn("Could not restore session from localStorage:", e);
+        }
+      }
       
       if (!user) {
         router.push("/auth/login");
@@ -391,6 +409,10 @@ Format as professional homeschool compliance documentation.`;
   }
 
   async function handleLogout() {
+    // Clear localStorage session
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('kernlo_session');
+    }
     await signOut();
     router.push("/");
   }
