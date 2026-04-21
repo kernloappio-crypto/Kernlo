@@ -21,19 +21,6 @@ export async function signUp(email: string, password: string) {
       return { success: false, error: error?.message || 'Signup failed' };
     }
 
-    // Create user record in database
-    if (data.user?.id) {
-      try {
-        await supabase.from('users').insert({
-          id: data.user.id,
-          email: data.user.email || email,
-          trial_start_date: new Date().toISOString(),
-        }).select();
-      } catch (err) {
-        console.warn('User record creation failed (may already exist):', err);
-      }
-    }
-
     return { success: true, user: data.user };
   } catch (err) {
     console.error('Unexpected signup error:', err);
