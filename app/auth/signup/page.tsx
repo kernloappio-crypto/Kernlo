@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/supabase-auth";
@@ -8,6 +8,18 @@ import { signUp } from "@/lib/supabase-auth";
 export const dynamic = "force-dynamic";
 
 export default function SignupPage() {
+  useEffect(() => {
+    // Log that page loaded
+    console.log("SignupPage mounted");
+    
+    // Catch unhandled errors
+    const handleError = (event: ErrorEvent) => {
+      console.error("Unhandled error:", event.error);
+    };
+    
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
