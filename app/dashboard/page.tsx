@@ -90,6 +90,7 @@ export default function DashboardPage() {
   const [newKidName, setNewKidName] = useState("");
   const [newKidAge, setNewKidAge] = useState("");
   const [newKidGrade, setNewKidGrade] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const router = useRouter();
 
@@ -454,10 +455,24 @@ Format as professional homeschool compliance documentation.`;
       </div>
 
       <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="flex">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="md:hidden absolute top-20 left-4 z-40 p-2"
+          style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px" }}
+        >
+          ☰
+        </button>
+
         {/* Left Sidebar - Kids Navigation */}
         <div
-          style={{ backgroundColor: "white", borderRight: `1px solid #e5e7eb` }}
-          className="w-64 h-full p-6 flex flex-col overflow-hidden"
+          style={{ 
+            backgroundColor: "white", 
+            borderRight: `1px solid #e5e7eb`,
+            transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.3s ease'
+          }}
+          className="fixed md:static w-64 h-full p-6 flex flex-col overflow-hidden z-30"
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
@@ -540,7 +555,24 @@ Format as professional homeschool compliance documentation.`;
               {email}
             </p>
           </div>
+
+          {/* Close button for mobile */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden mt-4 w-full px-3 py-2 text-sm font-medium text-white rounded"
+            style={{ backgroundColor: COLORS.primary }}
+          >
+            Close Menu
+          </button>
         </div>
+
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 md:hidden z-20"
+          />
+        )}
 
         {/* Right Content - Kid Cards */}
         <div className="flex-1 p-8 overflow-y-auto">
