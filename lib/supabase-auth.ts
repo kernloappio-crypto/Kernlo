@@ -21,7 +21,14 @@ export async function signUp(email: string, password: string) {
       return { success: false, error: error?.message || 'Signup failed' };
     }
 
-    return { success: true, user: data.user };
+    // Supabase returns user even if email confirmation required
+    if (data.user) {
+      console.log('Signup successful. User created:', data.user.id);
+      console.log('Email confirmation required:', !data.user.email_confirmed_at);
+      return { success: true, user: data.user };
+    }
+
+    return { success: false, error: 'Signup did not return user data' };
   } catch (err) {
     console.error('Unexpected signup error:', err);
     return { success: false, error: 'Unexpected error' };

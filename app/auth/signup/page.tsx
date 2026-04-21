@@ -53,12 +53,12 @@ export default function SignupPage() {
         return;
       }
 
-      console.log("Signup success, redirecting...");
-      // Don't clear loading until redirect actually happens
+      console.log("Signup success, user created:", result.user?.id);
+      alert("🎉 Welcome! Check your email to verify your account, then sign in.");
+      // Redirect to login so they can sign in with verified account
       setTimeout(() => {
-        alert("🎉 Welcome! Your 30-day free trial starts now. Full access to all features.");
-        router.push("/dashboard");
-      }, 500);
+        router.push("/auth/login");
+      }, 1000);
     } catch (err) {
       console.error("Signup catch error:", err);
       setError("An error occurred. Please try again.");
