@@ -455,10 +455,10 @@ Format as professional homeschool compliance documentation.`;
       </div>
 
       <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="flex">
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu Button - Hide on 1024px+ (lg) */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden absolute top-20 left-4 z-40 p-2"
+          className="lg:hidden absolute top-20 left-4 z-40 p-2"
           style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px" }}
         >
           ☰
@@ -472,7 +472,7 @@ Format as professional homeschool compliance documentation.`;
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: 'transform 0.3s ease'
           }}
-          className="fixed md:static w-64 h-full p-6 flex flex-col overflow-hidden z-30"
+          className="fixed lg:static w-64 h-full p-6 flex flex-col overflow-hidden z-30"
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
@@ -556,21 +556,21 @@ Format as professional homeschool compliance documentation.`;
             </p>
           </div>
 
-          {/* Close button for mobile */}
+          {/* Close button for mobile/tablet */}
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden mt-4 w-full px-3 py-2 text-sm font-medium text-white rounded"
+            className="lg:hidden mt-4 w-full px-3 py-2 text-sm font-medium text-white rounded"
             style={{ backgroundColor: COLORS.primary }}
           >
             Close Menu
           </button>
         </div>
 
-        {/* Mobile Overlay */}
+        {/* Mobile/Tablet Overlay */}
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 md:hidden z-20"
+            className="fixed inset-0 bg-black/50 lg:hidden z-20"
           />
         )}
 
