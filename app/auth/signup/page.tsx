@@ -7,6 +7,8 @@ import { signUp } from "@/lib/supabase-auth";
 
 export const dynamic = "force-dynamic";
 
+// Force redeploy: v2026-04-21-2252
+
 export default function SignupPage() {
   useEffect(() => {
     // Log that page loaded
