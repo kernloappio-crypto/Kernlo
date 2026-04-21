@@ -41,6 +41,7 @@ export default function SignupPage() {
         console.error("Signup failed:", errorMsg);
         setError(errorMsg);
         setLoading(false);
+        // Keep form values visible for retry
         return;
       }
 
@@ -80,6 +81,20 @@ export default function SignupPage() {
             Create your account
           </p>
         </div>
+
+        {loading && (
+          <div
+            style={{
+              backgroundColor: "#e3f2fd",
+              borderLeft: "4px solid #0066cc",
+            }}
+            className="p-4 rounded mb-6"
+          >
+            <p style={{ color: "#0066cc" }} className="text-sm font-semibold">
+              ⏳ Creating account... Please wait.
+            </p>
+          </div>
+        )}
 
         {error && (
           <div
