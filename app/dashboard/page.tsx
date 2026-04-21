@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
-  
+
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
@@ -95,20 +95,33 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    let unsubscribe: any;
-    let sessionChecked = false;
-
     // Use auth state listener for reliable mobile support
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event, !!session);
+        console.log("Auth event:", event, "Session exists:", !!session?.user);
 
+        // Handle different auth events
+        if (event === "INITIAL_SESSION") {
+          // This fires on mount - check if we have a session
+          if (!session?.user) {
+            console.log("No session on initial load, redirecting to login");
+            router.push("/auth/login");
+            return;
+          }
+        } else if (event === "SIGNED_OUT") {
+          // User explicitly signed out
+          console.log("User signed out, redirecting to login");
+          router.push("/auth/login");
+          return;
+        }
+
+        // If we have a user, load their data
         if (session?.user) {
-          // User is authenticated
           const user = session.user;
+          console.log("Loading data for user:", user.id);
           setUserId(user.id);
           setEmail(user.email || "");
-      
+
           // Load kids
           const { data: kidsData } = await supabase
             .from("kids")
@@ -151,13 +164,7 @@ export default function DashboardPage() {
           setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
           setLoading(false);
-        } else if (sessionChecked) {
-          // No session and we've already checked once - redirect to login
-          console.log("No session, redirecting to login");
-          router.push("/auth/login");
         }
-
-        sessionChecked = true;
       }
     );
 
@@ -424,7 +431,7 @@ Format as professional homeschool compliance documentation.`;
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Navbar />
-      
+
       {/* Header with Quick Log and Report */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="h-16">
         <div className="h-full px-8 py-4 flex items-center justify-between">
@@ -481,8 +488,8 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Left Sidebar - Kids Navigation */}
         <div
-          style={{ 
-            backgroundColor: "white", 
+          style={{
+            backgroundColor: "white",
             borderRight: `1px solid #e5e7eb`,
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: 'transform 0.3s ease'
