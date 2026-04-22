@@ -91,42 +91,58 @@ export default function DashboardPage() {
   const [newKidAge, setNewKidAge] = useState("");
   const [newKidGrade, setNewKidGrade] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addLog = (msg: string) => {
+    console.log(msg);
+    setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`].slice(-15));
+  };
 
   const router = useRouter();
 
   useEffect(() => {
     const initUser = async () => {
       try {
-        console.log("Dashboard: Getting session...");
+        addLog("📱 Dashboard loading...");
         
         // Try refreshSession first (may fail if no refresh_token, that's OK)
         try {
+          addLog("⏳ Calling refreshSession...");
           const { data, error } = await supabase.auth.refreshSession();
-          console.log("RefreshSession result:", error ? `Error: ${error.message}` : "Success");
-        } catch (e) {
-          console.log("RefreshSession threw:", e);
+          if (error) {
+            addLog(`⚠️ RefreshSession error: ${error.message}`);
+          } else {
+            addLog("✅ RefreshSession success");
+          }
+        } catch (e: any) {
+          addLog(`❌ RefreshSession threw: ${e?.message || e}`);
         }
         
         // Get the session (from storage or current)
+        addLog("📨 Calling getSession...");
         const { data: { session } } = await supabase.auth.getSession();
         
-        console.log("GetSession result:", session?.user?.id || "No user");
+        addLog(`Result: ${session?.user?.id ? `User ${session.user.id}` : "No user"}`);
         
         if (!session?.user) {
-          console.log("No session found, waiting 1s then checking again...");
+          addLog("⏳ Waiting 1s for session to load...");
           // Wait a bit and try one more time (session might be loading)
           await new Promise(resolve => setTimeout(resolve, 1000));
           const { data: { session: session2 } } = await supabase.auth.getSession();
           
           if (!session2?.user) {
-            console.log("Still no session, redirecting to home");
+            addLog("❌ Still no session after wait");
+            addLog("⏳ Waiting 3s before redirect to home...");
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            addLog("→ Redirecting to home");
             router.push("/");
             return;
           }
+          addLog("✅ Session loaded on retry!");
         }
 
         const user = (session?.user || (await supabase.auth.getSession()).data.session?.user)!;
-        console.log("Dashboard: User session found:", user.id);
+        addLog(`✅ Dashboard: User session found: ${user.id}`);
         setUserId(user.id);
         setEmail(user.email || "");
 
@@ -424,7 +440,27 @@ Format as professional homeschool compliance documentation.`;
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#f0f7ff" }}>
+        <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", maxWidth: "400px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+          <h2 style={{ color: "#0066cc", marginBottom: "16px" }}>Loading Dashboard...</h2>
+          <div style={{ backgroundColor: "#f5f5f5", padding: "12px", borderRadius: "8px", maxHeight: "300px", overflowY: "auto" }}>
+            {debugLogs.length === 0 ? (
+              <p style={{ color: "#999", fontSize: "12px" }}>Initializing...</p>
+            ) : (
+              debugLogs.map((log, i) => (
+                <p key={i} style={{ color: "#666", fontSize: "12px", margin: "4px 0", fontFamily: "monospace" }}>
+                  {log}
+                </p>
+              ))
+            )}
+          </div>
+          <p style={{ color: "#999", fontSize: "11px", marginTop: "12px", textAlign: "center" }}>
+            {debugLogs[debugLogs.length - 1]?.includes("Redirecting") ? "Redirecting..." : "Please wait..."}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Helper functions for kid stats
