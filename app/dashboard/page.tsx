@@ -146,51 +146,68 @@ export default function DashboardPage() {
         setUserId(user.id);
         setEmail(user.email || "");
 
-        // Load kids
-        const { data: kidsData } = await supabase
+        addLog("📚 Loading kids...");
+        const { data: kidsData, error: kidsErr } = await supabase
           .from("kids")
           .select("*")
           .eq("user_id", user.id);
 
-        if (kidsData) {
-          setKids(kidsData);
-          if (kidsData.length > 0) {
-            setQuickLogKid(kidsData[0]);
-            setReportKid(kidsData[0]);
+        if (kidsErr) {
+          addLog(`❌ Kids error: ${kidsErr.message}`);
+        } else {
+          addLog(`✅ Kids: ${kidsData?.length || 0}`);
+          if (kidsData) {
+            setKids(kidsData);
+            if (kidsData.length > 0) {
+              setQuickLogKid(kidsData[0]);
+              setReportKid(kidsData[0]);
+            }
           }
         }
 
-        // Load all activities
-        const { data: activitiesData } = await supabase
+        addLog("📊 Loading activities...");
+        const { data: activitiesData, error: activitiesErr } = await supabase
           .from("activities")
           .select("*")
           .eq("user_id", user.id)
           .order("date", { ascending: false });
 
-        if (activitiesData) {
-          setActivities(activitiesData);
+        if (activitiesErr) {
+          addLog(`❌ Activities error: ${activitiesErr.message}`);
+        } else {
+          addLog(`✅ Activities: ${activitiesData?.length || 0}`);
+          if (activitiesData) {
+            setActivities(activitiesData);
+          }
         }
 
-        // Load all goals
-        const { data: goalsData } = await supabase
+        addLog("🎯 Loading goals...");
+        const { data: goalsData, error: goalsErr } = await supabase
           .from("goals")
           .select("*")
           .eq("user_id", user.id);
 
-        if (goalsData) {
-          setGoals(goalsData);
+        if (goalsErr) {
+          addLog(`❌ Goals error: ${goalsErr.message}`);
+        } else {
+          addLog(`✅ Goals: ${goalsData?.length || 0}`);
+          if (goalsData) {
+            setGoals(goalsData);
+          }
         }
 
-        // Initialize date range (last 30 days)
+        addLog("⏰ Initializing date range...");
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         setReportEndDate(today.toISOString().split("T")[0]);
         setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
+        addLog("🎉 Dashboard ready!");
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
+        addLog(`❌ CRASH: ${error?.message || error}`);
         console.error("Error initializing user:", error);
-        router.push("/");
+        setTimeout(() => router.push("/"), 3000);
       }
     };
 
