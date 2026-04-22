@@ -97,20 +97,35 @@ export default function DashboardPage() {
   useEffect(() => {
     const initUser = async () => {
       try {
-        console.log("Dashboard: Attempting to refresh session...");
-        // Refresh the session first - this syncs with storage
-        await supabase.auth.refreshSession();
+        console.log("Dashboard: Getting session...");
         
-        // Now get the session
+        // Try refreshSession first (may fail if no refresh_token, that's OK)
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          console.log("RefreshSession result:", error ? `Error: ${error.message}` : "Success");
+        } catch (e) {
+          console.log("RefreshSession threw:", e);
+        }
+        
+        // Get the session (from storage or current)
         const { data: { session } } = await supabase.auth.getSession();
         
+        console.log("GetSession result:", session?.user?.id || "No user");
+        
         if (!session?.user) {
-          console.log("No session after refresh, redirecting to home");
-          router.push("/");
-          return;
+          console.log("No session found, waiting 1s then checking again...");
+          // Wait a bit and try one more time (session might be loading)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { session: session2 } } = await supabase.auth.getSession();
+          
+          if (!session2?.user) {
+            console.log("Still no session, redirecting to home");
+            router.push("/");
+            return;
+          }
         }
 
-        const user = session.user;
+        const user = (session?.user || (await supabase.auth.getSession()).data.session?.user)!;
         console.log("Dashboard: User session found:", user.id);
         setUserId(user.id);
         setEmail(user.email || "");
