@@ -97,35 +97,21 @@ export default function DashboardPage() {
   useEffect(() => {
     const initUser = async () => {
       try {
-        let session = null;
-        let attempts = 0;
-        const maxAttempts = 5; // Try 5 times with delays
-
-        // Poll for session restoration (mobile takes time)
-        while (!session?.user && attempts < maxAttempts) {
-          const { data: { session: s } } = await supabase.auth.getSession();
-          session = s;
-          
-          if (session?.user) {
-            console.log("Session found on attempt", attempts + 1);
-            break;
-          }
-          
-          attempts++;
-          if (attempts < maxAttempts) {
-            console.log(`No session on attempt ${attempts}, waiting 500ms...`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
+        console.log("Dashboard: Attempting to refresh session...");
+        // Refresh the session first - this syncs with storage
+        await supabase.auth.refreshSession();
+        
+        // Now get the session
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (!session?.user) {
-          console.log("No session found after all attempts, redirecting to home");
+          console.log("No session after refresh, redirecting to home");
           router.push("/");
           return;
         }
 
         const user = session.user;
-        console.log("User session found:", user.id);
+        console.log("Dashboard: User session found:", user.id);
         setUserId(user.id);
         setEmail(user.email || "");
 
