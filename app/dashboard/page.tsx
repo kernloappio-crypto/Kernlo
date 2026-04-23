@@ -200,7 +200,10 @@ export default function DashboardPage() {
             .order("date", { ascending: false });
 
           if (activitiesErr) {
-            addLog(`❌ Activities error: ${activitiesErr.message}`);
+            addLog(`❌ Activities RLS error`);
+            addLog(`Code: ${activitiesErr.code}`);
+            addLog(`Msg: ${activitiesErr.message}`);
+            addLog(`Details: ${JSON.stringify(activitiesErr)}`);
             throw activitiesErr;
           } else {
             addLog(`✅ Activities: ${activitiesData?.length || 0}`);
@@ -209,7 +212,7 @@ export default function DashboardPage() {
             }
           }
         } catch (e: any) {
-          addLog(`❌ Activities failed: ${e?.message}`);
+          addLog(`❌ Activities THROW: ${e?.message}`);
           throw e;
         }
 
