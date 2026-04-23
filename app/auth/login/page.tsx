@@ -62,9 +62,18 @@ export default function LoginPage() {
       }
 
       addLog("✅ Login successful!");
+      // Store user ID in sessionStorage as fallback for mobile
+      if (typeof window !== 'undefined' && result.session?.user?.id) {
+        try {
+          sessionStorage.setItem('kernlo_user_id', result.session.user.id);
+          addLog("💾 Stored user ID in sessionStorage");
+        } catch (e) {
+          addLog("⚠️ Could not store user ID");
+        }
+      }
       addLog("→ Redirecting to dashboard...");
       setLoading(false);
-      router.push("/dashboard");
+      setTimeout(() => router.push("/dashboard"), 500);
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");

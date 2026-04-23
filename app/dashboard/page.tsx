@@ -141,8 +141,28 @@ export default function DashboardPage() {
           addLog("✅ Session loaded on retry!");
         }
 
-        const user = (session?.user || (await supabase.auth.getSession()).data.session?.user)!;
-        addLog(`✅ Dashboard: User session found: ${user.id}`);
+        let user = session?.user || (await supabase.auth.getSession()).data.session?.user;
+        
+        // Fallback: Check sessionStorage for user ID (mobile Safari fix)
+        if (!user && typeof window !== 'undefined') {
+          const storedUserId = sessionStorage.getItem('kernlo_user_id');
+          if (storedUserId) {
+            addLog(`💾 Found user ID in sessionStorage: ${storedUserId}`);
+            // Create a minimal user object just for ID (we'll use it to fetch data)
+            user = { id: storedUserId } as any;
+          }
+        }
+        
+        if (!user) {
+          addLog("❌ No user found in session or storage");
+          addLog("⏳ Waiting 3s before redirect...");
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          addLog("→ Redirecting to home");
+          router.push("/");
+          return;
+        }
+        
+        addLog(`✅ Dashboard: User found: ${user.id}`);
         setUserId(user.id);
         setEmail(user.email || "");
 
