@@ -155,7 +155,6 @@ export default function DashboardPage() {
           await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
-            user: user as any,
           });
           addLog("✅ Auth context restored");
         } catch (e: any) {
@@ -196,20 +195,22 @@ export default function DashboardPage() {
           const { data: activitiesData, error: activitiesErr } = await supabase
             .from("activities")
             .select("*")
-            .eq("user_id", user.id)
-            .order("date", { ascending: false });
+            .eq("user_id", user.id);
 
           if (activitiesErr) {
-            addLog(`❌ Activities RLS error`);
+            addLog(`❌ Activities error (no order): ${activitiesErr.message}`);
             addLog(`Code: ${activitiesErr.code}`);
-            addLog(`Msg: ${activitiesErr.message}`);
-            addLog(`Details: ${JSON.stringify(activitiesErr)}`);
             throw activitiesErr;
-          } else {
-            addLog(`✅ Activities: ${activitiesData?.length || 0}`);
-            if (activitiesData) {
-              setActivities(activitiesData);
-            }
+          }
+          
+          // Sort client-side after RLS passes
+          if (activitiesData) {
+            activitiesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          }
+          
+          addLog(`✅ Activities: ${activitiesData?.length || 0}`);
+          if (activitiesData) {
+            setActivities(activitiesData);
           }
         } catch (e: any) {
           addLog(`❌ Activities THROW: ${e?.message}`);

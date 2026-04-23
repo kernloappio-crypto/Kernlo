@@ -96,10 +96,14 @@ export async function getActivities(userId: string, childName?: string) {
     query = query.eq('child_name', childName);
   }
 
-  const { data, error } = await query.order('date', { ascending: false });
+  const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  
+  // Sort client-side after RLS passes
+  const sorted = data || [];
+  sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return sorted;
 }
 
 export async function deleteActivity(activityId: string) {
