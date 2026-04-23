@@ -235,25 +235,23 @@ export default function DashboardPage() {
 
         try {
           addLog("📊 Loading activities...");
-          // Note: RLS policy will automatically filter to user's activities
-          // So we don't need to add .eq() filter - RLS does it
-          const { data: activitiesData, error: activitiesErr } = await supabase
-            .from("activities")
-            .select("*");
+          // Use server-side endpoint to avoid client-side auth issues
+          const activitiesResponse = await fetch('/api/activities', {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
 
-          if (activitiesErr) {
-            addLog(`❌ Activities error: ${activitiesErr.message}`);
-            addLog(`Code: ${activitiesErr.code}`);
-            addLog(`Details: ${activitiesErr.details || 'none'}`);
-            addLog(`Hint: ${activitiesErr.hint || 'none'}`);
-            addLog(`Status: ${(activitiesErr as any).status || 'unknown'}`);
-            throw activitiesErr;
+          if (!activitiesResponse.ok) {
+            const errorData = await activitiesResponse.json();
+            addLog(`❌ Activities error: ${errorData.error}`);
+            addLog(`Code: ${errorData.code || 'unknown'}`);
+            addLog(`Details: ${errorData.details || 'none'}`);
+            addLog(`Hint: ${errorData.hint || 'none'}`);
+            throw new Error(errorData.error || 'Activities query failed');
           }
-          
-          // Sort client-side after RLS passes
-          if (activitiesData) {
-            activitiesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          }
+
+          const { activities: activitiesData } = await activitiesResponse.json();
           
           addLog(`✅ Activities: ${activitiesData?.length || 0}`);
           if (activitiesData) {
