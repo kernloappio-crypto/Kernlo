@@ -429,6 +429,7 @@ Format as professional homeschool compliance documentation.`;
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Navigation Links */}
+        {kid && (
         <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
           <Link
             href={`/dashboard/${kid.id}/goals`}
@@ -445,8 +446,10 @@ Format as professional homeschool compliance documentation.`;
             Compliance
           </Link>
         </div>
+        )}
 
         {/* Summary Cards */}
+        {kid && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Subjects & Compliance Card */}
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
@@ -546,9 +549,10 @@ Format as professional homeschool compliance documentation.`;
             </Link>
           </div>
         </div>
+        )}
 
         {/* Quick Log Modal */}
-        {showQuickLog && (
+        {showQuickLog && kid && (
           <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
               <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">
@@ -755,7 +759,7 @@ Format as professional homeschool compliance documentation.`;
       </div>
 
       {/* Comprehensive Report Modal */}
-      {showComprehensiveReport && kid && (
+      {showComprehensiveReport && kid ? (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
@@ -848,7 +852,7 @@ Format as professional homeschool compliance documentation.`;
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
     </main>
     </>
