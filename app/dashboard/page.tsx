@@ -211,21 +211,27 @@ export default function DashboardPage() {
 
         try {
           addLog("📚 Loading kids...");
-          const { data: kidsData, error: kidsErr } = await supabase
-            .from("kids")
-            .select("*");
+          // Use server-side endpoint for better auth handling
+          const kidsResponse = await fetch('/api/kids', {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
 
-          if (kidsErr) {
-            addLog(`❌ Kids error: ${kidsErr.message}`);
-            throw kidsErr;
-          } else {
-            addLog(`✅ Kids: ${kidsData?.length || 0}`);
-            if (kidsData) {
-              setKids(kidsData);
-              if (kidsData.length > 0) {
-                setQuickLogKid(kidsData[0]);
-                setReportKid(kidsData[0]);
-              }
+          if (!kidsResponse.ok) {
+            const errorData = await kidsResponse.json();
+            addLog(`❌ Kids error: ${errorData.error}`);
+            throw new Error(errorData.error || 'Kids query failed');
+          }
+
+          const { kids: kidsData } = await kidsResponse.json();
+          
+          addLog(`✅ Kids: ${kidsData?.length || 0}`);
+          if (kidsData) {
+            setKids(kidsData);
+            if (kidsData.length > 0) {
+              setQuickLogKid(kidsData[0]);
+              setReportKid(kidsData[0]);
             }
           }
         } catch (e: any) {
@@ -265,18 +271,24 @@ export default function DashboardPage() {
 
         try {
           addLog("🎯 Loading goals...");
-          const { data: goalsData, error: goalsErr } = await supabase
-            .from("goals")
-            .select("*");
+          // Use server-side endpoint for better auth handling
+          const goalsResponse = await fetch('/api/goals', {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
 
-          if (goalsErr) {
-            addLog(`❌ Goals error: ${goalsErr.message}`);
-            throw goalsErr;
-          } else {
-            addLog(`✅ Goals: ${goalsData?.length || 0}`);
-            if (goalsData) {
-              setGoals(goalsData);
-            }
+          if (!goalsResponse.ok) {
+            const errorData = await goalsResponse.json();
+            addLog(`❌ Goals error: ${errorData.error}`);
+            throw new Error(errorData.error || 'Goals query failed');
+          }
+
+          const { goals: goalsData } = await goalsResponse.json();
+          
+          addLog(`✅ Goals: ${goalsData?.length || 0}`);
+          if (goalsData) {
+            setGoals(goalsData);
           }
         } catch (e: any) {
           addLog(`❌ Goals failed: ${e?.message}`);
