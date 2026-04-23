@@ -595,17 +595,17 @@ Format as professional homeschool compliance documentation.`;
       <Navbar />
 
       {/* Header with Quick Log and Report */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="h-16">
-        <div className="h-full px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 style={{ color: "#1a1a2e" }} className="text-2xl font-bold">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold truncate">
               Parent Dashboard
             </h1>
-            <p style={{ color: "#333" }} className="text-sm">
+            <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
               Manage all your kids' homeschool progress
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
             <button
               onClick={() => {
                 if (kids.length === 0) {
@@ -616,7 +616,7 @@ Format as professional homeschool compliance documentation.`;
                 setShowQuickLog(true);
               }}
               style={{ backgroundColor: COLORS.primary }}
-              className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm"
+              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap"
             >
               + Quick Log
             </button>
@@ -630,7 +630,7 @@ Format as professional homeschool compliance documentation.`;
                 setShowReportGen(true);
               }}
               style={{ backgroundColor: COLORS.secondary }}
-              className="px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm"
+              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap"
             >
               📄 Report
             </button>
@@ -638,12 +638,12 @@ Format as professional homeschool compliance documentation.`;
         </div>
       </div>
 
-      <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="flex">
-        {/* Mobile Menu Button - Hide on 1024px+ (lg) */}
+      <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
+        {/* Mobile Menu Button - Only show on small/medium screens */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden absolute top-20 left-4 z-40 p-2"
-          style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px" }}
+          className="lg:hidden fixed top-auto bottom-4 left-4 z-40 p-3"
+          style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px", fontSize: "24px" }}
         >
           ☰
         </button>
@@ -654,13 +654,14 @@ Format as professional homeschool compliance documentation.`;
             backgroundColor: "white",
             borderRight: `1px solid #e5e7eb`,
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-            transition: 'transform 0.3s ease'
+            transition: 'transform 0.3s ease',
+            position: 'fixed',
           }}
-          className="fixed lg:static w-64 h-full p-6 flex flex-col overflow-hidden z-30"
+          className="lg:relative lg:transform-none w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30 lg:translate-x-0"
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
-            <h2 style={{ color: "#1a1a2e" }} className="text-lg font-bold mb-4">
+            <h2 style={{ color: "#1a1a2e" }} className="text-base sm:text-lg font-bold mb-4">
               Your Kids
             </h2>
             <div className="space-y-2 mb-4">
@@ -672,7 +673,8 @@ Format as professional homeschool compliance documentation.`;
                     backgroundColor: COLORS.primary,
                     color: "white",
                   }}
-                  className="block w-full px-4 py-3 text-left rounded-lg hover:opacity-90 transition font-medium text-sm"
+                  className="block w-full px-4 py-2.5 sm:py-3 text-left rounded-lg hover:opacity-90 transition font-medium text-sm"
+                  onClick={() => setSidebarOpen(false)}
                 >
                   {kid.name}
                   {kid.age && <span className="text-xs opacity-90 ml-2">({kid.age})</span>}
@@ -697,7 +699,7 @@ Format as professional homeschool compliance documentation.`;
                   onChange={(e) => setNewKidName(e.target.value)}
                   placeholder="Name"
                   style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                   type="number"
@@ -705,7 +707,7 @@ Format as professional homeschool compliance documentation.`;
                   onChange={(e) => setNewKidAge(e.target.value)}
                   placeholder="Age"
                   style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                   type="text"
@@ -713,12 +715,12 @@ Format as professional homeschool compliance documentation.`;
                   onChange={(e) => setNewKidGrade(e.target.value)}
                   placeholder="Grade"
                   style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm"
+                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={handleAddKid}
                   style={{ backgroundColor: COLORS.primary }}
-                  className="w-full px-3 py-2 text-white rounded text-sm"
+                  className="w-full px-3 py-2 text-white rounded text-sm font-medium hover:opacity-90"
                 >
                   Save
                 </button>
@@ -731,11 +733,11 @@ Format as professional homeschool compliance documentation.`;
             <button
               onClick={handleLogout}
               style={{ color: COLORS.primary }}
-              className="w-full text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded text-left"
+              className="w-full text-xs sm:text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded text-left"
             >
               Logout
             </button>
-            <p style={{ color: "#555" }} className="text-xs mt-3">
+            <p style={{ color: "#555" }} className="text-xs mt-3 break-all">
               {email}
             </p>
           </div>
@@ -746,7 +748,7 @@ Format as professional homeschool compliance documentation.`;
             className="lg:hidden mt-4 w-full px-3 py-2 text-sm font-medium text-white rounded"
             style={{ backgroundColor: COLORS.primary }}
           >
-            Close Menu
+            ✕ Close
           </button>
         </div>
 
@@ -759,12 +761,12 @@ Format as professional homeschool compliance documentation.`;
         )}
 
         {/* Right Content - Kid Cards */}
-        <div className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-6xl">
+        <div className="flex-1 overflow-y-auto w-full lg:w-auto">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
             {kids.length === 0 ? (
-              <p style={{ color: "#555" }}>No kids added yet. Add a kid to get started!</p>
+              <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;
@@ -774,9 +776,9 @@ Format as professional homeschool compliance documentation.`;
                   const progressPercent = totalGoalHours > 0 ? Math.min(100, (loggedHours / totalGoalHours) * 100) : 0;
 
                   return (
-                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-6 rounded-lg shadow-sm">
+                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-4 sm:p-6 rounded-lg shadow-sm">
                       {/* Kid Header */}
-                      <h3 style={{ color: "#1a1a2e" }} className="text-xl font-bold mb-4">
+                      <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-4">
                         {kid.name}
                       </h3>
 
@@ -883,12 +885,12 @@ Format as professional homeschool compliance documentation.`;
       {/* Quick Log Modal */}
       {showQuickLog && quickLogKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
-            <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-6">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-6">
               Quick Log - {quickLogKid.name}
             </h2>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Kid
@@ -977,18 +979,18 @@ Format as professional homeschool compliance documentation.`;
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleQuickLogSave}
                 style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90"
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
               >
                 Save Activity
               </button>
               <button
                 onClick={() => setShowQuickLog(false)}
                 style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2 border font-semibold rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
               >
                 Cancel
               </button>
@@ -1000,8 +1002,8 @@ Format as professional homeschool compliance documentation.`;
       {/* Report Generator Modal */}
       {showReportGen && reportKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
-            <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-6">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-6">
               Generate Report
             </h2>
 
@@ -1090,21 +1092,21 @@ Format as professional homeschool compliance documentation.`;
               ⚠️ Report generation takes ~30 seconds. Please click once and wait.
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleGenerateReport}
                 disabled={selectedSubjects.length === 0}
                 style={{
                   backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
                 }}
-                className="flex-1 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 Download Report
               </button>
               <button
                 onClick={() => setShowReportGen(false)}
                 style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2 border font-semibold rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
               >
                 Cancel
               </button>
