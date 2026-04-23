@@ -107,35 +107,53 @@ export default function DashboardPage() {
         
         let user = null;
         let accessToken = null;
+        let fullSession = null;
         
-        // Only source of truth: JWT access token in localStorage
+        // Source of truth: Check for full session first, fall back to tokens
         if (typeof window !== 'undefined') {
-          accessToken = localStorage.getItem('kernlo_access_token');
-          if (accessToken) {
-            addLog(`🔑 JWT access token found`);
-            
-            // Decode JWT to extract user info
+          // Try to load full session first
+          const sessionStr = localStorage.getItem('kernlo_session');
+          if (sessionStr) {
             try {
-              const parts = accessToken.split('.');
-              if (parts.length === 3) {
-                const decoded = JSON.parse(atob(parts[1]));
-                
-                // Check if token is expired
-                const now = Math.floor(Date.now() / 1000);
-                if (decoded.exp && decoded.exp < now) {
-                  addLog(`⚠️ Token expired`);
-                  accessToken = null;
-                } else {
-                  user = {
-                    id: decoded.sub,
-                    email: decoded.email,
-                  };
-                  addLog(`✅ User: ${user.id}`);
-                }
-              }
+              fullSession = JSON.parse(sessionStr);
+              accessToken = fullSession.access_token;
+              user = fullSession.user;
+              addLog(`✅ Full session found in localStorage`);
             } catch (e) {
-              addLog(`⚠️ Failed to decode token`);
-              accessToken = null;
+              addLog(`⚠️ Could not parse stored session`);
+              fullSession = null;
+            }
+          }
+          
+          // Fallback: Use JWT token if no full session
+          if (!fullSession && !accessToken) {
+            accessToken = localStorage.getItem('kernlo_access_token');
+            if (accessToken) {
+              addLog(`🔑 JWT access token found (no session)`);
+              
+              // Decode JWT to extract user info
+              try {
+                const parts = accessToken.split('.');
+                if (parts.length === 3) {
+                  const decoded = JSON.parse(atob(parts[1]));
+                  
+                  // Check if token is expired
+                  const now = Math.floor(Date.now() / 1000);
+                  if (decoded.exp && decoded.exp < now) {
+                    addLog(`⚠️ Token expired`);
+                    accessToken = null;
+                  } else {
+                    user = {
+                      id: decoded.sub,
+                      email: decoded.email,
+                    };
+                    addLog(`✅ User from JWT: ${user.id}`);
+                  }
+                }
+              } catch (e) {
+                addLog(`⚠️ Failed to decode token`);
+                accessToken = null;
+              }
             }
           }
         }
@@ -148,31 +166,35 @@ export default function DashboardPage() {
           return;
         }
         
-        // CRITICAL: Restore Supabase auth context with the token
+        // CRITICAL: Restore Supabase auth context
         // This makes auth.uid() return the correct user ID for RLS policies
         try {
           addLog("🔑 Restoring auth context...");
           
-          // Validate the JWT token contains the expected user ID
-          const parts = accessToken.split('.');
-          if (parts.length === 3) {
-            const decoded = JSON.parse(atob(parts[1]));
-            addLog(`🔍 JWT sub claim: ${decoded.sub}, expected: ${user.id}`);
-            if (decoded.sub !== user.id) {
-              addLog(`⚠️ WARNING: Token sub doesn't match parsed user ID!`);
-            }
-          }
+          let setSessionData: any = null;
+          let setSessionError: any = null;
           
-          // Set the session on the Supabase client
-          const { data: setSessionData, error: setSessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
-          });
+          if (fullSession) {
+            // Use the full session object if available
+            addLog("📦 Using full session object");
+            const result = await supabase.auth.setSession(fullSession);
+            setSessionData = result.data;
+            setSessionError = result.error;
+          } else {
+            // Fallback: construct session from tokens
+            addLog("🔑 Using tokens to construct session");
+            const result = await supabase.auth.setSession({
+              access_token: accessToken!,
+              refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
+            });
+            setSessionData = result.data;
+            setSessionError = result.error;
+          }
           
           if (setSessionError) {
             addLog(`⚠️ setSession error: ${setSessionError.message}`);
           } else if (setSessionData?.session) {
-            addLog(`✅ Auth context restored, user in session: ${setSessionData.session.user?.id}`);
+            addLog(`✅ Auth context restored, user: ${setSessionData.session.user?.id}`);
           } else {
             addLog(`⚠️ setSession returned no data`);
           }

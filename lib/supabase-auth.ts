@@ -60,17 +60,19 @@ export async function signIn(email: string, password: string) {
       return { success: false, error: error?.message || 'Login failed' };
     }
 
-    // Extract tokens from session
+    // Extract tokens and session from response
     if (data.session) {
       const accessToken = data.session.access_token;
       const refreshToken = data.session.refresh_token;
       
-      // Store ONLY JWT tokens to localStorage
+      // Store BOTH tokens and full session object to localStorage
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('kernlo_access_token', accessToken);
           localStorage.setItem('kernlo_refresh_token', refreshToken);
-          console.log('✅ Tokens stored to localStorage');
+          // Also store the full session for easier restoration
+          localStorage.setItem('kernlo_session', JSON.stringify(data.session));
+          console.log('✅ Tokens and session stored to localStorage');
         } catch (e) {
           console.warn('⚠️ Could not store tokens:', e);
         }
@@ -86,13 +88,14 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
-    // Clear tokens from localStorage
+    // Clear tokens and session from localStorage
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('kernlo_access_token');
         localStorage.removeItem('kernlo_refresh_token');
+        localStorage.removeItem('kernlo_session');
         localStorage.removeItem('kernlo_session_backup');
-        console.log('✅ Tokens cleared from localStorage');
+        console.log('✅ Tokens and session cleared from localStorage');
       } catch (e) {
         console.warn('⚠️ Could not clear tokens:', e);
       }
