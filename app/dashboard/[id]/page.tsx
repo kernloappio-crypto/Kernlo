@@ -404,7 +404,7 @@ Format as professional homeschool compliance documentation.`;
               ← Back to Dashboard
             </Link>
             <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-              {kid.name}
+              {kid?.name || "Loading..."}
             </h1>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">

@@ -172,7 +172,7 @@ export default function GoalsPage() {
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
-            ← Back to {kid.name}
+            ← Back to {kid?.name || "Child"}
           </Link>
           <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
             Goals
