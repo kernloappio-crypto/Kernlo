@@ -12,33 +12,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const router = useRouter();
 
-  const addLog = (msg: string) => {
-    console.log(msg);
-    setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`].slice(-10));
-  };
-
   async function handleLogin() {
-    addLog("🔘 Sign In clicked");
+    console.log("🔘 Sign In clicked");
     setError("");
     
     if (!email.trim()) {
       const msg = "Email is required";
-      addLog(`❌ ${msg}`);
+      console.log(`❌ ${msg}`);
       setError(msg);
       return;
     }
 
     if (!password) {
       const msg = "Password is required";
-      addLog(`❌ ${msg}`);
+      console.log(`❌ ${msg}`);
       setError(msg);
       return;
     }
 
-    addLog("⏳ Calling signIn...");
+    console.log("⏳ Calling signIn...");
     setLoading(true);
 
     if (!email || !password) {
@@ -50,26 +44,26 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(email, password);
-      addLog(`📨 Login result: ${result.success ? "SUCCESS" : "FAILED"}`);
+      console.log(`📨 Login result: ${result.success ? "SUCCESS" : "FAILED"}`);
 
       if (!result.success) {
         const errorMsg = result.error || "Login failed";
-        addLog(`❌ Error: ${errorMsg}`);
+        console.log(`❌ Error: ${errorMsg}`);
         setLoading(false);
         setError(errorMsg);
         // Keep error visible - don't redirect
         return;
       }
 
-      addLog("✅ Login successful!");
+      console.log("✅ Login successful!");
       // Tokens already stored to localStorage by signIn()
-      addLog("🔑 JWT tokens stored to localStorage");
-      addLog("→ Redirecting to dashboard...");
+      console.log("🔑 JWT tokens stored to localStorage");
+      console.log("→ Redirecting to dashboard...");
       setLoading(false);
       // Give localStorage time to persist
       setTimeout(() => router.push("/dashboard"), 300);
     } catch (err: any) {
-      addLog(`❌ Catch: ${err?.message || err}`);
+      console.log(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
       setLoading(false);
     }
@@ -196,27 +190,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Debug Logs */}
-          {debugLogs.length > 0 && (
-            <div
-              style={{
-                backgroundColor: "#f5f5f5",
-                borderTop: "1px solid #e5e7eb",
-                marginTop: "20px",
-                paddingTop: "10px",
-              }}
-              className="text-xs"
-            >
-              <p style={{ color: "#666", marginBottom: "8px", fontWeight: "bold" }}>
-                Debug Log:
-              </p>
-              {debugLogs.map((log, i) => (
-                <p key={i} style={{ color: "#666", margin: "2px 0", fontFamily: "monospace", fontSize: "10px" }}>
-                  {log}
-                </p>
-              ))}
-            </div>
-          )}
+
 
           <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-4 sm:pt-6">
             <div className="text-center mb-4">

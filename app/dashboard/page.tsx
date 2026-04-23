@@ -91,19 +91,13 @@ export default function DashboardPage() {
   const [newKidAge, setNewKidAge] = useState("");
   const [newKidGrade, setNewKidGrade] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-
-  const addLog = (msg: string) => {
-    console.log(msg);
-    setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`].slice(-15));
-  };
 
   const router = useRouter();
 
   useEffect(() => {
     const initUser = async () => {
       try {
-        addLog("📱 Dashboard loading...");
+        console.log("📱 Dashboard loading...");
         
         let user = null;
         let accessToken = null;
@@ -118,9 +112,9 @@ export default function DashboardPage() {
               fullSession = JSON.parse(sessionStr);
               accessToken = fullSession.access_token;
               user = fullSession.user;
-              addLog(`✅ Full session found in localStorage`);
+              console.log(`✅ Full session found in localStorage`);
             } catch (e) {
-              addLog(`⚠️ Could not parse stored session`);
+              console.log(`⚠️ Could not parse stored session`);
               fullSession = null;
             }
           }
@@ -129,7 +123,7 @@ export default function DashboardPage() {
           if (!fullSession && !accessToken) {
             accessToken = localStorage.getItem('kernlo_access_token');
             if (accessToken) {
-              addLog(`🔑 JWT access token found (no session)`);
+              console.log(`🔑 JWT access token found (no session)`);
               
               // Decode JWT to extract user info
               try {
@@ -140,18 +134,18 @@ export default function DashboardPage() {
                   // Check if token is expired
                   const now = Math.floor(Date.now() / 1000);
                   if (decoded.exp && decoded.exp < now) {
-                    addLog(`⚠️ Token expired`);
+                    console.log(`⚠️ Token expired`);
                     accessToken = null;
                   } else {
                     user = {
                       id: decoded.sub,
                       email: decoded.email,
                     };
-                    addLog(`✅ User from JWT: ${user.id}`);
+                    console.log(`✅ User from JWT: ${user.id}`);
                   }
                 }
               } catch (e) {
-                addLog(`⚠️ Failed to decode token`);
+                console.log(`⚠️ Failed to decode token`);
                 accessToken = null;
               }
             }
@@ -159,8 +153,8 @@ export default function DashboardPage() {
         }
         
         if (!user || !accessToken) {
-          addLog("❌ Not authenticated");
-          addLog("→ Redirecting to login");
+          console.log("❌ Not authenticated");
+          console.log("→ Redirecting to login");
           await new Promise(resolve => setTimeout(resolve, 1000));
           router.push("/auth/login");
           return;
@@ -169,20 +163,20 @@ export default function DashboardPage() {
         // CRITICAL: Restore Supabase auth context
         // This makes auth.uid() return the correct user ID for RLS policies
         try {
-          addLog("🔑 Restoring auth context...");
+          console.log("🔑 Restoring auth context...");
           
           let setSessionData: any = null;
           let setSessionError: any = null;
           
           if (fullSession) {
             // Use the full session object if available
-            addLog("📦 Using full session object");
+            console.log("📦 Using full session object");
             const result = await supabase.auth.setSession(fullSession);
             setSessionData = result.data;
             setSessionError = result.error;
           } else {
             // Fallback: construct session from tokens
-            addLog("🔑 Using tokens to construct session");
+            console.log("🔑 Using tokens to construct session");
             const result = await supabase.auth.setSession({
               access_token: accessToken!,
               refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
@@ -192,17 +186,17 @@ export default function DashboardPage() {
           }
           
           if (setSessionError) {
-            addLog(`⚠️ setSession error: ${setSessionError.message}`);
+            console.log(`⚠️ setSession error: ${setSessionError.message}`);
           } else if (setSessionData?.session) {
-            addLog(`✅ Auth context restored, user: ${setSessionData.session.user?.id}`);
+            console.log(`✅ Auth context restored, user: ${setSessionData.session.user?.id}`);
           } else {
-            addLog(`⚠️ setSession returned no data`);
+            console.log(`⚠️ setSession returned no data`);
           }
           
           // Give Supabase a moment to register the auth context
           await new Promise(resolve => setTimeout(resolve, 50));
         } catch (e: any) {
-          addLog(`⚠️ Could not restore auth context: ${e?.message}`);
+          console.log(`⚠️ Could not restore auth context: ${e?.message}`);
           // Continue anyway - we have the token
         }
         
@@ -210,7 +204,7 @@ export default function DashboardPage() {
         setEmail(user.email || "");
 
         try {
-          addLog("📚 Loading kids...");
+          console.log("📚 Loading kids...");
           // Use server-side endpoint for better auth handling
           const kidsResponse = await fetch('/api/kids', {
             headers: {
@@ -220,13 +214,13 @@ export default function DashboardPage() {
 
           if (!kidsResponse.ok) {
             const errorData = await kidsResponse.json();
-            addLog(`❌ Kids error: ${errorData.error}`);
+            console.log(`❌ Kids error: ${errorData.error}`);
             throw new Error(errorData.error || 'Kids query failed');
           }
 
           const { kids: kidsData } = await kidsResponse.json();
           
-          addLog(`✅ Kids: ${kidsData?.length || 0}`);
+          console.log(`✅ Kids: ${kidsData?.length || 0}`);
           if (kidsData) {
             setKids(kidsData);
             if (kidsData.length > 0) {
@@ -235,12 +229,12 @@ export default function DashboardPage() {
             }
           }
         } catch (e: any) {
-          addLog(`❌ Kids failed: ${e?.message}`);
+          console.log(`❌ Kids failed: ${e?.message}`);
           throw e;
         }
 
         try {
-          addLog("📊 Loading activities...");
+          console.log("📊 Loading activities...");
           // Use server-side endpoint to avoid client-side auth issues
           const activitiesResponse = await fetch('/api/activities', {
             headers: {
@@ -250,27 +244,27 @@ export default function DashboardPage() {
 
           if (!activitiesResponse.ok) {
             const errorData = await activitiesResponse.json();
-            addLog(`❌ Activities error: ${errorData.error}`);
-            addLog(`Code: ${errorData.code || 'unknown'}`);
-            addLog(`Details: ${errorData.details || 'none'}`);
-            addLog(`Hint: ${errorData.hint || 'none'}`);
+            console.log(`❌ Activities error: ${errorData.error}`);
+            console.log(`Code: ${errorData.code || 'unknown'}`);
+            console.log(`Details: ${errorData.details || 'none'}`);
+            console.log(`Hint: ${errorData.hint || 'none'}`);
             throw new Error(errorData.error || 'Activities query failed');
           }
 
           const { activities: activitiesData } = await activitiesResponse.json();
           
-          addLog(`✅ Activities: ${activitiesData?.length || 0}`);
+          console.log(`✅ Activities: ${activitiesData?.length || 0}`);
           if (activitiesData) {
             setActivities(activitiesData);
           }
         } catch (e: any) {
-          addLog(`❌ Activities THROW: ${e?.message}`);
-          addLog(`Full error: ${JSON.stringify(e)}`);
+          console.log(`❌ Activities THROW: ${e?.message}`);
+          console.log(`Full error: ${JSON.stringify(e)}`);
           throw e;
         }
 
         try {
-          addLog("🎯 Loading goals...");
+          console.log("🎯 Loading goals...");
           // Use server-side endpoint for better auth handling
           const goalsResponse = await fetch('/api/goals', {
             headers: {
@@ -280,34 +274,34 @@ export default function DashboardPage() {
 
           if (!goalsResponse.ok) {
             const errorData = await goalsResponse.json();
-            addLog(`❌ Goals error: ${errorData.error}`);
+            console.log(`❌ Goals error: ${errorData.error}`);
             throw new Error(errorData.error || 'Goals query failed');
           }
 
           const { goals: goalsData } = await goalsResponse.json();
           
-          addLog(`✅ Goals: ${goalsData?.length || 0}`);
+          console.log(`✅ Goals: ${goalsData?.length || 0}`);
           if (goalsData) {
             setGoals(goalsData);
           }
         } catch (e: any) {
-          addLog(`❌ Goals failed: ${e?.message}`);
+          console.log(`❌ Goals failed: ${e?.message}`);
           throw e;
         }
 
-        addLog("⏰ Initializing date range...");
+        console.log("⏰ Initializing date range...");
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
         setReportEndDate(today.toISOString().split("T")[0]);
         setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
-        addLog("🎉 Dashboard ready!");
+        console.log("🎉 Dashboard ready!");
         setLoading(false);
       } catch (error: any) {
         const errorMsg = error?.message || JSON.stringify(error) || "Unknown error";
-        addLog(`❌ CRASH: ${errorMsg}`);
+        console.log(`❌ CRASH: ${errorMsg}`);
         console.error("Error initializing user:", error);
-        addLog("⏳ Redirecting to home in 3s...");
+        console.log("⏳ Redirecting to home in 3s...");
         setTimeout(() => router.push("/"), 3000);
       }
     };
@@ -562,19 +556,8 @@ Format as professional homeschool compliance documentation.`;
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: "#f0f7ff" }}>
         <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", maxWidth: "400px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
           <h2 style={{ color: "#0066cc", marginBottom: "16px" }}>Loading Dashboard...</h2>
-          <div style={{ backgroundColor: "#f5f5f5", padding: "12px", borderRadius: "8px", maxHeight: "300px", overflowY: "auto" }}>
-            {debugLogs.length === 0 ? (
-              <p style={{ color: "#999", fontSize: "12px" }}>Initializing...</p>
-            ) : (
-              debugLogs.map((log, i) => (
-                <p key={i} style={{ color: "#666", fontSize: "12px", margin: "4px 0", fontFamily: "monospace" }}>
-                  {log}
-                </p>
-              ))
-            )}
-          </div>
           <p style={{ color: "#999", fontSize: "11px", marginTop: "12px", textAlign: "center" }}>
-            {debugLogs[debugLogs.length - 1]?.includes("Redirecting") ? "Redirecting..." : "Please wait..."}
+            Please wait...
           </p>
         </div>
       </div>
