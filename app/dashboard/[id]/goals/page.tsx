@@ -67,6 +67,17 @@ export default function GoalsPage() {
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        // Restore auth context for RLS policies to work
+        const sessionStr = localStorage.getItem('kernlo_session');
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            await supabase.auth.setSession(session);
+          } catch (e) {
+            console.log('Could not restore session');
+          }
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();

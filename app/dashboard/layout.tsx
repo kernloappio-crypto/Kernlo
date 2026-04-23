@@ -11,7 +11,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("kernlo_access_token");
     if (!token) {
       router.push("/auth/login");
     }
