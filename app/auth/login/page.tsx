@@ -62,18 +62,21 @@ export default function LoginPage() {
       }
 
       addLog("✅ Login successful!");
-      // Store user ID in sessionStorage as fallback for mobile
+      // Session is automatically persisted by Supabase client to localStorage
+      // Store fallback in sessionStorage for extra safety
       if (typeof window !== 'undefined' && result.session?.user?.id) {
         try {
           sessionStorage.setItem('kernlo_user_id', result.session.user.id);
-          addLog("💾 Stored user ID in sessionStorage");
+          localStorage.setItem('kernlo_session_backup', JSON.stringify(result.session));
+          addLog("💾 Session persisted to localStorage");
         } catch (e) {
-          addLog("⚠️ Could not store user ID");
+          addLog("⚠️ Could not store backup session");
         }
       }
       addLog("→ Redirecting to dashboard...");
       setLoading(false);
-      setTimeout(() => router.push("/dashboard"), 500);
+      // Give session time to persist
+      setTimeout(() => router.push("/dashboard"), 800);
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");

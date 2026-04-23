@@ -141,24 +141,40 @@ export default function DashboardPage() {
           addLog("✅ Session loaded on retry!");
         }
 
-        let user = session?.user || (await supabase.auth.getSession()).data.session?.user;
+        let user = session?.user;
         
-        // Fallback: Check sessionStorage for user ID (mobile Safari fix)
+        // Multi-level fallback for mobile session recovery
         if (!user && typeof window !== 'undefined') {
-          const storedUserId = sessionStorage.getItem('kernlo_user_id');
-          if (storedUserId) {
-            addLog(`💾 Found user ID in sessionStorage: ${storedUserId}`);
-            // Create a minimal user object just for ID (we'll use it to fetch data)
-            user = { id: storedUserId } as any;
+          // Try backup localStorage session first
+          const backupSessionStr = localStorage.getItem('kernlo_session_backup');
+          if (backupSessionStr) {
+            try {
+              const backupSession = JSON.parse(backupSessionStr);
+              if (backupSession?.user?.id) {
+                addLog(`💾 Recovered session from localStorage backup`);
+                user = backupSession.user;
+              }
+            } catch (e) {
+              addLog("⚠️ Could not parse localStorage backup");
+            }
+          }
+          
+          // Finally, check sessionStorage fallback
+          if (!user) {
+            const storedUserId = sessionStorage.getItem('kernlo_user_id');
+            if (storedUserId) {
+              addLog(`💾 Using sessionStorage user ID: ${storedUserId}`);
+              user = { id: storedUserId } as any;
+            }
           }
         }
         
         if (!user) {
-          addLog("❌ No user found in session or storage");
-          addLog("⏳ Waiting 3s before redirect...");
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          addLog("→ Redirecting to home");
-          router.push("/");
+          addLog("❌ No user found - session lost");
+          addLog("⏳ Clearing auth and redirecting to login...");
+          await supabase.auth.signOut().catch(() => {});
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          router.push("/auth/login");
           return;
         }
         
