@@ -148,6 +148,21 @@ export default function DashboardPage() {
           return;
         }
         
+        // CRITICAL: Restore Supabase auth context with the token
+        // This makes auth.uid() return the correct user ID for RLS policies
+        try {
+          addLog("🔑 Restoring auth context...");
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
+            user: user as any,
+          });
+          addLog("✅ Auth context restored");
+        } catch (e: any) {
+          addLog(`⚠️ Could not restore auth context: ${e?.message}`);
+          // Continue anyway - we have the token
+        }
+        
         setUserId(user.id);
         setEmail(user.email || "");
 
