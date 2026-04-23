@@ -414,7 +414,7 @@ Format as professional homeschool compliance documentation.`;
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
       {/* Header with Buttons */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <Link href="/dashboard" style={{ color: COLORS.primary }} className="text-sm font-medium mb-2 block">
               ← Back to Dashboard
@@ -423,18 +423,18 @@ Format as professional homeschool compliance documentation.`;
               {kid.name}
             </h1>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
             <button
               onClick={() => setShowQuickLog(!showQuickLog)}
               style={{ backgroundColor: COLORS.primary }}
-              className="px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm"
+              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
             >
               {showQuickLog ? "Cancel" : "+ Log Activity"}
             </button>
             <button
               onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
               style={{ backgroundColor: COLORS.secondary }}
-              className="px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm"
+              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
             >
               {showComprehensiveReport ? "Cancel" : "📄 Report"}
             </button>
@@ -443,29 +443,29 @@ Format as professional homeschool compliance documentation.`;
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Navigation Links */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
           <Link
             href={`/dashboard/${kid.id}/goals`}
             style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-            className="px-6 py-3 font-medium rounded-lg border hover:bg-gray-50"
+            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
           >
             Goals
           </Link>
           <Link
             href={`/dashboard/${kid.id}/compliance`}
             style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-            className="px-6 py-3 font-medium rounded-lg border hover:bg-gray-50"
+            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
           >
             Compliance
           </Link>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Subjects & Compliance Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                 Subject Progress ({complianceState})
@@ -526,7 +526,7 @@ Format as professional homeschool compliance documentation.`;
           </div>
 
           {/* Goals Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Monthly Goals
             </h3>
@@ -565,7 +565,7 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Quick Log Form */}
         {showQuickLog && (
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
             <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Log Activity
             </h2>
@@ -832,7 +832,7 @@ Format as professional homeschool compliance documentation.`;
               ⚠️ Report generation takes ~30 seconds. Please click once and wait.
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
               <button
                 onClick={handleGenerateComprehensiveReport}
                 disabled={selectedSubjects.length === 0}

@@ -598,7 +598,7 @@ Format as professional homeschool compliance documentation.`;
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold truncate">
+            <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
               Parent Dashboard
             </h1>
             <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
@@ -886,7 +886,7 @@ Format as professional homeschool compliance documentation.`;
       {showQuickLog && quickLogKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
-            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-6">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
               Quick Log - {quickLogKid.name}
             </h2>
 
@@ -1003,7 +1003,7 @@ Format as professional homeschool compliance documentation.`;
       {showReportGen && reportKid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
-            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-6">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
               Generate Report
             </h2>
 

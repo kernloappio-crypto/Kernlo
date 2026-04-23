@@ -216,7 +216,7 @@ export default function CompliancePage() {
       <Navbar />
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
       {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
             ← Back to {kid.name}
@@ -228,7 +228,7 @@ export default function CompliancePage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* State Selection */}
         <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
           <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
@@ -239,7 +239,7 @@ export default function CompliancePage() {
             value={selectedState}
             onChange={(e) => handleStateChange(e.target.value)}
             style={{ borderColor: COLORS.primary, color: COLORS.dark }}
-            className="w-full px-4 py-3 border rounded-lg font-medium text-base"
+            className="w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg font-medium text-sm sm:text-base"
           >
             {Object.keys(STATE_REQUIREMENTS).map((state) => (
               <option key={state} value={state}>

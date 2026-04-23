@@ -33,22 +33,22 @@ export default function LandingPage() {
     <main style={{ backgroundColor: "white" }}>
       {/* Navigation */}
       <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div style={{ color: COLORS.primary }} className="text-2xl font-bold">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div style={{ color: COLORS.primary }} className="text-lg sm:text-2xl font-bold">
             kernlo
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/auth/login"
               style={{ color: COLORS.primary }}
-              className="text-sm font-medium hover:opacity-70"
+              className="text-xs sm:text-sm font-medium hover:opacity-70"
             >
               Log In
             </Link>
             <Link
               href="/auth/signup"
               style={{ backgroundColor: COLORS.primary }}
-              className="px-6 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90"
+              className="px-4 sm:px-6 py-2 text-white text-xs sm:text-sm font-medium rounded-lg hover:opacity-90"
             >
               Get Started Free
             </Link>
@@ -57,25 +57,25 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section style={{ backgroundColor: COLORS.light }} className="py-20">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 style={{ color: COLORS.dark }} className="text-5xl font-bold mb-6 leading-tight">
+      <section style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+          <h1 style={{ color: COLORS.dark }} className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
             Turn 5 hours of compliance reports into 5 minutes
           </h1>
-          <p style={{ color: "#666" }} className="text-xl mb-8 max-w-3xl mx-auto">
+          <p style={{ color: "#666" }} className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto">
             Stop spending your weekends writing progress reports. Kernlo's AI generates professional, state-compliant reports from your activity logs. Log once. Report everywhere.
           </p>
-          <div className="flex gap-4 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8 sm:mb-12">
             <Link
               href="/auth/signup"
               style={{ backgroundColor: COLORS.primary }}
-              className="px-8 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition"
+              className="px-6 sm:px-8 py-2.5 sm:py-3 text-white font-semibold rounded-lg hover:opacity-90 transition text-sm sm:text-base"
             >
               Try Free (No credit card)
             </Link>
             <a
               href="#how-it-works"
-              className="px-8 py-3 border-2 font-semibold rounded-lg transition hover:bg-gray-50"
+              className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 font-semibold rounded-lg transition hover:bg-gray-50 text-sm sm:text-base"
               style={{ borderColor: COLORS.primary, color: COLORS.primary }}
             >
               See How It Works
@@ -103,12 +103,12 @@ export default function LandingPage() {
       </section>
 
       {/* Problem Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             Does this sound like you?
           </h2>
-          <div className="grid grid-cols-2 gap-8 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 max-w-2xl mx-auto">
             {[
               "Dreading compliance deadlines every month",
               "Spending weekends writing progress reports",
@@ -116,7 +116,7 @@ export default function LandingPage() {
               "Wanting professional reports but have no time",
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
-                <span style={{ color: COLORS.accent3 }} className="text-2xl font-bold">
+                <span style={{ color: COLORS.accent3 }} className="text-2xl font-bold flex-shrink-0">
                   ✓
                 </span>
                 <p style={{ color: "#666" }} className="text-sm">
@@ -129,12 +129,12 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" style={{ backgroundColor: COLORS.light }} className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section id="how-it-works" style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             How Kernlo Works
           </h2>
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               { step: "1", title: "Log Activities", desc: "Record what your kids learned—subject, duration, platform, notes." },
               { step: "2", title: "AI Generates", desc: "Kernlo's AI creates professional, state-compliant reports automatically." },
@@ -160,12 +160,12 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             Everything You Need
           </h2>
-          <div className="grid grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
               { icon: "📊", title: "Multi-Kid Support", desc: "Track progress for all your kids in one place" },
               { icon: "🤖", title: "AI-Powered Reports", desc: "Professional reports generated in minutes, not hours" },
@@ -174,12 +174,12 @@ export default function LandingPage() {
               { icon: "📈", title: "Goals & Tracking", desc: "Set monthly targets and track progress visually" },
               { icon: "📄", title: "PDF Export", desc: "Download comprehensive reports ready to submit" },
             ].map((feature, i) => (
-              <div key={i} style={{ backgroundColor: COLORS.light }} className="p-6 rounded-lg">
-                <p className="text-4xl mb-2">{feature.icon}</p>
-                <h3 style={{ color: COLORS.dark }} className="font-bold mb-2">
+              <div key={i} style={{ backgroundColor: COLORS.light }} className="p-4 sm:p-6 rounded-lg">
+                <p className="text-3xl sm:text-4xl mb-2">{feature.icon}</p>
+                <h3 style={{ color: COLORS.dark }} className="font-bold mb-2 text-sm sm:text-base">
                   {feature.title}
                 </h3>
-                <p style={{ color: "#666" }} className="text-sm">
+                <p style={{ color: "#666" }} className="text-xs sm:text-sm">
                   {feature.desc}
                 </p>
               </div>
@@ -189,12 +189,12 @@ export default function LandingPage() {
       </section>
 
       {/* Social Proof */}
-      <section style={{ backgroundColor: COLORS.light }} className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             What Parents Are Saying
           </h2>
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 quote: "I went from 5 hours of report writing to 30 minutes. Game changer.",
@@ -215,8 +215,8 @@ export default function LandingPage() {
                 state: "FL",
               },
             ].map((testimonial, i) => (
-              <div key={i} style={{ backgroundColor: "white" }} className="p-6 rounded-lg border border-gray-200">
-                <p style={{ color: "#666" }} className="mb-4 italic">
+              <div key={i} style={{ backgroundColor: "white" }} className="p-4 sm:p-6 rounded-lg border border-gray-200">
+                <p style={{ color: "#666" }} className="mb-4 italic text-sm">
                   "{testimonial.quote}"
                 </p>
                 <p style={{ color: COLORS.dark }} className="font-bold text-sm">
@@ -232,12 +232,12 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             Simple Pricing
           </h2>
-          <div className="grid grid-cols-2 gap-8 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-2xl mx-auto">
             {[
               {
                 name: "Free Trial",
@@ -258,12 +258,12 @@ export default function LandingPage() {
                   backgroundColor: i === 1 ? COLORS.primary : COLORS.light,
                   color: i === 1 ? "white" : COLORS.dark,
                 }}
-                className="p-8 rounded-lg text-center"
+                className="p-6 sm:p-8 rounded-lg text-center"
               >
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p style={{ color: i === 1 ? "rgba(255,255,255,0.9)" : "#666" }} className="mb-6">
+                <p style={{ color: i === 1 ? "rgba(255,255,255,0.9)" : "#666" }} className="mb-6 text-sm sm:text-base">
                   {plan.price}
-                  <span className="text-sm">
+                  <span className="text-xs sm:text-sm">
                     {plan.price !== "$0" ? " " + plan.desc : ""}
                   </span>
                 </p>
@@ -273,11 +273,11 @@ export default function LandingPage() {
                     backgroundColor: i === 1 ? "white" : COLORS.primary,
                     color: i === 1 ? COLORS.primary : "white",
                   }}
-                  className="block px-6 py-2 rounded-lg font-semibold mb-8 hover:opacity-90 transition"
+                  className="block px-6 py-2 rounded-lg font-semibold mb-8 hover:opacity-90 transition text-sm sm:text-base"
                 >
                   Get Started
                 </Link>
-                <ul className="space-y-3 text-left text-sm">
+                <ul className="space-y-3 text-left text-xs sm:text-sm">
                   {plan.features.map((feature, j) => (
                     <li key={j} className="flex items-center gap-2">
                       <span>✓</span> {feature}
@@ -287,16 +287,16 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <p style={{ color: "#999" }} className="text-center mt-8 text-sm">
+          <p style={{ color: "#999" }} className="text-center mt-8 text-xs sm:text-sm">
             Free trial. No credit card required. Upgrade anytime.
           </p>
         </div>
       </section>
 
       {/* FAQ */}
-      <section style={{ backgroundColor: COLORS.light }} className="py-20">
-        <div className="max-w-3xl mx-auto px-6">
-          <h2 style={{ color: COLORS.dark }} className="text-3xl font-bold text-center mb-12">
+      <section style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
             Frequently Asked Questions
           </h2>
           <div className="space-y-6">
@@ -326,11 +326,11 @@ export default function LandingPage() {
                 a: "Absolutely. Your data is yours. You can export reports as PDF at any time.",
               },
             ].map((faq, i) => (
-              <div key={i} className="bg-white p-6 rounded-lg border border-gray-200">
-                <h3 style={{ color: COLORS.dark }} className="font-bold mb-2">
+              <div key={i} className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                <h3 style={{ color: COLORS.dark }} className="font-bold mb-2 text-sm sm:text-base">
                   {faq.q}
                 </h3>
-                <p style={{ color: "#666" }} className="text-sm">
+                <p style={{ color: "#666" }} className="text-xs sm:text-sm">
                   {faq.a}
                 </p>
               </div>
@@ -340,15 +340,15 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section style={{ backgroundColor: COLORS.primary }} className="py-20 text-center text-white">
-        <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-3xl font-bold mb-6">Ready to take back your weekends?</h2>
-          <p className="text-lg mb-8 opacity-90">
+      <section style={{ backgroundColor: COLORS.primary }} className="py-16 sm:py-20 text-center text-white">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Ready to take back your weekends?</h2>
+          <p className="text-base sm:text-lg mb-6 sm:mb-8 opacity-90">
             Start free. No credit card. No commitments.
           </p>
           <Link
             href="/auth/signup"
-            className="inline-block px-8 py-3 bg-white text-black font-semibold rounded-lg hover:opacity-90 transition"
+            className="inline-block px-8 py-3 bg-white text-black font-semibold rounded-lg hover:opacity-90 transition text-sm sm:text-base"
           >
             Get Started Now
           </Link>
@@ -357,32 +357,32 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer style={{ backgroundColor: COLORS.dark }} className="text-white py-12">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-4 gap-8 mb-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8">
             <div>
               <p className="font-bold mb-4">Kernlo</p>
-              <p className="text-sm opacity-70">AI-powered progress reports for homeschool families.</p>
+              <p className="text-xs sm:text-sm opacity-70">AI-powered progress reports for homeschool families.</p>
             </div>
             <div>
               <p className="font-bold mb-4">Product</p>
-              <ul className="text-sm opacity-70 space-y-2">
+              <ul className="text-xs sm:text-sm opacity-70 space-y-2">
                 <li><Link href="/generator" className="hover:opacity-100">Report Generator</Link></li>
                 <li><Link href="/dashboard" className="hover:opacity-100">Dashboard</Link></li>
               </ul>
             </div>
             <div>
               <p className="font-bold mb-4">Legal</p>
-              <ul className="text-sm opacity-70 space-y-2">
+              <ul className="text-xs sm:text-sm opacity-70 space-y-2">
                 <li><Link href="/privacy" className="hover:opacity-100">Privacy</Link></li>
                 <li><Link href="/terms" className="hover:opacity-100">Terms</Link></li>
               </ul>
             </div>
             <div>
               <p className="font-bold mb-4">Contact</p>
-              <p className="text-sm opacity-70">hello@kernlo.app</p>
+              <p className="text-xs sm:text-sm opacity-70">hello@kernlo.app</p>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }} className="pt-8 text-center text-sm opacity-50">
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }} className="pt-8 text-center text-xs sm:text-sm opacity-50">
             <p>© 2026 Kernlo. All rights reserved.</p>
           </div>
         </div>

@@ -185,7 +185,7 @@ export default function GoalsPage() {
       <Navbar />
       <main style={{ backgroundColor: COLORS.light, minHeight: "100vh" }}>
       {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-6">
+      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb" }} className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
             ← Back to {kid.name}
@@ -197,12 +197,12 @@ export default function GoalsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Add Goal Button */}
         <button
           onClick={() => setShowAddGoal(!showAddGoal)}
           style={{ backgroundColor: COLORS.primary }}
-          className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90"
+          className="px-4 sm:px-6 py-2 sm:py-3 text-white font-medium rounded-lg hover:opacity-90 text-sm sm:text-base"
         >
           {showAddGoal ? "Cancel" : "+ Add Goal"}
         </button>
@@ -289,7 +289,7 @@ export default function GoalsPage() {
                         <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                           {goal.subject}
                         </h3>
-                        <p style={{ color: "#333" }} className="text-sm">
+                        <p style={{ color: "#333" }} className="text-xs sm:text-sm">
                           {hours.toFixed(1)}h / {goal.monthly_hours}h
                         </p>
                       </div>

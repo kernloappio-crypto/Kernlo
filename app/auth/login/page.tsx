@@ -82,166 +82,167 @@ export default function LoginPage() {
         div[class*="bg-gradient"] { background: #1a1a2e !important; }
         div[class*="from-slate"] { background: #1a1a2e !important; }
       `}</style>
-      <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4">
-      <div
-        style={{ backgroundColor: "white", borderRadius: "12px" }}
-        className="p-8 w-full max-w-sm border border-gray-200 shadow-lg"
-      >
-        <div className="mb-8 pb-6" style={{ borderBottom: "1px solid #e5e7eb" }}>
-          <h1 style={{ color: "#0066cc" }} className="text-2xl font-bold mb-4">
-            kernlo
-          </h1>
-          <h2 style={{ color: "#1a1a2e" }} className="text-2xl font-bold mb-2">
-            Sign In
-          </h2>
-          <p style={{ color: "#666" }} className="text-sm">
-            Access your homeschool dashboard
-          </p>
-        </div>
+      <main style={{ backgroundColor: "#1a1a2e" }} className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div
+          style={{ backgroundColor: "white", borderRadius: "12px" }}
+          className="p-6 sm:p-8 w-full max-w-sm border border-gray-200 shadow-lg"
+        >
+          <div className="mb-6 sm:mb-8 pb-4 sm:pb-6" style={{ borderBottom: "1px solid #e5e7eb" }}>
+            <h1 style={{ color: "#0066cc" }} className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
+              kernlo
+            </h1>
+            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-2">
+              Sign In
+            </h2>
+            <p style={{ color: "#666" }} className="text-xs sm:text-sm">
+              Access your homeschool dashboard
+            </p>
+          </div>
 
-        {error && (
-          <div
-            style={{
-              backgroundColor: "#ffebee",
-              borderLeft: "4px solid #ff6b6b",
-            }}
-            className="p-4 rounded mb-6"
-          >
-            <p style={{ color: "#c62828" }} className="text-base font-bold mb-2">
-              ❌ Sign In Failed
-            </p>
-            <p style={{ color: "#c62828" }} className="text-sm mb-4">
-              {error}
-            </p>
-            <p style={{ color: "#999" }} className="text-xs mb-3">
-              Check your email and password, then try again.
-            </p>
-            <button
-              onClick={() => setError("")}
-              style={{ 
-                color: "white", 
-                backgroundColor: "#0066cc",
-                padding: "8px 16px",
-                borderRadius: "4px",
-                fontWeight: "600",
-                border: "none"
+          {error && (
+            <div
+              style={{
+                backgroundColor: "#ffebee",
+                borderLeft: "4px solid #ff6b6b",
               }}
-              className="text-sm hover:opacity-90"
+              className="p-3 sm:p-4 rounded mb-6"
             >
-              Try Again
+              <p style={{ color: "#c62828" }} className="text-sm sm:text-base font-bold mb-2">
+                ❌ Sign In Failed
+              </p>
+              <p style={{ color: "#c62828" }} className="text-xs sm:text-sm mb-3 sm:mb-4">
+                {error}
+              </p>
+              <p style={{ color: "#999" }} className="text-xs mb-3">
+                Check your email and password, then try again.
+              </p>
+              <button
+                onClick={() => setError("")}
+                style={{ 
+                  color: "white", 
+                  backgroundColor: "#0066cc",
+                  padding: "8px 16px",
+                  borderRadius: "4px",
+                  fontWeight: "600",
+                  border: "none",
+                  fontSize: "0.875rem"
+                }}
+                className="hover:opacity-90"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {loading && (
+            <div
+              style={{
+                backgroundColor: "#e3f2fd",
+                borderLeft: "4px solid #0066cc",
+              }}
+              className="p-3 sm:p-4 rounded mb-6"
+            >
+              <p style={{ color: "#0066cc" }} className="text-xs sm:text-sm font-semibold">
+                ⏳ Signing in... Please wait.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3 sm:space-y-4 mb-6">
+            <div>
+              <label
+                style={{ color: "#666" }}
+                className="text-xs sm:text-sm font-medium block mb-2"
+              >
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                style={{ color: "#1a1a2e" }}
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label
+                style={{ color: "#666" }}
+                className="text-xs sm:text-sm font-medium block mb-2"
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                style={{ color: "#1a1a2e" }}
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogin}
+              disabled={loading}
+              style={{ backgroundColor: "#0066cc" }}
+              className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50 text-sm sm:text-base"
+            >
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </div>
-        )}
 
-        {loading && (
-          <div
-            style={{
-              backgroundColor: "#e3f2fd",
-              borderLeft: "4px solid #0066cc",
-            }}
-            className="p-4 rounded mb-6"
-          >
-            <p style={{ color: "#0066cc" }} className="text-sm font-semibold">
-              ⏳ Signing in... Please wait.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-4 mb-6">
-          <div>
-            <label
-              style={{ color: "#666" }}
-              className="text-sm font-medium block mb-2"
+          {/* Debug Logs */}
+          {debugLogs.length > 0 && (
+            <div
+              style={{
+                backgroundColor: "#f5f5f5",
+                borderTop: "1px solid #e5e7eb",
+                marginTop: "20px",
+                paddingTop: "10px",
+              }}
+              className="text-xs"
             >
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              style={{ color: "#1a1a2e" }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label
-              style={{ color: "#666" }}
-              className="text-sm font-medium block mb-2"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              style={{ color: "#1a1a2e" }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleLogin}
-            disabled={loading}
-            style={{ backgroundColor: "#0066cc" }}
-            className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </div>
-
-        {/* Debug Logs */}
-        {debugLogs.length > 0 && (
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              borderTop: "1px solid #e5e7eb",
-              marginTop: "20px",
-              paddingTop: "10px",
-            }}
-            className="text-xs"
-          >
-            <p style={{ color: "#666", marginBottom: "8px", fontWeight: "bold" }}>
-              Debug Log:
-            </p>
-            {debugLogs.map((log, i) => (
-              <p key={i} style={{ color: "#666", margin: "2px 0", fontFamily: "monospace" }}>
-                {log}
+              <p style={{ color: "#666", marginBottom: "8px", fontWeight: "bold" }}>
+                Debug Log:
               </p>
-            ))}
-          </div>
-        )}
+              {debugLogs.map((log, i) => (
+                <p key={i} style={{ color: "#666", margin: "2px 0", fontFamily: "monospace", fontSize: "10px" }}>
+                  {log}
+                </p>
+              ))}
+            </div>
+          )}
 
-        <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-6">
-          <div className="text-center mb-4">
-            <Link
-              href="/auth/forgot-password"
-              style={{ color: "#0066cc" }}
-              className="text-sm font-medium hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-          <div className="text-center">
-            <p style={{ color: "#666" }} className="text-sm mb-2">
-              Don't have an account?
-            </p>
-            <Link
-              href="/auth/signup"
-              style={{ color: "#0066cc" }}
-              className="text-sm font-medium hover:underline"
-            >
-              Sign Up
-            </Link>
+          <div style={{ borderTop: "1px solid #e5e7eb" }} className="pt-4 sm:pt-6">
+            <div className="text-center mb-4">
+              <Link
+                href="/auth/forgot-password"
+                style={{ color: "#0066cc" }}
+                className="text-xs sm:text-sm font-medium hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <div className="text-center">
+              <p style={{ color: "#666" }} className="text-xs sm:text-sm mb-2">
+                Don't have an account?
+              </p>
+              <Link
+                href="/auth/signup"
+                style={{ color: "#0066cc" }}
+                className="text-xs sm:text-sm font-medium hover:underline"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
     </>
   );
 }
