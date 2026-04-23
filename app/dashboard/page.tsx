@@ -154,54 +154,72 @@ export default function DashboardPage() {
         setUserId(user.id);
         setEmail(user.email || "");
 
-        addLog("📚 Loading kids...");
-        const { data: kidsData, error: kidsErr } = await supabase
-          .from("kids")
-          .select("*")
-          .eq("user_id", user.id);
+        try {
+          addLog("📚 Loading kids...");
+          const { data: kidsData, error: kidsErr } = await supabase
+            .from("kids")
+            .select("*")
+            .eq("user_id", user.id);
 
-        if (kidsErr) {
-          addLog(`❌ Kids error: ${kidsErr.message}`);
-        } else {
-          addLog(`✅ Kids: ${kidsData?.length || 0}`);
-          if (kidsData) {
-            setKids(kidsData);
-            if (kidsData.length > 0) {
-              setQuickLogKid(kidsData[0]);
-              setReportKid(kidsData[0]);
+          if (kidsErr) {
+            addLog(`❌ Kids error: ${kidsErr.message}`);
+            throw kidsErr;
+          } else {
+            addLog(`✅ Kids: ${kidsData?.length || 0}`);
+            if (kidsData) {
+              setKids(kidsData);
+              if (kidsData.length > 0) {
+                setQuickLogKid(kidsData[0]);
+                setReportKid(kidsData[0]);
+              }
             }
           }
+        } catch (e: any) {
+          addLog(`❌ Kids failed: ${e?.message}`);
+          throw e;
         }
 
-        addLog("📊 Loading activities...");
-        const { data: activitiesData, error: activitiesErr } = await supabase
-          .from("activities")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("date", { ascending: false });
+        try {
+          addLog("📊 Loading activities...");
+          const { data: activitiesData, error: activitiesErr } = await supabase
+            .from("activities")
+            .select("*")
+            .eq("user_id", user.id)
+            .order("date", { ascending: false });
 
-        if (activitiesErr) {
-          addLog(`❌ Activities error: ${activitiesErr.message}`);
-        } else {
-          addLog(`✅ Activities: ${activitiesData?.length || 0}`);
-          if (activitiesData) {
-            setActivities(activitiesData);
+          if (activitiesErr) {
+            addLog(`❌ Activities error: ${activitiesErr.message}`);
+            throw activitiesErr;
+          } else {
+            addLog(`✅ Activities: ${activitiesData?.length || 0}`);
+            if (activitiesData) {
+              setActivities(activitiesData);
+            }
           }
+        } catch (e: any) {
+          addLog(`❌ Activities failed: ${e?.message}`);
+          throw e;
         }
 
-        addLog("🎯 Loading goals...");
-        const { data: goalsData, error: goalsErr } = await supabase
-          .from("goals")
-          .select("*")
-          .eq("user_id", user.id);
+        try {
+          addLog("🎯 Loading goals...");
+          const { data: goalsData, error: goalsErr } = await supabase
+            .from("goals")
+            .select("*")
+            .eq("user_id", user.id);
 
-        if (goalsErr) {
-          addLog(`❌ Goals error: ${goalsErr.message}`);
-        } else {
-          addLog(`✅ Goals: ${goalsData?.length || 0}`);
-          if (goalsData) {
-            setGoals(goalsData);
+          if (goalsErr) {
+            addLog(`❌ Goals error: ${goalsErr.message}`);
+            throw goalsErr;
+          } else {
+            addLog(`✅ Goals: ${goalsData?.length || 0}`);
+            if (goalsData) {
+              setGoals(goalsData);
+            }
           }
+        } catch (e: any) {
+          addLog(`❌ Goals failed: ${e?.message}`);
+          throw e;
         }
 
         addLog("⏰ Initializing date range...");
@@ -213,8 +231,10 @@ export default function DashboardPage() {
         addLog("🎉 Dashboard ready!");
         setLoading(false);
       } catch (error: any) {
-        addLog(`❌ CRASH: ${error?.message || error}`);
+        const errorMsg = error?.message || JSON.stringify(error) || "Unknown error";
+        addLog(`❌ CRASH: ${errorMsg}`);
         console.error("Error initializing user:", error);
+        addLog("⏳ Redirecting to home in 3s...");
         setTimeout(() => router.push("/"), 3000);
       }
     };
