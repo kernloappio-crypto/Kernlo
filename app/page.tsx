@@ -60,10 +60,10 @@ export default function LandingPage() {
       <section style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
           <h1 style={{ color: COLORS.dark }} className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
-            Turn 5 hours of compliance reports into 5 minutes
+            Track homeschool learning. Generate reports when you need them.
           </h1>
           <p style={{ color: "#666" }} className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto">
-            Stop spending your weekends writing progress reports. Kernlo's AI generates professional, state-compliant reports from your activity logs. Log once. Report everywhere.
+            Log your kids' learning activities in seconds. Kernlo tracks progress by subject and state requirements. When you need a report, generate one with AI in moments. No spreadsheets. No hassle.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8 sm:mb-12">
             <Link
@@ -167,12 +167,12 @@ export default function LandingPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
+              { icon: "📱", title: "Quick Logging", desc: "Log learning in seconds—subject, duration, platform, notes" },
               { icon: "📊", title: "Multi-Kid Support", desc: "Track progress for all your kids in one place" },
-              { icon: "🤖", title: "AI-Powered Reports", desc: "Professional reports generated in minutes, not hours" },
-              { icon: "✓", title: "50-State Compliant", desc: "Works with requirements from all 50 states" },
-              { icon: "📱", title: "Quick Logging", desc: "Log activities on the go—subject, duration, platform, notes" },
-              { icon: "📈", title: "Goals & Tracking", desc: "Set monthly targets and track progress visually" },
-              { icon: "📄", title: "PDF Export", desc: "Download comprehensive reports ready to submit" },
+              { icon: "📈", title: "Goals & Compliance Tracking", desc: "Set targets and see at a glance how you're tracking against your state's requirements" },
+              { icon: "🤖", title: "AI-Powered Reports", desc: "Generate professional, narrative reports when you need them" },
+              { icon: "📄", title: "PDF Export", desc: "Download reports ready for co-ops, colleges, or state submissions" },
+              { icon: "✓", title: "State Tracking", desc: "Track hours against your state's requirements. Verify rules with your state education department" },
             ].map((feature, i) => (
               <div key={i} style={{ backgroundColor: COLORS.light }} className="p-4 sm:p-6 rounded-lg">
                 <p className="text-3xl sm:text-4xl mb-2">{feature.icon}</p>
@@ -303,11 +303,11 @@ export default function LandingPage() {
             {[
               {
                 q: "Does Kernlo work for my state?",
-                a: "Yes! Kernlo works for all 50 states. When you generate a report, you can select your state and Kernlo ensures it's compliant with your specific requirements.",
+                a: "Kernlo tracks learning hours and generates reports for any homeschool parent. Your state has specific rules—we recommend checking your state education department to confirm what documentation they need. Kernlo covers the tracking and report generation; you verify compliance with your state.",
               },
               {
                 q: "How does the AI generate reports?",
-                a: "You log activities with details (subject, duration, platform, notes). Our AI analyzes these logs and generates professional, narrative-style progress reports that impress compliance reviewers.",
+                a: "You log activities with details (subject, duration, platform, notes). Kernlo tracks your progress by subject and state requirements in real-time. When you need a report, our AI analyzes your logs and generates professional, narrative-style progress reports.",
               },
               {
                 q: "What if I use IXL, Khan Academy, or other platforms?",
