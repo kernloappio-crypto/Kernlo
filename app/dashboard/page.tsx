@@ -106,65 +106,48 @@ export default function DashboardPage() {
         addLog("📱 Dashboard loading...");
         
         let user = null;
-        let session = null;
+        let accessToken = null;
         
-        // PRIMARY: Check localStorage backup (most reliable on mobile)
+        // Only source of truth: JWT access token in localStorage
         if (typeof window !== 'undefined') {
-          const backupSessionStr = localStorage.getItem('kernlo_session_backup');
-          if (backupSessionStr) {
+          accessToken = localStorage.getItem('kernlo_access_token');
+          if (accessToken) {
+            addLog(`🔑 JWT access token found`);
+            
+            // Decode JWT to extract user info
             try {
-              const backupSession = JSON.parse(backupSessionStr);
-              if (backupSession?.user?.id) {
-                addLog(`💾 Session found in localStorage`);
-                session = backupSession;
-                user = backupSession.user;
+              const parts = accessToken.split('.');
+              if (parts.length === 3) {
+                const decoded = JSON.parse(atob(parts[1]));
                 
-                // CRITICAL FIX: Restore the session to Supabase auth context
-                // This makes auth.uid() work correctly for RLS policies
-                try {
-                  await supabase.auth.setSession(session);
-                  addLog("✅ Session restored to Supabase context");
-                } catch (e) {
-                  addLog("⚠️ Could not restore session to Supabase");
+                // Check if token is expired
+                const now = Math.floor(Date.now() / 1000);
+                if (decoded.exp && decoded.exp < now) {
+                  addLog(`⚠️ Token expired`);
+                  accessToken = null;
+                } else {
+                  user = {
+                    id: decoded.sub,
+                    email: decoded.email,
+                  };
+                  addLog(`✅ User: ${user.id}`);
                 }
               }
             } catch (e) {
-              addLog("⚠️ Could not parse localStorage session");
-            }
-          }
-          
-          // SECONDARY: Try getSession as backup (works on desktop)
-          if (!user) {
-            addLog("📨 Trying getSession()...");
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (currentSession?.user) {
-              addLog(`✅ Got session from Supabase`);
-              session = currentSession;
-              user = currentSession.user;
-            }
-          }
-          
-          // TERTIARY: Check sessionStorage fallback (won't work for RLS - migration path)
-          if (!user) {
-            const storedUserId = sessionStorage.getItem('kernlo_user_id');
-            if (storedUserId) {
-              addLog(`⚠️ Using sessionStorage user ID (RLS will fail)`);
-              addLog(`→ Re-authenticating required`);
-              router.push("/auth/login");
-              return;
+              addLog(`⚠️ Failed to decode token`);
+              accessToken = null;
             }
           }
         }
         
-        if (!user) {
-          addLog("❌ No user found");
-          addLog("→ Redirecting to home");
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          router.push("/");
+        if (!user || !accessToken) {
+          addLog("❌ Not authenticated");
+          addLog("→ Redirecting to login");
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          router.push("/auth/login");
           return;
         }
         
-        addLog(`✅ User authenticated: ${user.id}`);
         setUserId(user.id);
         setEmail(user.email || "");
 

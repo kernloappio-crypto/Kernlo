@@ -60,7 +60,24 @@ export async function signIn(email: string, password: string) {
       return { success: false, error: error?.message || 'Login failed' };
     }
 
-    return { success: true, session: data.session };
+    // Extract tokens from session
+    if (data.session) {
+      const accessToken = data.session.access_token;
+      const refreshToken = data.session.refresh_token;
+      
+      // Store ONLY JWT tokens to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('kernlo_access_token', accessToken);
+          localStorage.setItem('kernlo_refresh_token', refreshToken);
+          console.log('✅ Tokens stored to localStorage');
+        } catch (e) {
+          console.warn('⚠️ Could not store tokens:', e);
+        }
+      }
+    }
+
+    return { success: true, session: data.session, tokens: { accessToken: data.session?.access_token, refreshToken: data.session?.refresh_token } };
   } catch (err) {
     console.error('Unexpected login error:', err);
     return { success: false, error: 'Unexpected error' };
@@ -69,6 +86,18 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   try {
+    // Clear tokens from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('kernlo_access_token');
+        localStorage.removeItem('kernlo_refresh_token');
+        localStorage.removeItem('kernlo_session_backup');
+        console.log('✅ Tokens cleared from localStorage');
+      } catch (e) {
+        console.warn('⚠️ Could not clear tokens:', e);
+      }
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Logout error:', error.message);
@@ -123,10 +152,55 @@ export async function getSession() {
   }
 }
 
-export function onAuthStateChange(
-  callback: (user: any | null, session: any | null) => void
-) {
-  return supabase.auth.onAuthStateChange((event, session) => {
-    callback(session?.user || null, session);
-  });
+/**
+ * Helper: Restore Supabase auth session from JWT token in localStorage
+ * Called once on app init to validate token and set up client
+ */
+export async function restoreAuthFromToken() {
+  try {
+    if (typeof window === 'undefined') return null;
+    
+    const accessToken = localStorage.getItem('kernlo_access_token');
+    const refreshToken = localStorage.getItem('kernlo_refresh_token');
+    
+    if (!accessToken) {
+      console.log('No JWT token found in localStorage');
+      return null;
+    }
+    
+    // Validate token is not expired
+    try {
+      const parts = accessToken.split('.');
+      if (parts.length === 3) {
+        const decoded = JSON.parse(atob(parts[1]));
+        const now = Math.floor(Date.now() / 1000);
+        
+        if (decoded.exp && decoded.exp < now) {
+          console.log('Access token expired');
+          // Try to refresh if refresh token exists
+          if (refreshToken) {
+            const { data, error } = await supabase.auth.refreshSession({ 
+              refresh_token: refreshToken 
+            });
+            if (!error && data.session) {
+              localStorage.setItem('kernlo_access_token', data.session.access_token);
+              localStorage.setItem('kernlo_refresh_token', data.session.refresh_token);
+              console.log('✅ Token refreshed');
+              return data.session;
+            }
+          }
+          return null;
+        }
+        
+        console.log('✅ Token is valid');
+        return { access_token: accessToken, refresh_token: refreshToken };
+      }
+    } catch (e) {
+      console.error('Token validation error:', e);
+      return null;
+    }
+  } catch (err) {
+    console.error('Error restoring auth:', err);
+    return null;
+  }
 }

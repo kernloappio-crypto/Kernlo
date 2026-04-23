@@ -62,21 +62,12 @@ export default function LoginPage() {
       }
 
       addLog("✅ Login successful!");
-      // Session is automatically persisted by Supabase client to localStorage
-      // Store fallback in sessionStorage for extra safety
-      if (typeof window !== 'undefined' && result.session?.user?.id) {
-        try {
-          sessionStorage.setItem('kernlo_user_id', result.session.user.id);
-          localStorage.setItem('kernlo_session_backup', JSON.stringify(result.session));
-          addLog("💾 Session persisted to localStorage");
-        } catch (e) {
-          addLog("⚠️ Could not store backup session");
-        }
-      }
+      // Tokens already stored to localStorage by signIn()
+      addLog("🔑 JWT tokens stored to localStorage");
       addLog("→ Redirecting to dashboard...");
       setLoading(false);
-      // Give session time to persist
-      setTimeout(() => router.push("/dashboard"), 800);
+      // Give localStorage time to persist
+      setTimeout(() => router.push("/dashboard"), 300);
     } catch (err: any) {
       addLog(`❌ Catch: ${err?.message || err}`);
       setError("An error occurred. Please try again.");
