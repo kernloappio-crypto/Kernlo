@@ -432,6 +432,17 @@ Format as professional homeschool compliance documentation.`;
               {showQuickLog ? "Cancel" : "+ Log Activity"}
             </button>
             <button
+              onClick={() => {
+                // Open attendance modal with this kid pre-selected
+                // This would require adding attendance modal to [id] page
+                alert("Mark attendance for " + kid?.name + " on today?");
+              }}
+              style={{ backgroundColor: COLORS.accent3 }}
+              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+            >
+              📅 Attendance
+            </button>
+            <button
               onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
               style={{ backgroundColor: COLORS.secondary }}
               className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"

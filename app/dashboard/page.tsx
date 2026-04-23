@@ -96,6 +96,11 @@ export default function DashboardPage() {
   const [newKidGrade, setNewKidGrade] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Attendance Log states
+  const [showAttendanceLog, setShowAttendanceLog] = useState(false);
+  const [selectedKidsForAttendance, setSelectedKidsForAttendance] = useState<string[]>([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split("T")[0]);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -597,6 +602,19 @@ Format as professional homeschool compliance documentation.`;
             </p>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <button
+              onClick={() => {
+                if (kids.length === 0) {
+                  alert("Please add a kid first");
+                  return;
+                }
+                setShowAttendanceLog(true);
+              }}
+              style={{ backgroundColor: COLORS.secondary }}
+              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap"
+            >
+              📅 Attendance
+            </button>
             <button
               onClick={() => {
                 if (kids.length === 0) {
@@ -1176,6 +1194,112 @@ Format as professional homeschool compliance documentation.`;
         </div>
       )}
 
+      {/* Attendance Log Modal */}
+      {showAttendanceLog && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="w-full max-w-md sm:max-w-lg my-8 p-6 sm:p-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-6">
+              Log Attendance
+            </h2>
+
+            {/* Date */}
+            <div className="mb-6">
+              <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                Date
+              </label>
+              <input
+                type="date"
+                value={attendanceDate}
+                onChange={(e) => setAttendanceDate(e.target.value)}
+                style={{ borderColor: "#d1d5db" }}
+                className="w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Kid Selection */}
+            <div className="mb-6">
+              <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
+                Select Kids
+              </label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {kids.map((kid) => (
+                  <label key={kid.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={selectedKidsForAttendance.includes(kid.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedKidsForAttendance([...selectedKidsForAttendance, kid.id]);
+                        } else {
+                          setSelectedKidsForAttendance(
+                            selectedKidsForAttendance.filter((id) => id !== kid.id)
+                          );
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                      {kid.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <button
+                onClick={async () => {
+                  if (selectedKidsForAttendance.length === 0) {
+                    alert("Please select at least one kid");
+                    return;
+                  }
+
+                  try {
+                    // Log attendance for selected kids
+                    for (const kidId of selectedKidsForAttendance) {
+                      const kidName = kids.find((k) => k.id === kidId)?.name;
+                      if (kidName) {
+                        const { error } = await supabase.from("attendance").insert({
+                          user_id: userId,
+                          child_name: kidName,
+                          date: attendanceDate,
+                        });
+
+                        if (error) {
+                          console.error("Error logging attendance:", error);
+                        }
+                      }
+                    }
+
+                    alert("Attendance logged successfully!");
+                    setShowAttendanceLog(false);
+                    setSelectedKidsForAttendance([]);
+                    setAttendanceDate(new Date().toISOString().split("T")[0]);
+                  } catch (err) {
+                    console.error("Error:", err);
+                    alert("Failed to log attendance");
+                  }
+                }}
+                style={{ backgroundColor: COLORS.primary }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+              >
+                Log Attendance
+              </button>
+              <button
+                onClick={() => {
+                  setShowAttendanceLog(false);
+                  setSelectedKidsForAttendance([]);
+                }}
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
