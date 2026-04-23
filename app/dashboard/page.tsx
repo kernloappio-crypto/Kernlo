@@ -191,8 +191,7 @@ export default function DashboardPage() {
           addLog("📚 Loading kids...");
           const { data: kidsData, error: kidsErr } = await supabase
             .from("kids")
-            .select("*")
-            .eq("user_id", user.id);
+            .select("*");
 
           if (kidsErr) {
             addLog(`❌ Kids error: ${kidsErr.message}`);
@@ -214,10 +213,11 @@ export default function DashboardPage() {
 
         try {
           addLog("📊 Loading activities...");
+          // Note: RLS policy will automatically filter to user's activities
+          // So we don't need to add .eq() filter - RLS does it
           const { data: activitiesData, error: activitiesErr } = await supabase
             .from("activities")
-            .select("*")
-            .eq("user_id", user.id);
+            .select("*");
 
           if (activitiesErr) {
             addLog(`❌ Activities error: ${activitiesErr.message}`);
@@ -247,8 +247,7 @@ export default function DashboardPage() {
           addLog("🎯 Loading goals...");
           const { data: goalsData, error: goalsErr } = await supabase
             .from("goals")
-            .select("*")
-            .eq("user_id", user.id);
+            .select("*");
 
           if (goalsErr) {
             addLog(`❌ Goals error: ${goalsErr.message}`);
