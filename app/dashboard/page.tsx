@@ -105,80 +105,52 @@ export default function DashboardPage() {
       try {
         addLog("📱 Dashboard loading...");
         
-        // Try refreshSession first (may fail if no refresh_token, that's OK)
-        try {
-          addLog("⏳ Calling refreshSession...");
-          const { data, error } = await supabase.auth.refreshSession();
-          if (error) {
-            addLog(`⚠️ RefreshSession error: ${error.message}`);
-          } else {
-            addLog("✅ RefreshSession success");
-          }
-        } catch (e: any) {
-          addLog(`❌ RefreshSession threw: ${e?.message || e}`);
-        }
+        let user = null;
         
-        // Get the session (from storage or current)
-        addLog("📨 Calling getSession...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        addLog(`Result: ${session?.user?.id ? `User ${session.user.id}` : "No user"}`);
-        
-        if (!session?.user) {
-          addLog("⏳ Waiting 1s for session to load...");
-          // Wait a bit and try one more time (session might be loading)
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const { data: { session: session2 } } = await supabase.auth.getSession();
-          
-          if (!session2?.user) {
-            addLog("❌ Still no session after wait");
-            addLog("⏳ Waiting 3s before redirect to home...");
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            addLog("→ Redirecting to home");
-            router.push("/");
-            return;
-          }
-          addLog("✅ Session loaded on retry!");
-        }
-
-        let user = session?.user;
-        
-        // Multi-level fallback for mobile session recovery
-        if (!user && typeof window !== 'undefined') {
-          // Try backup localStorage session first
+        // PRIMARY: Check localStorage backup (most reliable on mobile)
+        if (typeof window !== 'undefined') {
           const backupSessionStr = localStorage.getItem('kernlo_session_backup');
           if (backupSessionStr) {
             try {
               const backupSession = JSON.parse(backupSessionStr);
               if (backupSession?.user?.id) {
-                addLog(`💾 Recovered session from localStorage backup`);
+                addLog(`💾 Session found in localStorage`);
                 user = backupSession.user;
               }
             } catch (e) {
-              addLog("⚠️ Could not parse localStorage backup");
+              addLog("⚠️ Could not parse localStorage session");
             }
           }
           
-          // Finally, check sessionStorage fallback
+          // SECONDARY: Try getSession as backup (works on desktop)
+          if (!user) {
+            addLog("📨 Trying getSession()...");
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              addLog(`✅ Got session from Supabase`);
+              user = session.user;
+            }
+          }
+          
+          // TERTIARY: Check sessionStorage fallback
           if (!user) {
             const storedUserId = sessionStorage.getItem('kernlo_user_id');
             if (storedUserId) {
-              addLog(`💾 Using sessionStorage user ID: ${storedUserId}`);
+              addLog(`💾 Using sessionStorage user ID`);
               user = { id: storedUserId } as any;
             }
           }
         }
         
         if (!user) {
-          addLog("❌ No user found - session lost");
-          addLog("⏳ Clearing auth and redirecting to login...");
-          await supabase.auth.signOut().catch(() => {});
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          router.push("/auth/login");
+          addLog("❌ No user found");
+          addLog("→ Redirecting to home");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          router.push("/");
           return;
         }
         
-        addLog(`✅ Dashboard: User found: ${user.id}`);
+        addLog(`✅ User authenticated: ${user.id}`);
         setUserId(user.id);
         setEmail(user.email || "");
 
