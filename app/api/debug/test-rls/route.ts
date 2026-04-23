@@ -9,6 +9,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No access token provided' }, { status: 400 });
     }
 
+    // Log the token validation
+    const parts = accessToken.split('.');
+    let tokenInfo = { sub: 'unknown', exp: 'unknown', iat: 'unknown' };
+    if (parts.length === 3) {
+      const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      tokenInfo = {
+        sub: decoded.sub,
+        exp: decoded.exp,
+        iat: decoded.iat,
+      };
+    }
+
     // Create Supabase client with the token
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,7 +42,11 @@ export async function POST(req: NextRequest) {
 
     if (sessionError) {
       return NextResponse.json(
-        { error: `setSession failed: ${sessionError.message}`, code: sessionError.status },
+        { 
+          error: `setSession failed: ${sessionError.message}`,
+          tokenInfo,
+          userId,
+        },
         { status: 400 }
       );
     }
@@ -48,7 +64,9 @@ export async function POST(req: NextRequest) {
       .eq('user_id', userId);
 
     return NextResponse.json({
-      sessionSet: !!sessionData,
+      tokenInfo,
+      userId,
+      sessionSet: !!sessionData?.session,
       kids: {
         success: !kidsError,
         count: kidsData?.length || 0,

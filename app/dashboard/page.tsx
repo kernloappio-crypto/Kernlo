@@ -152,21 +152,33 @@ export default function DashboardPage() {
         // This makes auth.uid() return the correct user ID for RLS policies
         try {
           addLog("🔑 Restoring auth context...");
-          const setSessionResult = await supabase.auth.setSession({
+          
+          // Validate the JWT token contains the expected user ID
+          const parts = accessToken.split('.');
+          if (parts.length === 3) {
+            const decoded = JSON.parse(atob(parts[1]));
+            addLog(`🔍 JWT sub claim: ${decoded.sub}, expected: ${user.id}`);
+            if (decoded.sub !== user.id) {
+              addLog(`⚠️ WARNING: Token sub doesn't match parsed user ID!`);
+            }
+          }
+          
+          // Set the session on the Supabase client
+          const { data: setSessionData, error: setSessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: localStorage.getItem('kernlo_refresh_token') || '',
           });
           
-          // Verify session was actually set
-          if (setSessionResult.data?.session) {
-            addLog(`✅ Auth context restored, user_id in token: ${setSessionResult.data.session.user?.id}`);
+          if (setSessionError) {
+            addLog(`⚠️ setSession error: ${setSessionError.message}`);
+          } else if (setSessionData?.session) {
+            addLog(`✅ Auth context restored, user in session: ${setSessionData.session.user?.id}`);
           } else {
-            addLog(`⚠️ setSession returned no session data`);
+            addLog(`⚠️ setSession returned no data`);
           }
           
           // Give Supabase a moment to register the auth context
-          await new Promise(resolve => setTimeout(resolve, 100));
-          addLog("✅ Waiting for auth context to propagate");
+          await new Promise(resolve => setTimeout(resolve, 50));
         } catch (e: any) {
           addLog(`⚠️ Could not restore auth context: ${e?.message}`);
           // Continue anyway - we have the token
