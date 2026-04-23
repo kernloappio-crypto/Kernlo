@@ -743,8 +743,8 @@ Format as professional homeschool compliance documentation.`;
         )}
 
         {/* Right Content - Kid Cards */}
-        <div className="flex-1 overflow-y-auto w-full lg:w-auto">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
+        <div className="w-full overflow-y-auto">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             {kids.length === 0 ? (
               <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
