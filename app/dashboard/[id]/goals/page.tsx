@@ -164,14 +164,6 @@ export default function GoalsPage() {
     return { progress: Math.min(progress, 100), hours };
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   if (!kid) {
     return (
       <div className="min-h-screen flex items-center justify-center">

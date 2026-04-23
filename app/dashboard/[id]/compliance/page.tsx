@@ -192,14 +192,6 @@ export default function CompliancePage() {
     return compliance;
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   if (!kid) {
     return (
       <div className="min-h-screen flex items-center justify-center">
