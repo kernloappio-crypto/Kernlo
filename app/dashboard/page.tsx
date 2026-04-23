@@ -106,6 +106,7 @@ export default function DashboardPage() {
         addLog("📱 Dashboard loading...");
         
         let user = null;
+        let session = null;
         
         // PRIMARY: Check localStorage backup (most reliable on mobile)
         if (typeof window !== 'undefined') {
@@ -115,7 +116,17 @@ export default function DashboardPage() {
               const backupSession = JSON.parse(backupSessionStr);
               if (backupSession?.user?.id) {
                 addLog(`💾 Session found in localStorage`);
+                session = backupSession;
                 user = backupSession.user;
+                
+                // CRITICAL FIX: Restore the session to Supabase auth context
+                // This makes auth.uid() work correctly for RLS policies
+                try {
+                  await supabase.auth.setSession(session);
+                  addLog("✅ Session restored to Supabase context");
+                } catch (e) {
+                  addLog("⚠️ Could not restore session to Supabase");
+                }
               }
             } catch (e) {
               addLog("⚠️ Could not parse localStorage session");
@@ -125,19 +136,22 @@ export default function DashboardPage() {
           // SECONDARY: Try getSession as backup (works on desktop)
           if (!user) {
             addLog("📨 Trying getSession()...");
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession?.user) {
               addLog(`✅ Got session from Supabase`);
-              user = session.user;
+              session = currentSession;
+              user = currentSession.user;
             }
           }
           
-          // TERTIARY: Check sessionStorage fallback
+          // TERTIARY: Check sessionStorage fallback (won't work for RLS - migration path)
           if (!user) {
             const storedUserId = sessionStorage.getItem('kernlo_user_id');
             if (storedUserId) {
-              addLog(`💾 Using sessionStorage user ID`);
-              user = { id: storedUserId } as any;
+              addLog(`⚠️ Using sessionStorage user ID (RLS will fail)`);
+              addLog(`→ Re-authenticating required`);
+              router.push("/auth/login");
+              return;
             }
           }
         }
