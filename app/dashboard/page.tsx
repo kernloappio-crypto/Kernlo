@@ -642,7 +642,7 @@ Format as professional homeschool compliance documentation.`;
         {/* Mobile Menu Button - Only show on small/medium screens */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden fixed top-auto bottom-4 left-4 z-40 p-3"
+          className="fixed bottom-4 left-4 z-40 p-3 lg:hidden"
           style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px", fontSize: "24px" }}
         >
           ☰
@@ -655,9 +655,8 @@ Format as professional homeschool compliance documentation.`;
             borderRight: `1px solid #e5e7eb`,
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: 'transform 0.3s ease',
-            position: 'fixed',
           }}
-          className="lg:relative lg:transform-none w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30 lg:translate-x-0"
+          className="fixed lg:static w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30 lg:transform-none"
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
@@ -766,7 +765,7 @@ Format as professional homeschool compliance documentation.`;
             {kids.length === 0 ? (
               <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;

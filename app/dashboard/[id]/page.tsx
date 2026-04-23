@@ -563,98 +563,109 @@ Format as professional homeschool compliance documentation.`;
           </div>
         </div>
 
-        {/* Quick Log Form */}
+        {/* Quick Log Modal */}
         {showQuickLog && (
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
-            <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              Log Activity
-            </h2>
+          <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+              <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">
+                Log Activity - {kid.name}
+              </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={logDate}
-                  onChange={(e) => setLogDate(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Subject
+                  </label>
+                  <select
+                    value={logSubject}
+                    onChange={(e) => setLogSubject(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select subject...</option>
+                    {SUBJECTS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Duration (hours)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    placeholder="1.5"
+                    value={logDuration}
+                    onChange={(e) => setLogDuration(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Platform
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Khan Academy, IXL, Outschool..."
+                    value={logPlatform}
+                    onChange={(e) => setLogPlatform(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    placeholder="What did they learn?"
+                    value={logNotes}
+                    onChange={(e) => setLogNotes(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Subject
-                </label>
-                <select
-                  value={logSubject}
-                  onChange={(e) => setLogSubject(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+                <button
+                  onClick={handleQuickLog}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
                 >
-                  <option value="">Select subject...</option>
-                  {SUBJECTS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Duration (hours)
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  placeholder="1.5"
-                  value={logDuration}
-                  onChange={(e) => setLogDuration(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Platform
-                </label>
-                <input
-                  type="text"
-                  placeholder="Khan Academy, IXL, Outschool..."
-                  value={logPlatform}
-                  onChange={(e) => setLogPlatform(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Notes (optional)
-                </label>
-                <textarea
-                  placeholder="What did they learn?"
-                  value={logNotes}
-                  onChange={(e) => setLogNotes(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                />
+                  Save Activity
+                </button>
+                <button
+                  onClick={() => setShowQuickLog(false)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-
-            <button
-              onClick={handleQuickLog}
-              style={{ backgroundColor: COLORS.primary }}
-              className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90"
-            >
-              Log Activity
-            </button>
           </div>
         )}
 
