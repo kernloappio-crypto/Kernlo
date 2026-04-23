@@ -24,6 +24,8 @@ interface Activity {
   platform: string;
   date: string;
   notes?: string;
+  curriculum?: string;
+  activity_type?: string;
 }
 
 interface Goal {
@@ -77,6 +79,8 @@ export default function DashboardPage() {
   const [logDuration, setLogDuration] = useState("");
   const [logPlatform, setLogPlatform] = useState("");
   const [logNotes, setLogNotes] = useState("");
+  const [logCurriculum, setLogCurriculum] = useState("");
+  const [logActivityType, setLogActivityType] = useState("Core Subject");
 
   // Report Generator states
   const [showReportGen, setShowReportGen] = useState(false);
@@ -368,6 +372,8 @@ export default function DashboardPage() {
           subject: logSubject,
           duration: parseFloat(logDuration),
           platform: logPlatform || "Other",
+          curriculum: logCurriculum || null,
+          activity_type: logActivityType,
           date: logDate,
           notes: logNotes,
         })
@@ -387,6 +393,8 @@ export default function DashboardPage() {
       setLogDuration("");
       setLogPlatform("");
       setLogNotes("");
+      setLogCurriculum("");
+      setLogActivityType("Core Subject");
       setLogDate(new Date().toISOString().split("T")[0]);
       setShowQuickLog(false);
     } catch (err) {
@@ -837,6 +845,51 @@ Format as professional homeschool compliance documentation.`;
                         )}
                       </div>
 
+                      {/* Activity Type Breakdown */}
+                      {kidActivities.length > 0 && (
+                        <div className="mb-4 pb-4 border-b border-gray-200">
+                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
+                            ACTIVITY BREAKDOWN
+                          </p>
+                          <div className="space-y-1 text-xs">
+                            {(() => {
+                              const coreHours = kidActivities
+                                .filter((a) => !a.activity_type || a.activity_type === "Core Subject")
+                                .reduce((sum, a) => sum + a.duration, 0);
+                              const extracurricularHours = kidActivities
+                                .filter((a) => a.activity_type === "Extracurricular")
+                                .reduce((sum, a) => sum + a.duration, 0);
+                              const enrichmentHours = kidActivities
+                                .filter((a) => a.activity_type === "Field Trip / Enrichment")
+                                .reduce((sum, a) => sum + a.duration, 0);
+                              
+                              return (
+                                <>
+                                  {coreHours > 0 && (
+                                    <div className="flex justify-between">
+                                      <span style={{ color: "#1a1a2e" }}>Core Subjects</span>
+                                      <span style={{ color: COLORS.primary }} className="font-semibold">{coreHours.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                  {extracurricularHours > 0 && (
+                                    <div className="flex justify-between">
+                                      <span style={{ color: "#1a1a2e" }}>Extracurricular</span>
+                                      <span style={{ color: "#ff9900" }} className="font-semibold">{extracurricularHours.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                  {enrichmentHours > 0 && (
+                                    <div className="flex justify-between">
+                                      <span style={{ color: "#1a1a2e" }}>Enrichment</span>
+                                      <span style={{ color: "#66bb6a" }} className="font-semibold">{enrichmentHours.toFixed(1)}h</span>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Compliance Quick View */}
                       <div className="mb-4">
                         <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
@@ -946,6 +999,32 @@ Format as professional homeschool compliance documentation.`;
                   placeholder="Khan Academy, IXL, etc."
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 />
+              </div>
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Curriculum/Resource (optional)
+                </label>
+                <input
+                  type="text"
+                  value={logCurriculum}
+                  onChange={(e) => setLogCurriculum(e.target.value)}
+                  placeholder="e.g., Math Mammoth, Khan Academy, Outschool, IXL, Textbook"
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Activity Type
+                </label>
+                <select
+                  value={logActivityType}
+                  onChange={(e) => setLogActivityType(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="Core Subject">Core Subject</option>
+                  <option value="Extracurricular">Extracurricular (Music, Sports, Clubs)</option>
+                  <option value="Field Trip / Enrichment">Field Trip / Enrichment</option>
+                </select>
               </div>
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">

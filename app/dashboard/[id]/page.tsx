@@ -17,6 +17,8 @@ interface Activity {
   platform: string;
   date: string;
   notes?: string;
+  curriculum?: string;
+  activity_type?: string;
 }
 
 interface Report {
@@ -122,6 +124,8 @@ export default function KidDetailPage() {
   const [logDuration, setLogDuration] = useState("");
   const [logPlatform, setLogPlatform] = useState("");
   const [logNotes, setLogNotes] = useState("");
+  const [logCurriculum, setLogCurriculum] = useState("");
+  const [logActivityType, setLogActivityType] = useState("Core Subject");
   const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
@@ -219,15 +223,25 @@ export default function KidDetailPage() {
     }
 
     try {
-      await addActivity(
-        userId,
-        kid!.name,
-        logSubject,
-        parseFloat(logDuration),
-        logPlatform,
-        logDate,
-        logNotes || undefined
-      );
+      const { data, error } = await supabase
+        .from("activities")
+        .insert({
+          user_id: userId,
+          child_name: kid!.name,
+          subject: logSubject,
+          duration: parseFloat(logDuration),
+          platform: logPlatform,
+          curriculum: logCurriculum || null,
+          activity_type: logActivityType,
+          date: logDate,
+          notes: logNotes || null,
+        })
+        .select();
+
+      if (error) {
+        alert("Error: " + error.message);
+        return;
+      }
 
       // Reload activities
       const activitiesData = await getActivities(userId);
@@ -240,6 +254,8 @@ export default function KidDetailPage() {
       setLogDuration("");
       setLogPlatform("");
       setLogNotes("");
+      setLogCurriculum("");
+      setLogActivityType("Core Subject");
       setShowQuickLog(false);
     } catch (err) {
       console.error("Error logging activity:", err);
@@ -624,6 +640,36 @@ Format as professional homeschool compliance documentation.`;
 
                 <div>
                   <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Curriculum/Resource (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Math Mammoth, Khan Academy, IXL, Textbook"
+                    value={logCurriculum}
+                    onChange={(e) => setLogCurriculum(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                    Activity Type
+                  </label>
+                  <select
+                    value={logActivityType}
+                    onChange={(e) => setLogActivityType(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Core Subject">Core Subject</option>
+                    <option value="Extracurricular">Extracurricular (Music, Sports, Clubs)</option>
+                    <option value="Field Trip / Enrichment">Field Trip / Enrichment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
                     Notes (optional)
                   </label>
                   <textarea
@@ -675,21 +721,34 @@ Format as professional homeschool compliance documentation.`;
                   style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }}
                   className="p-3 flex items-center justify-between hover:bg-gray-50"
                 >
-                  <div className="flex-1 flex items-center gap-4">
-                    <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
-                      {new Date(activity.date).toLocaleDateString()}
-                    </span>
-                    <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
-                      {activity.subject}
-                    </span>
-                    <span style={{ color: "#333" }} className="text-sm">
-                      {activity.duration}h
-                    </span>
-                    <span style={{ color: "#555" }} className="text-xs">
-                      {activity.platform}
-                    </span>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex items-center gap-4">
+                      <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
+                        {new Date(activity.date).toLocaleDateString()}
+                      </span>
+                      <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
+                        {activity.subject}
+                      </span>
+                      <span style={{ color: "#333" }} className="text-sm">
+                        {activity.duration}h
+                      </span>
+                      <span style={{ color: "#555" }} className="text-xs">
+                        {activity.platform}
+                      </span>
+                      {activity.activity_type && activity.activity_type !== "Core Subject" && (
+                        <span style={{ backgroundColor: "#fff3cd", color: "#856404" }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
+                          {activity.activity_type}
+                        </span>
+                      )}
+                    </div>
+                    {activity.curriculum && (
+                      <div style={{ color: "#666" }} className="text-xs flex items-center gap-2">
+                        <span className="font-medium">📚 Curriculum:</span>
+                        <span>{activity.curriculum}</span>
+                      </div>
+                    )}
                     {activity.notes && (
-                      <span style={{ color: "#333" }} className="text-xs italic truncate">
+                      <span style={{ color: "#333" }} className="text-xs italic">
                         {activity.notes}
                       </span>
                     )}
