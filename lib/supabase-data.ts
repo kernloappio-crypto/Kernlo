@@ -293,3 +293,114 @@ export async function getUserData(userId: string) {
   if (error) throw error;
   return data;
 }
+
+// ============ ATTENDANCE ============
+
+/**
+ * Get attendance records for a user + kid in a specific year
+ */
+export async function getAttendanceByYear(userId: string, childName: string, year: number) {
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get attendance records for a user + kid in current month
+ */
+export async function getAttendanceByMonth(userId: string, childName: string, year: number, month: number) {
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .gte('date', startDate)
+    .lt('date', endDate)
+    .order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get last N attendance dates for a kid
+ */
+export async function getLastAttendanceDates(userId: string, childName: string, limit: number = 10) {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('date')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .order('date', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []).map((d) => d.date);
+}
+
+/**
+ * Get total attendance days for a kid in a year
+ */
+export async function getAttendanceDaysYearly(userId: string, childName: string, year: number) {
+  const records = await getAttendanceByYear(userId, childName, year);
+  // Get unique dates (in case multiple entries per day)
+  const uniqueDates = new Set(records.map((r) => r.date));
+  return uniqueDates.size;
+}
+
+/**
+ * Get total attendance days for a kid in current month
+ */
+export async function getAttendanceDaysMonthly(userId: string, childName: string, year: number, month: number) {
+  const records = await getAttendanceByMonth(userId, childName, year, month);
+  // Get unique dates (in case multiple entries per day)
+  const uniqueDates = new Set(records.map((r) => r.date));
+  return uniqueDates.size;
+}
+
+/**
+ * Log attendance for a kid
+ */
+export async function logAttendance(userId: string, childName: string, date: string) {
+  const { data, error } = await supabase
+    .from('attendance')
+    .insert({
+      user_id: userId,
+      child_name: childName,
+      date,
+    })
+    .select();
+
+  if (error) throw error;
+  return data?.[0];
+}
+
+/**
+ * Get attendance calendar data for a kid (returns all dates in year with day-of-week)
+ */
+export async function getAttendanceCalendar(userId: string, childName: string, year: number) {
+  const records = await getAttendanceByYear(userId, childName, year);
+  const dateMap: { [key: string]: boolean } = {};
+  
+  records.forEach((record) => {
+    dateMap[record.date] = true;
+  });
+
+  return dateMap;
+}

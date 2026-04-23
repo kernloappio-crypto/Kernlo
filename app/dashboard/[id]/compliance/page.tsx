@@ -5,7 +5,15 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { getActivities, getComplianceState, setComplianceState } from "@/lib/supabase-data";
+import { 
+  getActivities, 
+  getComplianceState, 
+  setComplianceState,
+  getAttendanceDaysYearly,
+  getAttendanceDaysMonthly,
+  getLastAttendanceDates,
+  logAttendance
+} from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +114,9 @@ export default function CompliancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split("T")[0]);
   const [schooledToday, setSchooledToday] = useState(true);
+  const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
+  const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
+  const [lastAttendanceDates, setLastAttendanceDates] = useState<string[]>([]);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -163,8 +174,24 @@ export default function CompliancePage() {
           .select("*")
           .eq("user_id", user.id)
           .eq("child_name", kidData?.name)
-          .order("schooling_date", { ascending: false });
+          .order("date", { ascending: false });
         setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
+
+        // Load attendance statistics
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        if (kidData?.name) {
+          const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
+          setAttendanceDaysYear(yearlyDays);
+
+          const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
+          setAttendanceDaysMonth(monthlyDays);
+
+          const lastDates = await getLastAttendanceDates(user.id, kidData.name, 10);
+          setLastAttendanceDates(lastDates);
+        }
 
         setLoading(false);
       } catch (err) {
@@ -200,50 +227,33 @@ export default function CompliancePage() {
     }
 
     try {
-      // Check if record already exists for this date
-      const existingRecord = attendanceRecords.find(
-        (r) => r.schooling_date === attendanceDate && r.child_name === kid.name
-      );
-
-      if (existingRecord) {
-        // Update existing record
-        const { error } = await supabase
-          .from("attendance")
-          .update({ schooled_today: schooledToday })
-          .eq("id", existingRecord.id);
-
-        if (error) {
-          alert("Error: " + error.message);
-          return;
-        }
-
-        // Update local state
-        setAttendanceRecords(
-          attendanceRecords.map((r) =>
-            r.id === existingRecord.id ? { ...r, schooled_today: schooledToday } : r
-          )
-        );
-      } else {
-        // Insert new record
-        const { data, error } = await supabase
-          .from("attendance")
-          .insert({
-            user_id: userId,
-            child_name: kid.name,
-            schooling_date: attendanceDate,
-            schooled_today: schooledToday,
-          })
-          .select();
-
-        if (error) {
-          alert("Error: " + error.message);
-          return;
-        }
-
-        if (data) {
-          setAttendanceRecords([...data, ...attendanceRecords]);
-        }
+      // Only log if schooled_today is true
+      if (schooledToday) {
+        await logAttendance(userId, kid.name, attendanceDate);
       }
+
+      // Reload attendance data
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      const yearlyDays = await getAttendanceDaysYearly(userId, kid.name, currentYear);
+      setAttendanceDaysYear(yearlyDays);
+
+      const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
+      setAttendanceDaysMonth(monthlyDays);
+
+      const lastDates = await getLastAttendanceDates(userId, kid.name, 10);
+      setLastAttendanceDates(lastDates);
+
+      // Reload all records
+      const { data: attendanceData } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("child_name", kid.name)
+        .order("date", { ascending: false });
+      setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
 
       setAttendanceDate(new Date().toISOString().split("T")[0]);
       setSchooledToday(true);
@@ -317,85 +327,137 @@ export default function CompliancePage() {
         {/* Attendance Tracking */}
         <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
           <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-            📅 Daily Attendance Tracking
+            📅 Attendance Summary
           </h2>
-          
-          <div className="space-y-4 mb-6">
-            <div>
-              <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                Date
-              </label>
-              <input
-                type="date"
-                value={attendanceDate}
-                onChange={(e) => setAttendanceDate(e.target.value)}
-                style={{ color: "#1a1a2e" }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                Did {kid?.name} do school today?
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="schooled"
-                    checked={schooledToday}
-                    onChange={() => setSchooledToday(true)}
-                    className="w-4 h-4 mr-2"
-                  />
-                  <span style={{ color: "#333" }} className="text-sm">Yes, schooled today</span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="schooled"
-                    checked={!schooledToday}
-                    onChange={() => setSchooledToday(false)}
-                    className="w-4 h-4 mr-2"
-                  />
-                  <span style={{ color: "#333" }} className="text-sm">No, not schooled today</span>
-                </label>
-              </div>
-            </div>
 
-            <button
-              onClick={handleSaveAttendance}
-              style={{ backgroundColor: COLORS.primary }}
-              className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
-            >
-              Record Attendance
-            </button>
+          {/* Year and Month Summary */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4">
+              <p style={{ color: "#555" }} className="text-xs font-semibold mb-1">THIS MONTH</p>
+              <p style={{ color: COLORS.primary }} className="text-2xl font-bold">{attendanceDaysMonth}</p>
+              <p style={{ color: "#555" }} className="text-xs mt-1">days logged</p>
+            </div>
+            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4">
+              <p style={{ color: "#555" }} className="text-xs font-semibold mb-1">THIS YEAR</p>
+              <p style={{ color: COLORS.primary }} className="text-2xl font-bold">{attendanceDaysYear}</p>
+              <p style={{ color: "#555" }} className="text-xs mt-1">days logged</p>
+            </div>
           </div>
 
-          {/* Attendance Summary */}
-          {attendanceRecords.length > 0 && (
-            <div className="pt-6 border-t border-gray-200">
-              <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-4">
-                Recent Attendance
+          {/* State Requirement Progress */}
+          {selectedState === "CA" && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
+                California Requirement: 175 days/year
+              </p>
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+                <div
+                  style={{
+                    backgroundColor: COLORS.accent3,
+                    width: `${Math.min((attendanceDaysYear / 175) * 100, 100)}%`,
+                    transition: "width 0.3s ease",
+                  }}
+                  className="h-full"
+                />
+              </div>
+              <p style={{ color: "#555" }} className="text-xs mt-2">
+                {attendanceDaysYear} / 175 days ({Math.round((attendanceDaysYear / 175) * 100)}%)
+              </p>
+            </div>
+          )}
+
+          {selectedState === "FL" && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
+                Florida Requirement: 1,000 hours/year
+              </p>
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+                <div
+                  style={{
+                    backgroundColor: COLORS.accent3,
+                    width: `${Math.min((attendanceDaysYear / 200) * 100, 100)}%`,
+                    transition: "width 0.3s ease",
+                  }}
+                  className="h-full"
+                />
+              </div>
+              <p style={{ color: "#555" }} className="text-xs mt-2">
+                Note: Use logged activities for hour tracking
+              </p>
+            </div>
+          )}
+
+          {selectedState === "NY" && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
+                New York Requirement: 900 hours/year
+              </p>
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+                <div
+                  style={{
+                    backgroundColor: COLORS.accent3,
+                    width: `${Math.min((attendanceDaysYear / 180) * 100, 100)}%`,
+                    transition: "width 0.3s ease",
+                  }}
+                  className="h-full"
+                />
+              </div>
+              <p style={{ color: "#555" }} className="text-xs mt-2">
+                Note: Use logged activities for hour tracking
+              </p>
+            </div>
+          )}
+
+          {/* Last 10 Attendance Dates */}
+          {lastAttendanceDates.length > 0 && (
+            <div className="mb-6">
+              <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
+                Last 10 Attendance Dates
               </h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {attendanceRecords.slice(0, 20).map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span style={{ color: "#333" }} className="text-sm">
-                      {new Date(record.schooling_date).toLocaleDateString()}
-                    </span>
-                    <span style={{ color: record.schooled_today ? "#2e7d32" : "#c62828" }} className="text-sm font-medium">
-                      {record.schooled_today ? "✓ Schooled" : "✗ Not schooled"}
-                    </span>
+              <div className="flex flex-wrap gap-2">
+                {lastAttendanceDates.map((date) => (
+                  <div
+                    key={date}
+                    style={{ backgroundColor: COLORS.light, borderRadius: "6px" }}
+                    className="px-3 py-2"
+                  >
+                    <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
+                      {new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </p>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 p-3 bg-blue-50 rounded">
-                <p style={{ color: "#0066cc" }} className="text-sm font-medium">
-                  Days completed this year: <strong>{attendanceRecords.filter(r => r.schooled_today).length}</strong>
-                </p>
-              </div>
             </div>
           )}
+
+          {/* Log New Attendance */}
+          <div className="pt-6 border-t border-gray-200">
+            <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-4">
+              Log Attendance
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={attendanceDate}
+                  onChange={(e) => setAttendanceDate(e.target.value)}
+                  style={{ color: "#1a1a2e" }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <button
+                onClick={handleSaveAttendance}
+                style={{ backgroundColor: COLORS.primary }}
+                className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+              >
+                ✓ Log as Attendance Day
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Compliance Status */}

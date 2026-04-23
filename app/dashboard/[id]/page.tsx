@@ -5,7 +5,15 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { getActivities, addActivity, deleteActivity, getGoals, getComplianceState } from "@/lib/supabase-data";
+import { 
+  getActivities, 
+  addActivity, 
+  deleteActivity, 
+  getGoals, 
+  getComplianceState,
+  getAttendanceDaysYearly,
+  getAttendanceDaysMonthly
+} from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +140,8 @@ export default function KidDetailPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
+  const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
+  const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -198,6 +208,19 @@ export default function KidDetailPage() {
             // Default to CA if no state saved yet
             setComplianceState("CA");
           }
+        }
+
+        // Load attendance statistics
+        if (kidData?.name) {
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth() + 1;
+
+          const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
+          setAttendanceDaysYear(yearlyDays);
+
+          const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
+          setAttendanceDaysMonth(monthlyDays);
         }
 
         // Initialize date range (last 30 days)
@@ -574,6 +597,40 @@ Format as professional homeschool compliance documentation.`;
             >
               Manage Goals →
             </Link>
+          </div>
+
+          {/* Attendance Card */}
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                📅 Attendance
+              </h3>
+              <Link
+                href={`/dashboard/${kid.id}/compliance`}
+                style={{ color: COLORS.primary }}
+                className="text-xs font-medium hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span style={{ color: "#555" }} className="text-sm font-medium">
+                  This Month
+                </span>
+                <span style={{ color: COLORS.primary }} className="text-lg font-bold">
+                  {attendanceDaysMonth}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span style={{ color: "#555" }} className="text-sm font-medium">
+                  This Year
+                </span>
+                <span style={{ color: COLORS.primary }} className="text-lg font-bold">
+                  {attendanceDaysYear}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         )}

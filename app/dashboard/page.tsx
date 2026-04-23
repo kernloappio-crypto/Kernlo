@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
 import { signOut } from "@/lib/supabase-auth";
+import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,7 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [attendanceMonthlyByKid, setAttendanceMonthlyByKid] = useState<{ [kidName: string]: number }>({});
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -298,6 +300,9 @@ export default function DashboardPage() {
           throw e;
         }
 
+        // Attendance will be loaded in useEffect after kids are set
+        // See the attendance loading section below
+
         console.log("⏰ Initializing date range...");
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -318,6 +323,36 @@ export default function DashboardPage() {
     initUser();
   }, [router]);
 
+  // Load attendance data for all kids
+  useEffect(() => {
+    if (kids.length === 0 || !userId) return;
+
+    const loadAttendance = async () => {
+      try {
+        console.log("📅 Loading attendance for all kids...");
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        
+        const attendanceMap: { [kidName: string]: number } = {};
+        for (const kid of kids) {
+          try {
+            const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
+            attendanceMap[kid.name] = monthlyDays;
+          } catch (e) {
+            console.log(`⚠️ Could not load attendance for ${kid.name}`);
+            attendanceMap[kid.name] = 0;
+          }
+        }
+        setAttendanceMonthlyByKid(attendanceMap);
+        console.log(`✅ Attendance loaded: ${JSON.stringify(attendanceMap)}`);
+      } catch (e) {
+        console.log(`⚠️ Error loading attendance: ${e}`);
+      }
+    };
+
+    loadAttendance();
+  }, [kids, userId]);
 
 
   async function handleAddKid() {
@@ -907,6 +942,18 @@ Format as professional homeschool compliance documentation.`;
                           </div>
                         </div>
                       )}
+
+                      {/* Attendance Badge */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-3 flex items-center justify-between">
+                          <span style={{ color: "#555" }} className="text-xs font-medium">
+                            📅 This Month
+                          </span>
+                          <span style={{ color: COLORS.primary }} className="text-sm font-bold">
+                            {attendanceMonthlyByKid[kid.name] || 0} days
+                          </span>
+                        </div>
+                      </div>
 
                       {/* Compliance Quick View */}
                       <div className="mb-4">
