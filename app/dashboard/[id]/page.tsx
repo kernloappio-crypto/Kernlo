@@ -392,14 +392,6 @@ Format as professional homeschool compliance documentation.`;
     }
   };
 
-  if (!kid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Child not found</p>
-      </div>
-    );
-  }
-
   return (
     <>
       <Navbar />

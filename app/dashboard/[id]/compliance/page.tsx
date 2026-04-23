@@ -192,14 +192,6 @@ export default function CompliancePage() {
     return compliance;
   }
 
-  if (!kid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Child not found</p>
-      </div>
-    );
-  }
-
   const compliance = calculateCompliance();
   const allMet = Object.values(compliance).every((c) => c.met);
 

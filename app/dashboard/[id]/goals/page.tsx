@@ -164,14 +164,6 @@ export default function GoalsPage() {
     return { progress: Math.min(progress, 100), hours };
   }
 
-  if (!kid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Child not found</p>
-      </div>
-    );
-  }
-
   return (
     <>
       <Navbar />
