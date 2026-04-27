@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
+import TranscriptCard from "@/components/TranscriptCard";
 import { 
   getActivities, 
   addActivity, 
@@ -14,6 +15,7 @@ import {
   getAttendanceDaysYearly,
   getAttendanceDaysMonthly
 } from "@/lib/supabase-data";
+import { getCoursesByKid, Course } from "@/lib/supabase-transcript";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +141,7 @@ export default function KidDetailPage() {
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
   const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
@@ -198,6 +201,10 @@ export default function KidDetailPage() {
         // Load goals
         const goalsData = await getGoals(user.id, kidData?.name);
         setGoals(goalsData || []);
+
+        // Load courses
+        const coursesData = await getCoursesByKid(kidId);
+        setCourses(coursesData || []);
 
         // Load compliance state
         if (kidData?.name) {
@@ -481,7 +488,7 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Summary Cards */}
         {kid && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
           {/* State Compliance Card (Combined) */}
           <div
             onClick={() => router.push(`/dashboard/${kid.id}/compliance`)}
@@ -679,6 +686,14 @@ Format as professional homeschool compliance documentation.`;
               </div>
             )}
           </div>
+
+          {/* Transcript Card */}
+          <TranscriptCard
+            kidId={kid.id}
+            kidName={kid.name}
+            courses={courses}
+            onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
+          />
         </div>
         )}
 
