@@ -692,7 +692,7 @@ Format as professional homeschool compliance documentation.`;
           ☰
         </button>
 
-        {/* Left Sidebar - Kids Navigation */}
+        {/* Left Sidebar - Kids Navigation (Mobile/Tablet only) */}
         <div
           style={{
             backgroundColor: "white",
@@ -700,7 +700,7 @@ Format as professional homeschool compliance documentation.`;
             transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: 'transform 0.3s ease',
           }}
-          className="fixed lg:static w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30 lg:transform-none"
+          className="fixed lg:hidden w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30"
         >
           {/* Kids Section */}
           <div className="mb-8 flex-1 overflow-y-auto">
