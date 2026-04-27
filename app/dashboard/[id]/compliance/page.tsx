@@ -407,8 +407,8 @@ export default function CompliancePage() {
           </div>
         </div>
 
-        {/* ATTENDANCE SUMMARY CARD (Half width - 50%) */}
-        <div className="w-1/2 max-w-md">
+        {/* ATTENDANCE SUMMARY CARD (Responsive) */}
+        <div className="w-full sm:w-1/2 max-w-md">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
             <h2 style={{ color: COLORS.dark }} className="text-sm font-bold mb-2">
               📅 Attendance Summary

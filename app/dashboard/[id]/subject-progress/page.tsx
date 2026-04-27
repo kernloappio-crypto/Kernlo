@@ -532,11 +532,12 @@ export default function SubjectProgressPage() {
                           cursor: "pointer",
                           color: "#555",
                           padding: "0",
-                          width: "32px",
-                          height: "32px",
+                          width: "44px",
+                          height: "44px",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
+                          flexShrink: 0,
                         }}
                       >
                         ✕
@@ -554,7 +555,7 @@ export default function SubjectProgressPage() {
                       return (
                         <div style={{ padding: "1.5rem" }}>
                           {/* Stats Grid */}
-                          <div className="grid grid-cols-3 gap-3 mb-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                             <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4 text-center">
                               <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                                 Total Hours
