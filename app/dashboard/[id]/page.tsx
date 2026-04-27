@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-// import TranscriptCard from "@/components/TranscriptCard"; // TEMPORARILY DISABLED
 import { 
   getActivities, 
   addActivity, 
