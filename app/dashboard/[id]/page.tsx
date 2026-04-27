@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import TranscriptCard from "@/components/TranscriptCard";
+// import TranscriptCard from "@/components/TranscriptCard"; // TEMPORARILY DISABLED
 import { 
   getActivities, 
   addActivity, 
@@ -718,13 +718,13 @@ Format as professional homeschool compliance documentation.`;
             )}
           </div>
 
-          {/* Transcript Card */}
-          <TranscriptCard
+          {/* Transcript Card - TEMPORARILY DISABLED TO UNBLOCK DASHBOARD */}
+          {/* <TranscriptCard
             kidId={kid.id}
             kidName={kid.name}
             courses={courses}
             onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
-          />
+          /> */}
         </div>
         )}
 
