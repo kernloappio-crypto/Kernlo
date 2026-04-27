@@ -117,6 +117,22 @@ export default function CompliancePage() {
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
   const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
   const [lastAttendanceDates, setLastAttendanceDates] = useState<string[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[class*="relative"]')) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -296,34 +312,61 @@ export default function CompliancePage() {
           <Link href={`/dashboard/${kidId}`} style={{ color: COLORS.primary }} className="text-sm font-medium mb-4 block">
             ← Back to {kid?.name || "Child"}
           </Link>
-          <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
-            State Compliance
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 style={{ color: COLORS.dark }} className="text-3xl font-bold">
+              State Compliance
+            </h1>
+            
+            {/* State Dropdown Button */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                style={{
+                  borderColor: COLORS.primary,
+                  color: COLORS.primary,
+                  backgroundColor: "white",
+                }}
+                className="px-4 py-2 border-2 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                {STATE_REQUIREMENTS[selectedState]?.name} ▼
+              </button>
+              
+              {/* Dropdown Menu */}
+              {dropdownOpen && (
+                <div
+                  style={{
+                    backgroundColor: "white",
+                    borderColor: COLORS.primary,
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  }}
+                  className="absolute right-0 mt-2 w-56 border-2 rounded-lg overflow-hidden z-50"
+                >
+                  {Object.entries(STATE_REQUIREMENTS).map(([stateCode, stateData]) => (
+                    <button
+                      key={stateCode}
+                      onClick={() => {
+                        handleStateChange(stateCode);
+                        setDropdownOpen(false);
+                      }}
+                      style={{
+                        backgroundColor:
+                          selectedState === stateCode ? "#e3f2fd" : "white",
+                        color: COLORS.dark,
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors text-sm font-medium"
+                    >
+                      {stateData.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
-        {/* State Selection */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-6">
-          <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-            Select Your State
-          </h2>
-
-          <select
-            value={selectedState}
-            onChange={(e) => handleStateChange(e.target.value)}
-            style={{ borderColor: COLORS.primary, color: COLORS.dark }}
-            className="w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-lg font-medium text-sm sm:text-base"
-          >
-            {Object.keys(STATE_REQUIREMENTS).map((state) => (
-              <option key={state} value={state}>
-                {state}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Attendance Tracking */}
         <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
           <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
