@@ -23,12 +23,15 @@ export default function TranscriptCard({
   useEffect(() => {
     const fetchCourses = async () => {
       try {
+        console.log('[TranscriptCard] Component mounted, kidId:', kidId);
         setLoading(true);
         setError(null);
 
         // Get JWT token from localStorage
+        console.log('[TranscriptCard] Checking localStorage for session...');
         const sessionStr = localStorage.getItem('kernlo_session');
         if (!sessionStr) {
+          console.warn('[TranscriptCard] No session found in localStorage');
           setError('No session found');
           setCourses([]);
           setLoading(false);
@@ -37,13 +40,15 @@ export default function TranscriptCard({
 
         let token: string;
         try {
+          console.log('[TranscriptCard] Parsing session JSON...');
           const session = JSON.parse(sessionStr);
           token = session?.access_token;
           if (!token) {
             throw new Error('No access token in session');
           }
+          console.log('[TranscriptCard] JWT token extracted successfully');
         } catch (err) {
-          console.error('Failed to parse session:', err);
+          console.error('[TranscriptCard] Failed to parse session:', err);
           setError('Session error');
           setCourses([]);
           setLoading(false);
@@ -51,6 +56,7 @@ export default function TranscriptCard({
         }
 
         // Call API endpoint with Authorization header
+        console.log('[TranscriptCard] Fetching courses from API...', `/api/courses?kid_id=${kidId}`);
         const response = await fetch(`/api/courses?kid_id=${kidId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -58,7 +64,10 @@ export default function TranscriptCard({
           },
         });
 
+        console.log('[TranscriptCard] API response status:', response.status);
+
         if (response.status === 401) {
+          console.error('[TranscriptCard] 401 Unauthorized');
           setError('Authentication required');
           setCourses([]);
           setLoading(false);
@@ -66,6 +75,7 @@ export default function TranscriptCard({
         }
 
         if (response.status === 403) {
+          console.error('[TranscriptCard] 403 Forbidden');
           setError('Access denied');
           setCourses([]);
           setLoading(false);
@@ -73,7 +83,9 @@ export default function TranscriptCard({
         }
 
         if (!response.ok) {
+          console.error('[TranscriptCard] Response not OK');
           const data = await response.json();
+          console.error('[TranscriptCard] Error response:', data);
           setError(data.error || 'Failed to load courses');
           setCourses([]);
           setLoading(false);
@@ -81,10 +93,20 @@ export default function TranscriptCard({
         }
 
         const data = await response.json();
+        console.log('[TranscriptCard] API response data:', data);
+        console.log('[TranscriptCard] Courses count:', data.courses?.length || 0);
+        
+        if (data.courses && data.courses.length > 0) {
+          console.log('[TranscriptCard] First course sample:', data.courses[0]);
+        }
+        
         setCourses(data.courses || []);
         setError(null);
+        console.log('[TranscriptCard] Successfully loaded courses');
       } catch (err: any) {
-        console.error('Error fetching courses:', err);
+        console.error('[TranscriptCard] Error fetching courses:', err);
+        console.error('[TranscriptCard] Error message:', err?.message);
+        console.error('[TranscriptCard] Error stack:', err?.stack);
         setError('Unable to load transcript');
         setCourses([]);
       } finally {
@@ -138,8 +160,21 @@ export default function TranscriptCard({
 
   // Render with courses data
   try {
+    console.log('[TranscriptCard] Rendering with courses:', courses);
+    
+    // Validate courses data
+    if (!Array.isArray(courses)) {
+      console.error('[TranscriptCard] Courses is not an array:', typeof courses);
+      throw new Error('Courses data is invalid');
+    }
+
+    console.log('[TranscriptCard] Calculating totalCredits...');
     const totalCredits = calculateTotalCredits(courses || []);
+    console.log('[TranscriptCard] totalCredits:', totalCredits);
+    
+    console.log('[TranscriptCard] Calculating GPA...');
     const gpa = calculateGPA(courses || []);
+    console.log('[TranscriptCard] GPA:', gpa);
 
     return (
       <div
