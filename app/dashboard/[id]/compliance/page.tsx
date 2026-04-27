@@ -366,34 +366,34 @@ export default function CompliancePage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Attendance Tracking */}
         <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
-          <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+          <h2 style={{ color: COLORS.dark }} className="text-sm font-bold mb-2">
             📅 Attendance Summary
           </h2>
 
           {/* Year and Month Summary */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4">
-              <p style={{ color: "#555" }} className="text-xs font-semibold mb-1">THIS MONTH</p>
-              <p style={{ color: COLORS.primary }} className="text-2xl font-bold">{attendanceDaysMonth}</p>
-              <p style={{ color: "#555" }} className="text-xs mt-1">days logged</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
+              <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS MONTH</p>
+              <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysMonth}</p>
+              <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
             </div>
-            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4">
-              <p style={{ color: "#555" }} className="text-xs font-semibold mb-1">THIS YEAR</p>
-              <p style={{ color: COLORS.primary }} className="text-2xl font-bold">{attendanceDaysYear}</p>
-              <p style={{ color: "#555" }} className="text-xs mt-1">days logged</p>
+            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
+              <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS YEAR</p>
+              <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysYear}</p>
+              <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
             </div>
           </div>
 
           {/* State Requirement Progress */}
           {selectedState === "CA" && (
-            <div className="mb-6 pb-6 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
-                California Requirement: 175 days/year
+            <div className="mb-2 pb-2 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                California: 175 days/year
               </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
                 <div
                   style={{
                     backgroundColor: COLORS.accent3,
@@ -403,18 +403,18 @@ export default function CompliancePage() {
                   className="h-full"
                 />
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-2">
-                {attendanceDaysYear} / 175 days ({Math.round((attendanceDaysYear / 175) * 100)}%)
+              <p style={{ color: "#555" }} className="text-xs mt-1">
+                {attendanceDaysYear} / 175 ({Math.round((attendanceDaysYear / 175) * 100)}%)
               </p>
             </div>
           )}
 
           {selectedState === "FL" && (
-            <div className="mb-6 pb-6 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
-                Florida Requirement: 1,000 hours/year
+            <div className="mb-2 pb-2 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                Florida: 1,000 hours/year
               </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
                 <div
                   style={{
                     backgroundColor: COLORS.accent3,
@@ -424,18 +424,18 @@ export default function CompliancePage() {
                   className="h-full"
                 />
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-2">
-                Note: Use logged activities for hour tracking
+              <p style={{ color: "#555" }} className="text-xs mt-1">
+                Use activities for hour tracking
               </p>
             </div>
           )}
 
           {selectedState === "NY" && (
-            <div className="mb-6 pb-6 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-sm font-semibold mb-3">
-                New York Requirement: 900 hours/year
+            <div className="mb-2 pb-2 border-b border-gray-200">
+              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                New York: 900 hours/year
               </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-4 overflow-hidden">
+              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
                 <div
                   style={{
                     backgroundColor: COLORS.accent3,
@@ -445,24 +445,24 @@ export default function CompliancePage() {
                   className="h-full"
                 />
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-2">
-                Note: Use logged activities for hour tracking
+              <p style={{ color: "#555" }} className="text-xs mt-1">
+                Use activities for hour tracking
               </p>
             </div>
           )}
 
           {/* Last 10 Attendance Dates */}
           {lastAttendanceDates.length > 0 && (
-            <div className="mb-6">
-              <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
-                Last 10 Attendance Dates
+            <div className="mb-2">
+              <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-1">
+                Last 10 Dates
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1">
                 {lastAttendanceDates.map((date) => (
                   <div
                     key={date}
-                    style={{ backgroundColor: COLORS.light, borderRadius: "6px" }}
-                    className="px-3 py-2"
+                    style={{ backgroundColor: COLORS.light, borderRadius: "4px" }}
+                    className="px-2 py-1"
                   >
                     <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
                       {new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -474,30 +474,27 @@ export default function CompliancePage() {
           )}
 
           {/* Log New Attendance */}
-          <div className="pt-6 border-t border-gray-200">
-            <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-4">
-              Log Attendance
+          <div className="pt-2 border-t border-gray-200">
+            <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-2 mt-2">
+              Log Date
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
-                <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                  Date
-                </label>
                 <input
                   type="date"
                   value={attendanceDate}
                   onChange={(e) => setAttendanceDate(e.target.value)}
                   style={{ color: "#1a1a2e" }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <button
                 onClick={handleSaveAttendance}
                 style={{ backgroundColor: COLORS.primary }}
-                className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+                className="w-full px-3 py-1.5 text-white font-semibold rounded-lg hover:opacity-90 text-xs"
               >
-                ✓ Log as Attendance Day
+                ✓ Log Day
               </button>
             </div>
           </div>
@@ -506,14 +503,14 @@ export default function CompliancePage() {
         {/* Compliance Status */}
         <div>
           {allMet ? (
-            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-6 border border-green-200">
-              <p style={{ color: "#2e7d32" }} className="text-lg font-bold">
+            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-3 sm:p-4 border border-green-200">
+              <p style={{ color: "#2e7d32" }} className="text-sm font-bold">
                 ✓ All requirements met!
               </p>
             </div>
           ) : (
-            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-6 border border-orange-200">
-              <p style={{ color: "#e65100" }} className="text-lg font-bold">
+            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200">
+              <p style={{ color: "#e65100" }} className="text-sm font-bold">
                 ⚠ Not all requirements met. Keep logging activities.
               </p>
             </div>
@@ -521,17 +518,17 @@ export default function CompliancePage() {
         </div>
 
         {/* State Requirements Header */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-6">
-          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-2">
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-4">
+          <h2 style={{ color: COLORS.dark }} className="text-base font-bold mb-1">
             {STATE_REQUIREMENTS[selectedState]?.name} Requirements
           </h2>
-          <p style={{ color: "#333" }} className="text-sm mb-4">
+          <p style={{ color: "#333" }} className="text-xs mb-2">
             {STATE_REQUIREMENTS[selectedState]?.description}
           </p>
           {STATE_REQUIREMENTS[selectedState]?.notes && (
-            <div style={{ backgroundColor: "#f0f7ff", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 rounded text-sm">
-              <p style={{ color: COLORS.dark }} className="font-medium mb-1">
-                Important Note:
+            <div style={{ backgroundColor: "#f0f7ff", borderLeft: `4px solid ${COLORS.primary}` }} className="p-2 rounded text-xs">
+              <p style={{ color: COLORS.dark }} className="font-medium mb-0.5">
+                Note:
               </p>
               <p style={{ color: "#333" }}>
                 {STATE_REQUIREMENTS[selectedState]?.notes}
@@ -543,10 +540,10 @@ export default function CompliancePage() {
         {/* Subject Requirements */}
         {STATE_REQUIREMENTS[selectedState]?.totalHours > 0 ? (
           <div>
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+            <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
               Subject Hour Requirements
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {Object.entries(compliance).map(([subject, data]) => {
                 const percentage = Math.round((data.hours / data.required) * 100);
                 const isMet = data.met;
@@ -557,13 +554,13 @@ export default function CompliancePage() {
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
                     className="p-3 sm:p-4 border border-gray-200"
                   >
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                        <h3 style={{ color: COLORS.dark }} className="text-sm font-bold">
                           {subject}
                         </h3>
-                        <p style={{ color: "#333" }} className="text-sm">
-                          {data.hours.toFixed(1)} / {data.required} hours
+                        <p style={{ color: "#333" }} className="text-xs">
+                          {data.hours.toFixed(1)} / {data.required}h
                         </p>
                       </div>
                       <span
@@ -571,14 +568,14 @@ export default function CompliancePage() {
                           backgroundColor: isMet ? "#e8f5e9" : "#ffebee",
                           color: isMet ? "#2e7d32" : "#c62828",
                         }}
-                        className="px-3 py-1 rounded-full text-sm font-medium"
+                        className="px-2 py-0.5 rounded-full text-xs font-medium"
                       >
-                        {isMet ? "✓ Met" : "✗ Not Met"}
+                        {isMet ? "✓" : "✗"}
                       </span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-3 overflow-hidden">
+                    <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
                       <div
                         style={{
                           backgroundColor: isMet ? COLORS.accent3 : COLORS.accent1,
@@ -589,8 +586,8 @@ export default function CompliancePage() {
                       />
                     </div>
 
-                    <p style={{ color: "#333" }} className="text-sm mt-2">
-                      {percentage}% complete
+                    <p style={{ color: "#333" }} className="text-xs mt-1">
+                      {percentage}%
                     </p>
                   </div>
                 );
@@ -598,12 +595,12 @@ export default function CompliancePage() {
             </div>
           </div>
         ) : (
-          <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-6 border border-orange-200">
-            <p style={{ color: "#e65100" }} className="font-semibold mb-2">
+          <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200">
+            <p style={{ color: "#e65100" }} className="font-semibold mb-1 text-xs">
               Curriculum-Based State
             </p>
-            <p style={{ color: "#333" }} className="text-sm">
-              {selectedState} requires a bona fide curriculum with core subjects. While there are no specific hour minimums, logging your activities helps demonstrate a comprehensive educational program.
+            <p style={{ color: "#333" }} className="text-xs">
+              {selectedState} requires a bona fide curriculum. No hour minimums, but logging activities demonstrates a comprehensive program.
             </p>
           </div>
         )}
