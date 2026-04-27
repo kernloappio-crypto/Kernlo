@@ -15,7 +15,8 @@ import {
   getAttendanceDaysYearly,
   getAttendanceDaysMonthly
 } from "@/lib/supabase-data";
-import { getCoursesByKid, Course } from "@/lib/supabase-transcript";
+
+import TranscriptCard from "@/components/TranscriptCard";
 
 export const dynamic = "force-dynamic";
 
@@ -141,7 +142,6 @@ export default function KidDetailPage() {
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
   const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
@@ -217,14 +217,7 @@ export default function KidDetailPage() {
           setGoals([]);
         }
 
-        // Load courses with error handling
-        try {
-          const coursesData = await getCoursesByKid(kidId);
-          setCourses(coursesData || []);
-        } catch (err) {
-          console.error("Error loading courses:", err);
-          setCourses([]); // Default to empty array, don't crash page
-        }
+
 
         // Load compliance state
         if (kidData?.name) {
@@ -718,13 +711,12 @@ Format as professional homeschool compliance documentation.`;
             )}
           </div>
 
-          {/* Transcript Card - TEMPORARILY DISABLED TO UNBLOCK DASHBOARD */}
-          {/* <TranscriptCard
+          {/* Transcript Card */}
+          <TranscriptCard
             kidId={kid.id}
             kidName={kid.name}
-            courses={courses}
             onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
-          /> */}
+          />
         </div>
         )}
 
