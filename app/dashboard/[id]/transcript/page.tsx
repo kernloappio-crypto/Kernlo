@@ -205,7 +205,7 @@ export default function TranscriptPage() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/app/dashboard/${kidId}`} className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
+          <Link href={`/dashboard/${kidId}`} className="text-blue-600 hover:text-blue-700 mb-4 inline-block">
             ← Back to Student
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

@@ -5,8 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-// import { ErrorBoundary } from "@/components/ErrorBoundary";
-// import TranscriptCard from "@/components/TranscriptCard"; // Phase 2 - DEFERRED
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import TranscriptCard from "@/components/TranscriptCard";
 import { 
   getActivities, 
   addActivity, 
@@ -710,14 +710,14 @@ Format as professional homeschool compliance documentation.`;
             )}
           </div>
 
-          {/* Transcript Card - PHASE 2 DEFERRED */}
-          {/* <ErrorBoundary>
+          {/* Transcript Card */}
+          <ErrorBoundary>
             <TranscriptCard
               kidId={kid.id}
               kidName={kid.name}
               onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
             />
-          </ErrorBoundary> */}
+          </ErrorBoundary>
         </div>
         )}
 

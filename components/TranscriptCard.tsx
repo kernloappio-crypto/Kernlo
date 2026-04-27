@@ -149,7 +149,7 @@ export default function TranscriptCard({
           Unable to load transcript. Please try again.
         </p>
         <Link
-          href={`/app/dashboard/${kidId}/transcript`}
+          href={`/dashboard/${kidId}/transcript`}
           className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
         >
           View Transcript
@@ -244,13 +244,13 @@ export default function TranscriptCard({
         {/* Action Buttons */}
         <div className="flex gap-3">
           <Link
-            href={`/app/dashboard/${kidId}/transcript`}
+            href={`/dashboard/${kidId}/transcript`}
             className="flex-1 inline-block text-center bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Manage Courses
           </Link>
           <Link
-            href={`/app/dashboard/${kidId}/transcript?action=generate`}
+            href={`/dashboard/${kidId}/transcript?action=generate`}
             className="flex-1 inline-block text-center bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
           >
             Generate PDF
@@ -263,7 +263,7 @@ export default function TranscriptCard({
               No courses yet
             </p>
             <Link
-              href={`/app/dashboard/${kidId}/transcript`}
+              href={`/dashboard/${kidId}/transcript`}
               className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
             >
               Add Your First Course
@@ -281,7 +281,7 @@ export default function TranscriptCard({
           Unable to load transcript. Please try again.
         </p>
         <Link
-          href={`/app/dashboard/${kidId}/transcript`}
+          href={`/dashboard/${kidId}/transcript`}
           className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
         >
           View Transcript
