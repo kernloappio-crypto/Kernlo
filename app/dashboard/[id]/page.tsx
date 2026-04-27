@@ -478,58 +478,101 @@ Format as professional homeschool compliance documentation.`;
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
-        {/* Navigation Links */}
-        {kid && (
-        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
-          <Link
-            href={`/dashboard/${kid.id}/subject-progress`}
-            style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
-          >
-            Subject Progress
-          </Link>
-          <Link
-            href={`/dashboard/${kid.id}/goals`}
-            style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
-          >
-            Goals
-          </Link>
-          <Link
-            href={`/dashboard/${kid.id}/compliance`}
-            style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
-          >
-            Compliance
-          </Link>
-        </div>
-        )}
 
         {/* Summary Cards */}
         {kid && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-fit">
-          {/* Subject Progress Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                📚 Recent Subjects
-              </h3>
-              <Link
-                href={`/dashboard/${kid.id}/subject-progress`}
-                style={{ color: COLORS.primary }}
-                className="text-xs font-medium hover:underline"
-              >
-                View All →
-              </Link>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {/* State Compliance Card (Combined) */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/compliance`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              📋 State Compliance
+            </h3>
+            
+            {/* Attendance Section */}
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <p style={{ color: "#555" }} className="text-xs font-medium mb-3">Attendance</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span style={{ color: "#555" }} className="text-xs">This Month</span>
+                  <span style={{ color: COLORS.primary }} className="text-sm font-bold">{attendanceDaysMonth}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span style={{ color: "#555" }} className="text-xs">This Year</span>
+                  <span style={{ color: COLORS.primary }} className="text-sm font-bold">{attendanceDaysYear}</span>
+                </div>
+              </div>
             </div>
             
+            {/* State Requirements Section */}
+            <div>
+              <p style={{ color: "#555" }} className="text-xs font-medium mb-3">State: {complianceState}</p>
+              {STATE_REQUIREMENTS[complianceState]?.totalHours > 0 ? (
+                (() => {
+                  const stateReqs = STATE_REQUIREMENTS[complianceState];
+                  const subjects = Object.keys(stateReqs.subjects).slice(0, 3);
+                  
+                  return (
+                    <div className="space-y-2">
+                      {subjects.map((subject) => {
+                        const subjectActivities = activities.filter((a) => a.subject === subject);
+                        const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+                        const required = stateReqs.subjects[subject] || 0;
+                        const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
+                        const met = hours >= required;
+
+                        return (
+                          <div key={subject} className="text-xs">
+                            <div className="flex justify-between mb-1">
+                              <span style={{ color: COLORS.dark }}>{subject}</span>
+                              <span style={{ color: met ? COLORS.accent3 : "#999" }} className="font-bold">
+                                {hours}h/{required}h
+                              </span>
+                            </div>
+                            <div style={{ backgroundColor: "#e5e7eb", height: "4px", borderRadius: "2px" }}>
+                              <div
+                                style={{
+                                  backgroundColor: met ? COLORS.accent3 : COLORS.primary,
+                                  height: "100%",
+                                  borderRadius: "2px",
+                                  width: `${percentage}%`,
+                                  transition: "width 0.3s ease",
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
+              ) : (
+                <p style={{ color: "#555" }} className="text-xs italic">
+                  {complianceState} is curriculum-based (no hour requirements).
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Subject Progress Card */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/subject-progress`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              📚 Subject Progress
+            </h3>
+            
             {activities.length === 0 ? (
-              <p style={{ color: "#555" }} className="text-sm mb-4">
+              <p style={{ color: "#555" }} className="text-sm">
                 No activities logged yet
               </p>
             ) : (
               (() => {
-                // Get unique subjects with latest activity, sorted by most recent
                 const subjectMap = new Map<string, { topic?: string; date: string; }>();
                 
                 activities.forEach((activity) => {
@@ -548,30 +591,18 @@ Format as professional homeschool compliance documentation.`;
                   .slice(0, 5);
 
                 return (
-                  <div className="space-y-3">
+                  <div className="space-y-2 text-sm">
                     {subjectsWithDates.map((item) => {
                       const dateObj = new Date(item.date);
                       const dateStr = dateObj.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       });
+                      const topic = item.topic?.substring(0, 30) || "";
                       
                       return (
-                        <div key={item.subject} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
-                            <span style={{ color: COLORS.dark }} className="text-sm font-medium">
-                              {item.subject}
-                            </span>
-                            {item.topic && (
-                              <p style={{ color: "#555" }} className="text-xs mt-1">
-                                {item.topic.substring(0, 40)}
-                                {item.topic.length > 40 ? "..." : ""}
-                              </p>
-                            )}
-                          </div>
-                          <span style={{ color: "#555" }} className="text-xs font-medium flex-shrink-0 ml-2">
-                            {dateStr}
-                          </span>
+                        <div key={item.subject} style={{ color: COLORS.dark }} className="font-medium">
+                          {item.subject} {dateStr} {topic}
                         </div>
                       );
                     })}
@@ -581,84 +612,27 @@ Format as professional homeschool compliance documentation.`;
             )}
           </div>
 
-          {/* Subjects & Compliance Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                Subject Progress ({complianceState})
-              </h3>
-              <Link
-                href={`/dashboard/${kid.id}/compliance`}
-                style={{ color: COLORS.primary }}
-                className="text-xs font-medium hover:underline"
-              >
-                View All →
-              </Link>
-            </div>
-            
-            <div className="space-y-3">
-              {STATE_REQUIREMENTS[complianceState]?.totalHours > 0 ? (
-                (() => {
-                  const stateReqs = STATE_REQUIREMENTS[complianceState];
-                  const subjects = Object.keys(stateReqs.subjects).slice(0, 4); // Show top 4
-                  
-                  return subjects.map((subject) => {
-                    const subjectActivities = activities.filter((a) => a.subject === subject);
-                    const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
-                    const required = stateReqs.subjects[subject] || 0;
-                    const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
-                    const met = hours >= required;
-
-                    return (
-                      <div key={subject}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span style={{ color: COLORS.dark }} className="text-sm font-medium">
-                            {subject}
-                          </span>
-                          <span style={{ color: met ? COLORS.accent3 : "#999" }} className="text-xs font-bold">
-                            {hours}h / {required}h
-                          </span>
-                        </div>
-                        <div style={{ backgroundColor: "#e5e7eb", height: "6px", borderRadius: "3px" }}>
-                          <div
-                            style={{
-                              backgroundColor: met ? COLORS.accent3 : COLORS.primary,
-                              height: "100%",
-                              borderRadius: "3px",
-                              width: `${percentage}%`,
-                              transition: "width 0.3s ease",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()
-              ) : (
-                <p style={{ color: "#555" }} className="text-xs italic">
-                  {complianceState} is curriculum-based (no specific hour requirements). Continue logging activities to demonstrate a comprehensive program.
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Goals Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/goals`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              Monthly Goals
+              🎯 Goals
             </h3>
             {goals.length === 0 ? (
-              <p style={{ color: "#555" }} className="text-sm mb-4">
+              <p style={{ color: "#555" }} className="text-sm">
                 No goals set
               </p>
             ) : (
-              <div className="space-y-3 mb-4">
+              <div className="space-y-2">
                 {goals.slice(0, 3).map((g) => (
-                  <div key={g.id} className="flex justify-between items-center">
-                    <span style={{ color: COLORS.dark }} className="text-sm font-medium">
+                  <div key={g.id} className="flex justify-between items-center text-sm">
+                    <span style={{ color: COLORS.dark }} className="font-medium">
                       {g.subject}
                     </span>
-                    <span style={{ color: COLORS.primary }} className="text-sm font-bold">
+                    <span style={{ color: COLORS.primary }} className="font-bold">
                       {g.monthly_hours}h
                     </span>
                   </div>
@@ -670,47 +644,6 @@ Format as professional homeschool compliance documentation.`;
                 )}
               </div>
             )}
-            <Link
-              href={`/dashboard/${kid.id}/goals`}
-              style={{ color: COLORS.primary }}
-              className="text-xs font-medium hover:underline block"
-            >
-              Manage Goals →
-            </Link>
-          </div>
-
-          {/* Attendance Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
-                📅 Attendance
-              </h3>
-              <Link
-                href={`/dashboard/${kid.id}/compliance`}
-                style={{ color: COLORS.primary }}
-                className="text-xs font-medium hover:underline"
-              >
-                View All →
-              </Link>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span style={{ color: "#555" }} className="text-sm font-medium">
-                  This Month
-                </span>
-                <span style={{ color: COLORS.primary }} className="text-lg font-bold">
-                  {attendanceDaysMonth}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span style={{ color: "#555" }} className="text-sm font-medium">
-                  This Year
-                </span>
-                <span style={{ color: COLORS.primary }} className="text-lg font-bold">
-                  {attendanceDaysYear}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
         )}
