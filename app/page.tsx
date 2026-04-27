@@ -83,7 +83,7 @@ export default function LandingPage() {
           </div>
 
           {/* Video - Whiteboard Animation */}
-          <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-black">
+          <div className="max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg bg-black mb-8">
             <video
               width="100%"
               height="auto"
@@ -98,6 +98,29 @@ export default function LandingPage() {
               <source src="/videos/kernlo-whiteboard.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+          </div>
+
+          {/* 45-Second Video Script */}
+          <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg border border-gray-200 text-left">
+            <p style={{ color: "#999" }} className="text-xs uppercase tracking-wide font-semibold mb-4">Video Script (45 sec)</p>
+            <div className="space-y-4 text-sm leading-relaxed" style={{ color: COLORS.dark }}>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Hook (5 sec)</p>
+                <p>"You didn't become a homeschool parent to manage spreadsheets."</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Problem (10 sec)</p>
+                <p>"Hours disappear tracking activities across different platforms. Notes get duplicated. Compliance deadlines sneak up. And when you need to show progress—nothing's organized."</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Solution (15 sec)</p>
+                <p>"Kernlo changes that. Log an activity in 30 seconds—subject, platform, duration, done. Watch your kids' progress unfold in real time. See exactly what they're learning. And when you need reports? Generate them instantly."</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-1">CTA (5 sec)</p>
+                <p>"Start free today. 30 days unlimited. No credit card."</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
