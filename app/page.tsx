@@ -60,10 +60,10 @@ export default function LandingPage() {
       <section style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
           <h1 style={{ color: COLORS.dark }} className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
-            Track homeschool learning. Generate reports when you need them.
+            Stop spreadsheets. Start seeing what your kids actually learn.
           </h1>
           <p style={{ color: "#666" }} className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 max-w-3xl mx-auto">
-            Log your kids' learning activities in seconds. Kernlo tracks progress by subject and state requirements. When you need a report, generate one with AI in moments. No spreadsheets. No hassle.
+            One place to log activities, track progress by subject, and see what's actually happening in your homeschool. Generate professional reports when you need them—in moments, not hours.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8 sm:mb-12">
             <Link
@@ -106,18 +106,18 @@ export default function LandingPage() {
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
-            Does this sound like you?
+            The homeschool tracking chaos is real
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 max-w-2xl mx-auto">
             {[
-              "Dreading compliance deadlines every month",
-              "Spending weekends writing progress reports",
-              "Using spreadsheets that don't work",
-              "Wanting professional reports but have no time",
+              "Spreadsheets that don't talk to each other",
+              "No visibility into what your kids actually learned",
+              "Hours wasted documenting instead of teaching",
+              "Panic scramble when compliance deadlines hit",
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">
-                <span style={{ color: COLORS.accent3 }} className="text-2xl font-bold flex-shrink-0">
-                  ✓
+                <span style={{ color: COLORS.accent1 }} className="text-2xl font-bold flex-shrink-0">
+                  ✗
                 </span>
                 <p style={{ color: "#666" }} className="text-sm">
                   {item}
@@ -132,13 +132,13 @@ export default function LandingPage() {
       <section id="how-it-works" style={{ backgroundColor: COLORS.light }} className="py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
-            How Kernlo Works
+            See. Track. Report. Simple.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
-              { step: "1", title: "Log Activities", desc: "Record what your kids learned—subject, duration, platform, notes." },
-              { step: "2", title: "AI Generates", desc: "Kernlo's AI creates professional, state-compliant reports automatically." },
-              { step: "3", title: "Download & Submit", desc: "Export PDF reports ready for compliance submission." },
+              { step: "1", title: "Log Activity", desc: "Quick log—subject, platform, duration, notes. Takes 30 seconds." },
+              { step: "2", title: "See Progress", desc: "Watch learning unfold by subject, by state, by kid. Full visibility." },
+              { step: "3", title: "Generate Reports", desc: "AI creates professional reports when you need them. Ready to submit." },
             ].map((item, i) => (
               <div key={i} className="text-center">
                 <div
@@ -163,16 +163,16 @@ export default function LandingPage() {
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 style={{ color: COLORS.dark }} className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">
-            Everything You Need
+            Real-time visibility. No spreadsheets.
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
-              { icon: "📱", title: "Quick Logging", desc: "Log learning in seconds—subject, duration, platform, notes" },
-              { icon: "📊", title: "Multi-Kid Support", desc: "Track progress for all your kids in one place" },
-              { icon: "📈", title: "Goals & Compliance Tracking", desc: "Set targets and see at a glance how you're tracking against your state's requirements" },
-              { icon: "🤖", title: "AI-Powered Reports", desc: "Generate professional, narrative reports when you need them" },
-              { icon: "📄", title: "PDF Export", desc: "Download reports ready for co-ops, colleges, or state submissions" },
-              { icon: "✓", title: "State Tracking", desc: "Track hours against your state's requirements. Verify rules with your state education department" },
+              { icon: "📱", title: "Quick Logging", desc: "Log in 30 seconds—subject, platform, duration, notes. That's it." },
+              { icon: "👁️", title: "See Progress Real-Time", desc: "Dashboard shows exactly what each kid is learning, by subject, right now" },
+              { icon: "📚", title: "Track by Subject", desc: "Monitor progress in Math, English, Science, and more at a glance" },
+              { icon: "📋", title: "State Compliance", desc: "Track hours against your state's requirements. Know you're on track." },
+              { icon: "🤖", title: "AI-Powered Reports", desc: "When you need reports, generate professional narratives in moments" },
+              { icon: "📄", title: "PDF Export", desc: "Download and submit to co-ops, colleges, or state authorities" },
             ].map((feature, i) => (
               <div key={i} style={{ backgroundColor: COLORS.light }} className="p-4 sm:p-6 rounded-lg">
                 <p className="text-3xl sm:text-4xl mb-2">{feature.icon}</p>

@@ -489,7 +489,7 @@ Format as professional homeschool compliance documentation.`;
             className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
           >
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              📋 State Compliance
+              📋 {complianceState} Compliance
             </h3>
             
             {/* Attendance Section */}
@@ -573,7 +573,7 @@ Format as professional homeschool compliance documentation.`;
               </p>
             ) : (
               (() => {
-                const subjectMap = new Map<string, { topic?: string; date: string; }>();
+                const subjectMap = new Map<string, { topic?: string; date: string; platform?: string; }>();
                 
                 activities.forEach((activity) => {
                   if (!subjectMap.has(activity.subject) || 
@@ -581,6 +581,7 @@ Format as professional homeschool compliance documentation.`;
                     subjectMap.set(activity.subject, {
                       topic: activity.notes || undefined,
                       date: activity.date,
+                      platform: activity.platform,
                     });
                   }
                 });
@@ -591,21 +592,54 @@ Format as professional homeschool compliance documentation.`;
                   .slice(0, 5);
 
                 return (
-                  <div className="space-y-2 text-sm">
-                    {subjectsWithDates.map((item) => {
+                  <div className="space-y-3">
+                    {subjectsWithDates.map((item, idx) => {
                       const dateObj = new Date(item.date);
                       const dateStr = dateObj.toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       });
-                      const topic = item.topic?.substring(0, 30) || "";
+                      const topic = item.topic?.substring(0, 35) || "—";
+                      
+                      const subjectIcons: {[key: string]: string} = {
+                        "Math": "🔢",
+                        "English": "📖",
+                        "Science": "🔬",
+                        "History": "📜",
+                        "Social Studies": "🌍",
+                        "Arts": "🎨",
+                        "Physical Education": "⚽",
+                      };
+                      const icon = subjectIcons[item.subject] || "📚";
                       
                       return (
-                        <div key={item.subject} style={{ color: COLORS.dark }} className="font-medium">
-                          {item.subject} {dateStr} {topic}
+                        <div key={item.subject} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
+                          <span className="text-lg flex-shrink-0">{icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span style={{ color: COLORS.dark }} className="font-semibold text-sm">
+                                {item.subject}
+                              </span>
+                              <span style={{ color: "#999" }} className="text-xs">
+                                {dateStr}
+                              </span>
+                            </div>
+                            <p style={{ color: "#666" }} className="text-xs mt-1 truncate">
+                              {topic}
+                            </p>
+                          </div>
                         </div>
                       );
                     })}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <a
+                        href={`/dashboard/${kid.id}/subject-progress`}
+                        style={{ color: COLORS.primary }}
+                        className="text-xs font-medium hover:opacity-70"
+                      >
+                        View All →
+                      </a>
+                    </div>
                   </div>
                 );
               })()
