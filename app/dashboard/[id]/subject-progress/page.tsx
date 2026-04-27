@@ -280,7 +280,7 @@ export default function SubjectProgressPage() {
                   <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                     Last Activity
                   </p>
-                  <p style={{ color: COLORS.dark }} className="text-sm font-semibold">
+                  <p style={{ color: COLORS.dark }} className="text-lg font-semibold">
                     {activities.length > 0
                       ? formatDate(
                           activities.sort(
@@ -308,17 +308,17 @@ export default function SubjectProgressPage() {
                         backgroundColor: COLORS.light,
                         borderBottom: "1px solid #e5e7eb",
                       }}
-                      className="p-4 sm:p-6"
+                      className="p-3 sm:p-4"
                     >
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex-1">
                           <h2
                             style={{ color: COLORS.dark }}
-                            className="text-xl sm:text-2xl font-bold"
+                            className="text-lg sm:text-xl font-bold"
                           >
                             {group.subject}
                           </h2>
-                          <p style={{ color: "#555" }} className="text-xs sm:text-sm mt-1">
+                          <p style={{ color: "#555" }} className="text-xs mt-1">
                             {group.totalActivities} activities • {group.totalHours.toFixed(1)} hours
                           </p>
                         </div>
@@ -359,11 +359,11 @@ export default function SubjectProgressPage() {
                     </div>
 
                     {/* Activity Timeline */}
-                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                    <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                       {group.activities.map((activity, index) => (
                         <div
                           key={activity.id}
-                          className="flex gap-3 sm:gap-4 pb-3 sm:pb-4"
+                          className="flex gap-2 sm:gap-3 pb-2 sm:pb-3"
                           style={{
                             borderBottom:
                               index < group.activities.length - 1
