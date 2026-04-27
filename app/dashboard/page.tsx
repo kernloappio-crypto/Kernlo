@@ -819,7 +819,7 @@ Format as professional homeschool compliance documentation.`;
                   const progressPercent = totalGoalHours > 0 ? Math.min(100, (loggedHours / totalGoalHours) * 100) : 0;
 
                   return (
-                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 w-fit max-w-sm">
+                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 w-fit max-w-4xl">
                       {/* Kid Header */}
                       <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-3">
                         {kid.name}
