@@ -809,7 +809,7 @@ Format as professional homeschool compliance documentation.`;
             {kids.length === 0 ? (
               <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-start">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;
