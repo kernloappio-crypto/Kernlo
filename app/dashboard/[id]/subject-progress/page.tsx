@@ -295,12 +295,12 @@ export default function SubjectProgressPage() {
               </div>
 
               {/* Subject Cards */}
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {subjectGroups.map((group) => (
                   <div
                     key={group.subject}
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="border border-gray-200 overflow-hidden w-fit max-w-2xl"
+                    className="border border-gray-200 overflow-hidden"
                   >
                     {/* Subject Header */}
                     <div
@@ -308,30 +308,24 @@ export default function SubjectProgressPage() {
                         backgroundColor: COLORS.light,
                         borderBottom: "1px solid #e5e7eb",
                       }}
-                      className="p-3 sm:p-4"
+                      className="p-2 sm:p-3"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2 flex-col gap-1 text-center">
+                        <div className="flex-1 w-full">
                           <h2
                             style={{ color: COLORS.dark }}
-                            className="text-lg sm:text-xl font-bold"
+                            className="text-sm sm:text-base font-bold"
                           >
                             {group.subject}
                           </h2>
-                          <p style={{ color: "#555" }} className="text-xs mt-1">
-                            {group.totalActivities} activities • {group.totalHours.toFixed(1)} hours
+                          <p style={{ color: "#555" }} className="text-xs mt-0.5">
+                            {group.totalActivities} • {group.totalHours.toFixed(1)}h
                           </p>
                         </div>
                         {group.lastActivity && (
-                          <div className="text-right">
+                          <div className="text-center w-full">
                             <p style={{ color: "#555" }} className="text-xs">
-                              Last activity
-                            </p>
-                            <p
-                              style={{ color: COLORS.primary }}
-                              className="text-sm font-semibold"
-                            >
-                              {formatDate(group.lastActivity.date)}
+                              Last: {formatDate(group.lastActivity.date)}
                             </p>
                           </div>
                         )}
@@ -359,14 +353,14 @@ export default function SubjectProgressPage() {
                     </div>
 
                     {/* Activity Timeline */}
-                    <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-                      {group.activities.map((activity, index) => (
+                    <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
+                      {group.activities.slice(0, 3).map((activity, index) => (
                         <div
                           key={activity.id}
-                          className="flex gap-2 sm:gap-3 pb-2 sm:pb-3"
+                          className="flex gap-1 sm:gap-2 pb-1 sm:pb-2 text-xs"
                           style={{
                             borderBottom:
-                              index < group.activities.length - 1
+                              index < Math.min(group.activities.length - 1, 2)
                                 ? "1px solid #e5e7eb"
                                 : "none",
                           }}
@@ -375,15 +369,15 @@ export default function SubjectProgressPage() {
                           <div className="flex flex-col items-center flex-shrink-0 mt-1">
                             <div
                               style={{ backgroundColor: COLORS.primary }}
-                              className="w-3 h-3 rounded-full"
+                              className="w-2 h-2 rounded-full flex-shrink-0"
                             />
-                            {index < group.activities.length - 1 && (
+                            {index < Math.min(group.activities.length - 1, 2) && (
                               <div
                                 style={{
                                   backgroundColor: "#e5e7eb",
-                                  width: "2px",
-                                  height: "40px",
-                                  marginTop: "8px",
+                                  width: "1px",
+                                  height: "20px",
+                                  marginTop: "4px",
                                 }}
                               />
                             )}
@@ -391,53 +385,24 @@ export default function SubjectProgressPage() {
 
                           {/* Activity Details */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <div className="flex items-center gap-1 flex-wrap mb-0.5">
                               <span
-                                style={{
-                                  backgroundColor: COLORS.light,
-                                  color: COLORS.primary,
-                                }}
-                                className="px-2 py-1 rounded text-xs font-semibold flex-shrink-0"
-                              >
-                                {formatFullDate(activity.date)}
-                              </span>
-                              <span
-                                style={{ color: "#333" }}
-                                className="text-sm font-semibold flex-shrink-0"
+                                style={{ color: COLORS.primary }}
+                                className="font-semibold flex-shrink-0"
                               >
                                 {activity.duration}h
                               </span>
-                              {activity.activity_type &&
-                                activity.activity_type !== "Core Subject" && (
-                                  <span
-                                    style={{
-                                      backgroundColor: "#fff3cd",
-                                      color: "#856404",
-                                    }}
-                                    className="px-2 py-1 rounded text-xs font-medium flex-shrink-0"
-                                  >
-                                    {activity.activity_type}
-                                  </span>
-                                )}
+                              <span
+                                style={{ color: "#555" }}
+                                className="flex-shrink-0"
+                              >
+                                {formatDate(activity.date)}
+                              </span>
                             </div>
 
                             {activity.platform && (
-                              <p style={{ color: "#555" }} className="text-xs sm:text-sm mb-1">
-                                <span className="font-medium">Platform:</span>{" "}
+                              <p style={{ color: "#555" }} className="text-xs mb-0.5">
                                 {activity.platform}
-                              </p>
-                            )}
-
-                            {activity.curriculum && (
-                              <p style={{ color: "#555" }} className="text-xs sm:text-sm mb-1">
-                                <span className="font-medium">Curriculum:</span>{" "}
-                                {activity.curriculum}
-                              </p>
-                            )}
-
-                            {activity.notes && (
-                              <p style={{ color: "#333" }} className="text-xs sm:text-sm italic mt-2">
-                                "{activity.notes}"
                               </p>
                             )}
                           </div>
