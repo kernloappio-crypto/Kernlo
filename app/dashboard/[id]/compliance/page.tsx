@@ -367,183 +367,188 @@ export default function CompliancePage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Attendance Tracking */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
-          <h2 style={{ color: COLORS.dark }} className="text-sm font-bold mb-2">
-            📅 Attendance Summary
-          </h2>
-
-          {/* Year and Month Summary */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
-              <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS MONTH</p>
-              <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysMonth}</p>
-              <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
-            </div>
-            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
-              <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS YEAR</p>
-              <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysYear}</p>
-              <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
-            </div>
+        {/* TOP SECTION: Warning + State Requirements (2-column grid) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Warning Card (Left) */}
+          <div className="w-fit">
+            {allMet ? (
+              <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-3 sm:p-4 border border-green-200 max-w-sm">
+                <p style={{ color: "#2e7d32" }} className="text-sm font-bold">
+                  ✓ All requirements met!
+                </p>
+              </div>
+            ) : (
+              <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200 max-w-sm">
+                <p style={{ color: "#e65100" }} className="text-sm font-bold">
+                  ⚠ Not all requirements met. Keep logging activities.
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* State Requirement Progress */}
-          {selectedState === "CA" && (
-            <div className="mb-2 pb-2 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
-                California: 175 days/year
-              </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
-                <div
-                  style={{
-                    backgroundColor: COLORS.accent3,
-                    width: `${Math.min((attendanceDaysYear / 175) * 100, 100)}%`,
-                    transition: "width 0.3s ease",
-                  }}
-                  className="h-full"
-                />
+          {/* State Requirements Card (Right) */}
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
+            <h2 style={{ color: COLORS.dark }} className="text-base font-bold mb-1">
+              {STATE_REQUIREMENTS[selectedState]?.name} Requirements
+            </h2>
+            <p style={{ color: "#333" }} className="text-xs mb-2">
+              {STATE_REQUIREMENTS[selectedState]?.description}
+            </p>
+            {STATE_REQUIREMENTS[selectedState]?.notes && (
+              <div style={{ backgroundColor: "#f0f7ff", borderLeft: `4px solid ${COLORS.primary}` }} className="p-2 rounded text-xs">
+                <p style={{ color: COLORS.dark }} className="font-medium mb-0.5">
+                  Note:
+                </p>
+                <p style={{ color: "#333" }}>
+                  {STATE_REQUIREMENTS[selectedState]?.notes}
+                </p>
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-1">
-                {attendanceDaysYear} / 175 ({Math.round((attendanceDaysYear / 175) * 100)}%)
-              </p>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
 
-          {selectedState === "FL" && (
-            <div className="mb-2 pb-2 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
-                Florida: 1,000 hours/year
-              </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
-                <div
-                  style={{
-                    backgroundColor: COLORS.accent3,
-                    width: `${Math.min((attendanceDaysYear / 200) * 100, 100)}%`,
-                    transition: "width 0.3s ease",
-                  }}
-                  className="h-full"
-                />
+        {/* ATTENDANCE SUMMARY CARD (Half width - 50%) */}
+        <div className="w-1/2 max-w-md">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
+            <h2 style={{ color: COLORS.dark }} className="text-sm font-bold mb-2">
+              📅 Attendance Summary
+            </h2>
+
+            {/* Year and Month Summary */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
+                <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS MONTH</p>
+                <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysMonth}</p>
+                <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-1">
-                Use activities for hour tracking
-              </p>
-            </div>
-          )}
-
-          {selectedState === "NY" && (
-            <div className="mb-2 pb-2 border-b border-gray-200">
-              <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
-                New York: 900 hours/year
-              </p>
-              <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
-                <div
-                  style={{
-                    backgroundColor: COLORS.accent3,
-                    width: `${Math.min((attendanceDaysYear / 180) * 100, 100)}%`,
-                    transition: "width 0.3s ease",
-                  }}
-                  className="h-full"
-                />
+              <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2">
+                <p style={{ color: "#555" }} className="text-xs font-semibold mb-0.5">THIS YEAR</p>
+                <p style={{ color: COLORS.primary }} className="text-lg font-bold">{attendanceDaysYear}</p>
+                <p style={{ color: "#555" }} className="text-xs mt-0.5">days</p>
               </div>
-              <p style={{ color: "#555" }} className="text-xs mt-1">
-                Use activities for hour tracking
-              </p>
             </div>
-          )}
 
-          {/* Last 10 Attendance Dates */}
-          {lastAttendanceDates.length > 0 && (
-            <div className="mb-2">
-              <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-1">
-                Last 10 Dates
-              </h3>
-              <div className="flex flex-wrap gap-1">
-                {lastAttendanceDates.map((date) => (
+            {/* State Requirement Progress */}
+            {selectedState === "CA" && (
+              <div className="mb-2 pb-2 border-b border-gray-200">
+                <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                  California: 175 days/year
+                </p>
+                <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
                   <div
-                    key={date}
-                    style={{ backgroundColor: COLORS.light, borderRadius: "4px" }}
-                    className="px-2 py-1"
-                  >
-                    <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
-                      {new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
-                  </div>
-                ))}
+                    style={{
+                      backgroundColor: COLORS.accent3,
+                      width: `${Math.min((attendanceDaysYear / 175) * 100, 100)}%`,
+                      transition: "width 0.3s ease",
+                    }}
+                    className="h-full"
+                  />
+                </div>
+                <p style={{ color: "#555" }} className="text-xs mt-1">
+                  {attendanceDaysYear} / 175 ({Math.round((attendanceDaysYear / 175) * 100)}%)
+                </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Log New Attendance */}
-          <div className="pt-2 border-t border-gray-200">
-            <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-2 mt-2">
-              Log Date
-            </h3>
-            <div className="space-y-2">
-              <div>
-                <input
-                  type="date"
-                  value={attendanceDate}
-                  onChange={(e) => setAttendanceDate(e.target.value)}
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            {selectedState === "FL" && (
+              <div className="mb-2 pb-2 border-b border-gray-200">
+                <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                  Florida: 1,000 hours/year
+                </p>
+                <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
+                  <div
+                    style={{
+                      backgroundColor: COLORS.accent3,
+                      width: `${Math.min((attendanceDaysYear / 200) * 100, 100)}%`,
+                      transition: "width 0.3s ease",
+                    }}
+                    className="h-full"
+                  />
+                </div>
+                <p style={{ color: "#555" }} className="text-xs mt-1">
+                  Use activities for hour tracking
+                </p>
               </div>
+            )}
 
-              <button
-                onClick={handleSaveAttendance}
-                style={{ backgroundColor: COLORS.primary }}
-                className="w-full px-3 py-1.5 text-white font-semibold rounded-lg hover:opacity-90 text-xs"
-              >
-                ✓ Log Day
-              </button>
+            {selectedState === "NY" && (
+              <div className="mb-2 pb-2 border-b border-gray-200">
+                <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                  New York: 900 hours/year
+                </p>
+                <div style={{ backgroundColor: "#e5e7eb", borderRadius: "4px" }} className="h-2 overflow-hidden">
+                  <div
+                    style={{
+                      backgroundColor: COLORS.accent3,
+                      width: `${Math.min((attendanceDaysYear / 180) * 100, 100)}%`,
+                      transition: "width 0.3s ease",
+                    }}
+                    className="h-full"
+                  />
+                </div>
+                <p style={{ color: "#555" }} className="text-xs mt-1">
+                  Use activities for hour tracking
+                </p>
+              </div>
+            )}
+
+            {/* Last 10 Attendance Dates */}
+            {lastAttendanceDates.length > 0 && (
+              <div className="mb-2">
+                <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-1">
+                  Last 10 Dates
+                </h3>
+                <div className="flex flex-wrap gap-1">
+                  {lastAttendanceDates.map((date) => (
+                    <div
+                      key={date}
+                      style={{ backgroundColor: COLORS.light, borderRadius: "4px" }}
+                      className="px-2 py-1"
+                    >
+                      <p style={{ color: COLORS.primary }} className="text-xs font-semibold">
+                        {new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Log New Attendance */}
+            <div className="pt-2 border-t border-gray-200">
+              <h3 style={{ color: COLORS.dark }} className="text-xs font-bold mb-2 mt-2">
+                Log Date
+              </h3>
+              <div className="space-y-2">
+                <div>
+                  <input
+                    type="date"
+                    value={attendanceDate}
+                    onChange={(e) => setAttendanceDate(e.target.value)}
+                    style={{ color: "#1a1a2e" }}
+                    className="w-full px-3 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveAttendance}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="w-full px-3 py-1.5 text-white font-semibold rounded-lg hover:opacity-90 text-xs"
+                >
+                  ✓ Log Day
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Compliance Status */}
-        <div className="w-fit">
-          {allMet ? (
-            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-3 sm:p-4 border border-green-200 max-w-sm">
-              <p style={{ color: "#2e7d32" }} className="text-sm font-bold">
-                ✓ All requirements met!
-              </p>
-            </div>
-          ) : (
-            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200 max-w-sm">
-              <p style={{ color: "#e65100" }} className="text-sm font-bold">
-                ⚠ Not all requirements met. Keep logging activities.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* State Requirements Header */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-4 w-fit max-w-2xl">
-          <h2 style={{ color: COLORS.dark }} className="text-base font-bold mb-1">
-            {STATE_REQUIREMENTS[selectedState]?.name} Requirements
-          </h2>
-          <p style={{ color: "#333" }} className="text-xs mb-2">
-            {STATE_REQUIREMENTS[selectedState]?.description}
-          </p>
-          {STATE_REQUIREMENTS[selectedState]?.notes && (
-            <div style={{ backgroundColor: "#f0f7ff", borderLeft: `4px solid ${COLORS.primary}` }} className="p-2 rounded text-xs">
-              <p style={{ color: COLORS.dark }} className="font-medium mb-0.5">
-                Note:
-              </p>
-              <p style={{ color: "#333" }}>
-                {STATE_REQUIREMENTS[selectedState]?.notes}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Subject Requirements */}
+        {/* SUBJECT HOUR REQUIREMENTS (5-column grid) */}
         {STATE_REQUIREMENTS[selectedState]?.totalHours > 0 ? (
           <div>
             <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
               Subject Hour Requirements
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-fit">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {Object.entries(compliance).map(([subject, data]) => {
                 const percentage = Math.round((data.hours / data.required) * 100);
                 const isMet = data.met;
@@ -552,7 +557,7 @@ export default function CompliancePage() {
                   <div
                     key={subject}
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="p-3 sm:p-4 border border-gray-200 max-w-sm"
+                    className="p-3 sm:p-4 border border-gray-200"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>
