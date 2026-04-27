@@ -17,20 +17,21 @@ export default function TranscriptCard({
   courses,
   onClick,
 }: TranscriptCardProps) {
-  const totalCredits = calculateTotalCredits(courses);
-  const gpa = calculateGPA(courses);
+  try {
+    const totalCredits = calculateTotalCredits(courses || []);
+    const gpa = calculateGPA(courses || []);
 
-  const handleCardClick = () => {
-    if (onClick) {
-      onClick();
-    }
-  };
+    const handleCardClick = () => {
+      if (onClick) {
+        onClick();
+      }
+    };
 
-  return (
-    <div
-      onClick={handleCardClick}
-      className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-    >
+    return (
+      <div
+        onClick={handleCardClick}
+        className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
@@ -116,6 +117,23 @@ export default function TranscriptCard({
           </Link>
         </div>
       )}
-    </div>
-  );
+      </div>
+    );
+  } catch (err) {
+    console.error("Error rendering TranscriptCard:", err);
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Transcript</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Unable to load transcript. Please try again.
+        </p>
+        <Link
+          href={`/app/dashboard/${kidId}/transcript`}
+          className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
+        >
+          View Transcript
+        </Link>
+      </div>
+    );
+  }
 }

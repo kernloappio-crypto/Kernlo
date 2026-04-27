@@ -184,50 +184,81 @@ export default function KidDetailPage() {
         }
 
         // Load activities
-        const activitiesData = await getActivities(user.id);
-        const kidActivities = activitiesData.filter(
-          (a: any) => a.child_name === kidData?.name
-        );
-        setActivities(kidActivities as Activity[]);
+        try {
+          const activitiesData = await getActivities(user.id);
+          const kidActivities = activitiesData.filter(
+            (a: any) => a.child_name === kidData?.name
+          );
+          setActivities(kidActivities as Activity[]);
+        } catch (err) {
+          console.error("Error loading activities:", err);
+          setActivities([]);
+        }
 
         // Load reports
-        const { data: reportsData } = await supabase
-          .from("reports")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("child_name", kidData?.name);
-        setReports((reportsData as Report[]) || []);
+        try {
+          const { data: reportsData } = await supabase
+            .from("reports")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("child_name", kidData?.name);
+          setReports((reportsData as Report[]) || []);
+        } catch (err) {
+          console.error("Error loading reports:", err);
+          setReports([]);
+        }
 
         // Load goals
-        const goalsData = await getGoals(user.id, kidData?.name);
-        setGoals(goalsData || []);
+        try {
+          const goalsData = await getGoals(user.id, kidData?.name);
+          setGoals(goalsData || []);
+        } catch (err) {
+          console.error("Error loading goals:", err);
+          setGoals([]);
+        }
 
-        // Load courses
-        const coursesData = await getCoursesByKid(kidId);
-        setCourses(coursesData || []);
+        // Load courses with error handling
+        try {
+          const coursesData = await getCoursesByKid(kidId);
+          setCourses(coursesData || []);
+        } catch (err) {
+          console.error("Error loading courses:", err);
+          setCourses([]); // Default to empty array, don't crash page
+        }
 
         // Load compliance state
         if (kidData?.name) {
-          const complianceData = await getComplianceState(user.id, kidData.name);
-          if (complianceData?.state) {
-            setComplianceState(complianceData.state);
-          } else {
-            // Default to CA if no state saved yet
+          try {
+            const complianceData = await getComplianceState(user.id, kidData.name);
+            if (complianceData?.state) {
+              setComplianceState(complianceData.state);
+            } else {
+              // Default to CA if no state saved yet
+              setComplianceState("CA");
+            }
+          } catch (err) {
+            console.error("Error loading compliance state:", err);
             setComplianceState("CA");
           }
         }
 
         // Load attendance statistics
         if (kidData?.name) {
-          const now = new Date();
-          const currentYear = now.getFullYear();
-          const currentMonth = now.getMonth() + 1;
+          try {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
 
-          const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
-          setAttendanceDaysYear(yearlyDays);
+            const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
+            setAttendanceDaysYear(yearlyDays);
 
-          const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
-          setAttendanceDaysMonth(monthlyDays);
+            const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
+            setAttendanceDaysMonth(monthlyDays);
+          } catch (err) {
+            console.error("Error loading attendance statistics:", err);
+            setAttendanceDaysYear(0);
+            setAttendanceDaysMonth(0);
+          }
         }
 
         // Initialize date range (last 30 days)
