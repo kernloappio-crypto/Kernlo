@@ -56,6 +56,7 @@ export default function SubjectProgressPage() {
   const [subjectGroups, setSubjectGroups] = useState<SubjectGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -147,6 +148,42 @@ export default function SubjectProgressPage() {
         return bDate - aDate;
       });
   }
+
+  const getLastTopic = (activity: Activity | undefined): string => {
+    if (!activity) return "";
+    // Extract topic from notes or curriculum
+    const notes = activity.notes?.trim() || "";
+    const curriculum = activity.curriculum?.trim() || "";
+    
+    if (notes) {
+      // Try to extract first meaningful phrase (up to first sentence)
+      const match = notes.match(/^([^.!?]*[.!?]?)/);
+      return match ? match[1].substring(0, 50) : notes.substring(0, 50);
+    }
+    return curriculum ? curriculum.substring(0, 50) : "";
+  };
+
+  const getPast6MonthsActivities = (acts: Activity[]): Activity[] => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    return acts.filter(
+      (activity) => new Date(activity.date).getTime() >= sixMonthsAgo.getTime()
+    );
+  };
+
+  const getDateRange = (acts: Activity[]): { start: string; end: string } => {
+    if (acts.length === 0) return { start: "", end: "" };
+    
+    const sorted = [...acts].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    return {
+      end: formatFullDate(sorted[0].date),
+      start: formatFullDate(sorted[sorted.length - 1].date),
+    };
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -296,122 +333,355 @@ export default function SubjectProgressPage() {
 
               {/* Subject Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {subjectGroups.map((group) => (
+                {subjectGroups.map((group) => {
+                  const lastTopic = getLastTopic(group.lastActivity);
+                  return (
+                    <button
+                      key={group.subject}
+                      onClick={() => setSelectedSubject(group.subject)}
+                      style={{ 
+                        backgroundColor: "white", 
+                        borderRadius: "12px",
+                        border: "1px solid #e5e7eb",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = "none";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                      className="text-left overflow-hidden hover:bg-gray-50"
+                    >
+                      {/* Subject Header */}
+                      <div
+                        style={{
+                          backgroundColor: COLORS.light,
+                          borderBottom: "1px solid #e5e7eb",
+                        }}
+                        className="p-2 sm:p-3"
+                      >
+                        <div className="flex items-center justify-between mb-2 flex-col gap-1 text-center">
+                          <div className="flex-1 w-full">
+                            <h2
+                              style={{ color: COLORS.dark }}
+                              className="text-sm sm:text-base font-bold"
+                            >
+                              {group.subject}
+                            </h2>
+                            <p style={{ color: "#555" }} className="text-xs mt-0.5">
+                              {group.totalActivities} • {group.totalHours.toFixed(1)}h
+                            </p>
+                          </div>
+                          {lastTopic && (
+                            <div className="text-center w-full">
+                              <p style={{ color: "#666" }} className="text-xs font-medium mt-1">
+                                Last: <span style={{ color: COLORS.primary }}>{lastTopic}</span>
+                              </p>
+                            </div>
+                          )}
+                          {group.lastActivity && (
+                            <div className="text-center w-full">
+                              <p style={{ color: "#555" }} className="text-xs mt-0.5">
+                                {formatDate(group.lastActivity.date)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full">
+                          <div
+                            style={{
+                              backgroundColor: "#e5e7eb",
+                              height: "8px",
+                              borderRadius: "4px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                backgroundColor: COLORS.primary,
+                                height: "100%",
+                                width: "100%",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Activity Timeline */}
+                      <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
+                        {group.activities.slice(0, 3).map((activity, index) => (
+                          <div
+                            key={activity.id}
+                            className="flex gap-1 sm:gap-2 pb-1 sm:pb-2 text-xs"
+                            style={{
+                              borderBottom:
+                                index < Math.min(group.activities.length - 1, 2)
+                                  ? "1px solid #e5e7eb"
+                                  : "none",
+                            }}
+                          >
+                            {/* Timeline Marker */}
+                            <div className="flex flex-col items-center flex-shrink-0 mt-1">
+                              <div
+                                style={{ backgroundColor: COLORS.primary }}
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                              />
+                              {index < Math.min(group.activities.length - 1, 2) && (
+                                <div
+                                  style={{
+                                    backgroundColor: "#e5e7eb",
+                                    width: "1px",
+                                    height: "20px",
+                                    marginTop: "4px",
+                                  }}
+                                />
+                              )}
+                            </div>
+
+                            {/* Activity Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1 flex-wrap mb-0.5">
+                                <span
+                                  style={{ color: COLORS.primary }}
+                                  className="font-semibold flex-shrink-0"
+                                >
+                                  {activity.duration}h
+                                </span>
+                                <span
+                                  style={{ color: "#555" }}
+                                  className="flex-shrink-0"
+                                >
+                                  {formatDate(activity.date)}
+                                </span>
+                              </div>
+
+                              {activity.platform && (
+                                <p style={{ color: "#555" }} className="text-xs mb-0.5">
+                                  {activity.platform}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Modal */}
+              {selectedSubject && (
+                <div
+                  style={{
+                    position: "fixed",
+                    inset: 0,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 50,
+                  }}
+                  onClick={() => setSelectedSubject(null)}
+                >
                   <div
-                    key={group.subject}
-                    style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="border border-gray-200 overflow-hidden"
+                    style={{
+                      backgroundColor: "white",
+                      borderRadius: "16px",
+                      width: "90%",
+                      maxWidth: "600px",
+                      maxHeight: "85vh",
+                      overflow: "auto",
+                      boxShadow: "0 20px 25px rgba(0,0,0,0.15)",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Subject Header */}
+                    {/* Modal Header */}
                     <div
                       style={{
                         backgroundColor: COLORS.light,
                         borderBottom: "1px solid #e5e7eb",
+                        padding: "1.5rem",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
                       }}
-                      className="p-2 sm:p-3"
                     >
-                      <div className="flex items-center justify-between mb-2 flex-col gap-1 text-center">
-                        <div className="flex-1 w-full">
-                          <h2
-                            style={{ color: COLORS.dark }}
-                            className="text-sm sm:text-base font-bold"
-                          >
-                            {group.subject}
-                          </h2>
-                          <p style={{ color: "#555" }} className="text-xs mt-0.5">
-                            {group.totalActivities} • {group.totalHours.toFixed(1)}h
-                          </p>
-                        </div>
-                        {group.lastActivity && (
-                          <div className="text-center w-full">
-                            <p style={{ color: "#555" }} className="text-xs">
-                              Last: {formatDate(group.lastActivity.date)}
-                            </p>
-                          </div>
-                        )}
+                      <div>
+                        <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-1">
+                          {selectedSubject}
+                        </h2>
+                        <p style={{ color: "#555" }} className="text-sm">
+                          Learning timeline &amp; progress
+                        </p>
                       </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full">
-                        <div
-                          style={{
-                            backgroundColor: "#e5e7eb",
-                            height: "8px",
-                            borderRadius: "4px",
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div
-                            style={{
-                              backgroundColor: COLORS.primary,
-                              height: "100%",
-                              width: "100%",
-                            }}
-                          />
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => setSelectedSubject(null)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          fontSize: "24px",
+                          cursor: "pointer",
+                          color: "#555",
+                          padding: "0",
+                          width: "32px",
+                          height: "32px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
 
-                    {/* Activity Timeline */}
-                    <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
-                      {group.activities.slice(0, 3).map((activity, index) => (
-                        <div
-                          key={activity.id}
-                          className="flex gap-1 sm:gap-2 pb-1 sm:pb-2 text-xs"
-                          style={{
-                            borderBottom:
-                              index < Math.min(group.activities.length - 1, 2)
-                                ? "1px solid #e5e7eb"
-                                : "none",
-                          }}
-                        >
-                          {/* Timeline Marker */}
-                          <div className="flex flex-col items-center flex-shrink-0 mt-1">
-                            <div
-                              style={{ backgroundColor: COLORS.primary }}
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                            />
-                            {index < Math.min(group.activities.length - 1, 2) && (
-                              <div
-                                style={{
-                                  backgroundColor: "#e5e7eb",
-                                  width: "1px",
-                                  height: "20px",
-                                  marginTop: "4px",
-                                }}
-                              />
-                            )}
-                          </div>
+                    {/* Summary Stats */}
+                    {(() => {
+                      const group = subjectGroups.find((g) => g.subject === selectedSubject);
+                      if (!group) return null;
 
-                          {/* Activity Details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 flex-wrap mb-0.5">
-                              <span
-                                style={{ color: COLORS.primary }}
-                                className="font-semibold flex-shrink-0"
-                              >
-                                {activity.duration}h
-                              </span>
-                              <span
-                                style={{ color: "#555" }}
-                                className="flex-shrink-0"
-                              >
-                                {formatDate(activity.date)}
-                              </span>
+                      const past6Months = getPast6MonthsActivities(group.activities);
+                      const dateRange = getDateRange(past6Months);
+
+                      return (
+                        <div style={{ padding: "1.5rem" }}>
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-3 gap-3 mb-6">
+                            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4 text-center">
+                              <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
+                                Total Hours
+                              </p>
+                              <p style={{ color: COLORS.primary }} className="text-2xl font-bold">
+                                {past6Months.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+                              </p>
                             </div>
 
-                            {activity.platform && (
-                              <p style={{ color: "#555" }} className="text-xs mb-0.5">
-                                {activity.platform}
+                            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4 text-center">
+                              <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
+                                Activities
                               </p>
-                            )}
+                              <p style={{ color: COLORS.secondary }} className="text-2xl font-bold">
+                                {past6Months.length}
+                              </p>
+                            </div>
+
+                            <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-4 text-center">
+                              <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
+                                Avg/Activity
+                              </p>
+                              <p style={{ color: COLORS.accent3 }} className="text-2xl font-bold">
+                                {past6Months.length > 0
+                                  ? (past6Months.reduce((sum, a) => sum + a.duration, 0) / past6Months.length).toFixed(1)
+                                  : "0"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Date Range */}
+                          {dateRange.start && dateRange.end && (
+                            <div style={{ marginBottom: "1.5rem", padding: "1rem", backgroundColor: COLORS.light, borderRadius: "8px" }}>
+                              <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
+                                Period
+                              </p>
+                              <p style={{ color: COLORS.dark }} className="text-sm font-semibold">
+                                {dateRange.start} → {dateRange.end}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Full Timeline */}
+                          <div>
+                            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+                              Timeline
+                            </h3>
+
+                            <div className="space-y-4">
+                              {past6Months.length === 0 ? (
+                                <p style={{ color: "#555" }} className="text-sm text-center py-4">
+                                  No activities in the past 6 months.
+                                </p>
+                              ) : (
+                                past6Months.map((activity, index) => (
+                                  <div
+                                    key={activity.id}
+                                    className="flex gap-4"
+                                  >
+                                    {/* Timeline Marker */}
+                                    <div className="flex flex-col items-center flex-shrink-0">
+                                      <div
+                                        style={{ backgroundColor: COLORS.primary }}
+                                        className="w-3 h-3 rounded-full"
+                                      />
+                                      {index < past6Months.length - 1 && (
+                                        <div
+                                          style={{
+                                            backgroundColor: "#e5e7eb",
+                                            width: "2px",
+                                            height: "60px",
+                                            marginTop: "8px",
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+
+                                    {/* Activity Card */}
+                                    <div
+                                      style={{
+                                        backgroundColor: COLORS.light,
+                                        borderRadius: "8px",
+                                        border: "1px solid #e5e7eb",
+                                        padding: "1rem",
+                                        flex: 1,
+                                      }}
+                                    >
+                                      <div className="flex items-start justify-between mb-2 gap-2">
+                                        <div>
+                                          <p style={{ color: COLORS.dark }} className="font-bold text-sm">
+                                            {formatFullDate(activity.date)}
+                                          </p>
+                                          <p style={{ color: "#555" }} className="text-xs mt-1">
+                                            <span className="font-semibold">{activity.duration}h</span>
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {activity.platform && (
+                                        <p style={{ color: "#666" }} className="text-xs mb-2">
+                                          <strong>Platform:</strong> {activity.platform}
+                                        </p>
+                                      )}
+
+                                      {activity.curriculum && (
+                                        <p style={{ color: "#666" }} className="text-xs mb-2">
+                                          <strong>Curriculum:</strong> {activity.curriculum}
+                                        </p>
+                                      )}
+
+                                      {activity.notes && (
+                                        <p style={{ color: "#666" }} className="text-xs">
+                                          <strong>Notes:</strong> {activity.notes}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
