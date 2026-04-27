@@ -501,15 +501,15 @@ export default function CompliancePage() {
         </div>
 
         {/* Compliance Status */}
-        <div>
+        <div className="w-fit">
           {allMet ? (
-            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-3 sm:p-4 border border-green-200">
+            <div style={{ backgroundColor: "#e8f5e9", borderRadius: "12px" }} className="p-3 sm:p-4 border border-green-200 max-w-sm">
               <p style={{ color: "#2e7d32" }} className="text-sm font-bold">
                 ✓ All requirements met!
               </p>
             </div>
           ) : (
-            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200">
+            <div style={{ backgroundColor: "#fff3e0", borderRadius: "12px" }} className="p-3 sm:p-4 border border-orange-200 max-w-sm">
               <p style={{ color: "#e65100" }} className="text-sm font-bold">
                 ⚠ Not all requirements met. Keep logging activities.
               </p>
@@ -518,7 +518,7 @@ export default function CompliancePage() {
         </div>
 
         {/* State Requirements Header */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-4">
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-4 w-fit max-w-2xl">
           <h2 style={{ color: COLORS.dark }} className="text-base font-bold mb-1">
             {STATE_REQUIREMENTS[selectedState]?.name} Requirements
           </h2>
@@ -543,7 +543,7 @@ export default function CompliancePage() {
             <h3 style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
               Subject Hour Requirements
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-fit">
               {Object.entries(compliance).map(([subject, data]) => {
                 const percentage = Math.round((data.hours / data.required) * 100);
                 const isMet = data.met;
@@ -552,7 +552,7 @@ export default function CompliancePage() {
                   <div
                     key={subject}
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="p-3 sm:p-4 border border-gray-200"
+                    className="p-3 sm:p-4 border border-gray-200 max-w-sm"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div>

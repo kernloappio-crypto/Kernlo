@@ -228,7 +228,7 @@ export default function SubjectProgressPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <div
                   style={{ backgroundColor: "white", borderRadius: "8px" }}
-                  className="p-4 border border-gray-200"
+                  className="p-4 border border-gray-200 max-w-xs"
                 >
                   <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                     Subjects Studied
@@ -243,7 +243,7 @@ export default function SubjectProgressPage() {
 
                 <div
                   style={{ backgroundColor: "white", borderRadius: "8px" }}
-                  className="p-4 border border-gray-200"
+                  className="p-4 border border-gray-200 max-w-xs"
                 >
                   <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                     Total Activities
@@ -258,7 +258,7 @@ export default function SubjectProgressPage() {
 
                 <div
                   style={{ backgroundColor: "white", borderRadius: "8px" }}
-                  className="p-4 border border-gray-200"
+                  className="p-4 border border-gray-200 max-w-xs"
                 >
                   <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                     Total Hours
@@ -275,7 +275,7 @@ export default function SubjectProgressPage() {
 
                 <div
                   style={{ backgroundColor: "white", borderRadius: "8px" }}
-                  className="p-4 border border-gray-200"
+                  className="p-4 border border-gray-200 max-w-xs"
                 >
                   <p style={{ color: "#555" }} className="text-xs font-medium mb-1">
                     Last Activity
@@ -300,7 +300,7 @@ export default function SubjectProgressPage() {
                   <div
                     key={group.subject}
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="border border-gray-200 overflow-hidden"
+                    className="border border-gray-200 overflow-hidden w-fit max-w-2xl"
                   >
                     {/* Subject Header */}
                     <div

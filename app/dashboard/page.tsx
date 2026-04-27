@@ -809,7 +809,7 @@ Format as professional homeschool compliance documentation.`;
             {kids.length === 0 ? (
               <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 w-fit">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;
@@ -819,7 +819,7 @@ Format as professional homeschool compliance documentation.`;
                   const progressPercent = totalGoalHours > 0 ? Math.min(100, (loggedHours / totalGoalHours) * 100) : 0;
 
                   return (
-                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 w-fit max-w-sm">
                       {/* Kid Header */}
                       <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-3">
                         {kid.name}

@@ -507,9 +507,9 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Summary Cards */}
         {kid && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-fit">
           {/* Subject Progress Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                 📚 Recent Subjects
@@ -582,7 +582,7 @@ Format as professional homeschool compliance documentation.`;
           </div>
 
           {/* Subjects & Compliance Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                 Subject Progress ({complianceState})
@@ -643,7 +643,7 @@ Format as professional homeschool compliance documentation.`;
           </div>
 
           {/* Goals Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Monthly Goals
             </h3>
@@ -680,7 +680,7 @@ Format as professional homeschool compliance documentation.`;
           </div>
 
           {/* Attendance Card */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200 max-w-xs">
             <div className="flex items-center justify-between mb-4">
               <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
                 📅 Attendance
