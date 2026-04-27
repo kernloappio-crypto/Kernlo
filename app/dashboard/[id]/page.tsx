@@ -482,6 +482,13 @@ Format as professional homeschool compliance documentation.`;
         {kid && (
         <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
           <Link
+            href={`/dashboard/${kid.id}/subject-progress`}
+            style={{ borderColor: COLORS.primary, color: COLORS.primary }}
+            className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
+          >
+            Subject Progress
+          </Link>
+          <Link
             href={`/dashboard/${kid.id}/goals`}
             style={{ borderColor: COLORS.primary, color: COLORS.primary }}
             className="px-4 sm:px-6 py-2 sm:py-3 font-medium rounded-lg border hover:bg-gray-50 text-sm sm:text-base"
@@ -500,7 +507,80 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Summary Cards */}
         {kid && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {/* Subject Progress Card */}
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 style={{ color: COLORS.dark }} className="text-lg font-bold">
+                📚 Recent Subjects
+              </h3>
+              <Link
+                href={`/dashboard/${kid.id}/subject-progress`}
+                style={{ color: COLORS.primary }}
+                className="text-xs font-medium hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+            
+            {activities.length === 0 ? (
+              <p style={{ color: "#555" }} className="text-sm mb-4">
+                No activities logged yet
+              </p>
+            ) : (
+              (() => {
+                // Get unique subjects with latest activity, sorted by most recent
+                const subjectMap = new Map<string, { topic?: string; date: string; }>();
+                
+                activities.forEach((activity) => {
+                  if (!subjectMap.has(activity.subject) || 
+                      new Date(activity.date) > new Date(subjectMap.get(activity.subject)!.date)) {
+                    subjectMap.set(activity.subject, {
+                      topic: activity.notes || undefined,
+                      date: activity.date,
+                    });
+                  }
+                });
+
+                const subjectsWithDates = Array.from(subjectMap.entries())
+                  .map(([subject, data]) => ({ subject, ...data }))
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 5);
+
+                return (
+                  <div className="space-y-3">
+                    {subjectsWithDates.map((item) => {
+                      const dateObj = new Date(item.date);
+                      const dateStr = dateObj.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                      
+                      return (
+                        <div key={item.subject} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <span style={{ color: COLORS.dark }} className="text-sm font-medium">
+                              {item.subject}
+                            </span>
+                            {item.topic && (
+                              <p style={{ color: "#555" }} className="text-xs mt-1">
+                                {item.topic.substring(0, 40)}
+                                {item.topic.length > 40 ? "..." : ""}
+                              </p>
+                            )}
+                          </div>
+                          <span style={{ color: "#555" }} className="text-xs font-medium flex-shrink-0 ml-2">
+                            {dateStr}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            )}
+          </div>
+
           {/* Subjects & Compliance Card */}
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
