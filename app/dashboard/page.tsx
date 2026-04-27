@@ -36,6 +36,14 @@ interface Goal {
   monthly_hours: number;
 }
 
+interface ParentProfile {
+  id?: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 const COLORS = {
   primary: "#0066cc",
   secondary: "#00d4ff",
@@ -72,6 +80,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [attendanceMonthlyByKid, setAttendanceMonthlyByKid] = useState<{ [kidName: string]: number }>({});
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -302,6 +311,27 @@ export default function DashboardPage() {
 
         // Attendance will be loaded in useEffect after kids are set
         // See the attendance loading section below
+
+        // Load parent profile
+        try {
+          console.log("👤 Loading parent profile...");
+          const { data: profileData, error: profileError } = await supabase
+            .from("parent_profiles")
+            .select("*")
+            .eq("user_id", user.id)
+            .single();
+
+          if (profileError && profileError.code !== "PGRST116") {
+            console.log(`⚠️ Profile error: ${profileError.message}`);
+          } else if (profileData) {
+            console.log(`✅ Parent profile loaded: ${profileData.first_name} ${profileData.last_name}`);
+            setParentProfile(profileData);
+          } else {
+            console.log("ℹ️ No profile yet - user can create one");
+          }
+        } catch (e: any) {
+          console.log(`⚠️ Could not load parent profile: ${e?.message}`);
+        }
 
         console.log("⏰ Initializing date range...");
         const today = new Date();
@@ -630,7 +660,7 @@ Format as professional homeschool compliance documentation.`;
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
-              Parent Dashboard
+              {parentProfile?.first_name ? `${parentProfile.first_name}'s Dashboard` : "Parent Dashboard"}
             </h1>
             <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
               Manage all your kids' homeschool progress
