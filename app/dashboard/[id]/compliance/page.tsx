@@ -305,7 +305,7 @@ export default function CompliancePage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* State Selection */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-6">
           <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
             Select Your State
           </h2>
@@ -325,7 +325,7 @@ export default function CompliancePage() {
         </div>
 
         {/* Attendance Tracking */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200">
           <h2 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
             📅 Attendance Summary
           </h2>
@@ -478,7 +478,7 @@ export default function CompliancePage() {
         </div>
 
         {/* State Requirements Header */}
-        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200 mb-6">
+        <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-3 sm:p-4 border border-gray-200 mb-6">
           <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-2">
             {STATE_REQUIREMENTS[selectedState]?.name} Requirements
           </h2>
@@ -500,10 +500,10 @@ export default function CompliancePage() {
         {/* Subject Requirements */}
         {STATE_REQUIREMENTS[selectedState]?.totalHours > 0 ? (
           <div>
-            <h3 style={{ color: COLORS.dark }} className="text-xl font-bold mb-4">
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               Subject Hour Requirements
             </h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {Object.entries(compliance).map(([subject, data]) => {
                 const percentage = Math.round((data.hours / data.required) * 100);
                 const isMet = data.met;
@@ -512,7 +512,7 @@ export default function CompliancePage() {
                   <div
                     key={subject}
                     style={{ backgroundColor: "white", borderRadius: "12px" }}
-                    className="p-6 border border-gray-200"
+                    className="p-3 sm:p-4 border border-gray-200"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div>
