@@ -86,9 +86,9 @@ export default function TestTranscriptPage() {
             <li>[TranscriptCard] JWT token extracted successfully</li>
             <li>[TranscriptCard] Fetching courses from API...</li>
             <li>[TranscriptCard] API response status: 200</li>
-            <li>[TranscriptCard] API response data: {...}</li>
+            <li>[TranscriptCard] API response data: (object)</li>
             <li>[TranscriptCard] Courses count: N</li>
-            <li>[TranscriptCard] Rendering with courses: [...]</li>
+            <li>[TranscriptCard] Rendering with courses</li>
             <li>[TranscriptCard] Calculating totalCredits...</li>
             <li>[TranscriptCard] Calculating GPA...</li>
           </ol>
