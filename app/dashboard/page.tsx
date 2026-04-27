@@ -105,7 +105,6 @@ export default function DashboardPage() {
   const [newKidName, setNewKidName] = useState("");
   const [newKidAge, setNewKidAge] = useState("");
   const [newKidGrade, setNewKidGrade] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Attendance Log states
   const [showAttendanceLog, setShowAttendanceLog] = useState(false);
@@ -713,125 +712,6 @@ Format as professional homeschool compliance documentation.`;
       </div>
 
       <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
-        {/* Mobile Menu Button - Only show on small/medium screens */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed bottom-4 left-4 z-40 p-3 lg:hidden"
-          style={{ backgroundColor: COLORS.primary, color: "white", borderRadius: "8px", fontSize: "24px" }}
-        >
-          ☰
-        </button>
-
-        {/* Left Sidebar - Kids Navigation (Mobile/Tablet only) */}
-        <div
-          style={{
-            backgroundColor: "white",
-            borderRight: `1px solid #e5e7eb`,
-            transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-            transition: 'transform 0.3s ease',
-          }}
-          className="fixed lg:hidden w-64 h-full p-4 sm:p-6 flex flex-col overflow-hidden z-30"
-        >
-          {/* Kids Section */}
-          <div className="mb-8 flex-1 overflow-y-auto">
-            <h2 style={{ color: "#1a1a2e" }} className="text-base sm:text-lg font-bold mb-4">
-              Your Kids
-            </h2>
-            <div className="space-y-2 mb-4">
-              {kids.map((kid) => (
-                <Link
-                  key={kid.id}
-                  href={`/dashboard/${kid.id}`}
-                  style={{
-                    backgroundColor: COLORS.primary,
-                    color: "white",
-                  }}
-                  className="block w-full px-4 py-2.5 sm:py-3 text-left rounded-lg hover:opacity-90 transition font-medium text-sm"
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  {kid.name}
-                  {kid.age && <span className="text-xs opacity-90 ml-2">({kid.age})</span>}
-                </Link>
-              ))}
-            </div>
-            {kids.length < 5 && (
-              <button
-                onClick={() => setShowAddKid(!showAddKid)}
-                style={{ backgroundColor: COLORS.primary }}
-                className="w-full px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm"
-              >
-                + Add Kid
-              </button>
-            )}
-
-            {showAddKid && (
-              <div style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-4 rounded mt-4 bg-gray-50">
-                <input
-                  type="text"
-                  value={newKidName}
-                  onChange={(e) => setNewKidName(e.target.value)}
-                  placeholder="Name"
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="number"
-                  value={newKidAge}
-                  onChange={(e) => setNewKidAge(e.target.value)}
-                  placeholder="Age"
-                  style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  value={newKidGrade}
-                  onChange={(e) => setNewKidGrade(e.target.value)}
-                  placeholder="Grade"
-                  style={{ color: "#1a1a2e" }}
-                  className="w-full px-3 py-2 border rounded mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={handleAddKid}
-                  style={{ backgroundColor: COLORS.primary }}
-                  className="w-full px-3 py-2 text-white rounded text-sm font-medium hover:opacity-90"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Logout Section */}
-          <div className="mt-auto pt-4 border-t">
-            <button
-              onClick={handleLogout}
-              style={{ color: COLORS.primary }}
-              className="w-full text-xs sm:text-sm font-medium hover:bg-gray-100 px-3 py-2 rounded text-left"
-            >
-              Logout
-            </button>
-            <p style={{ color: "#555" }} className="text-xs mt-3 break-all">
-              {email}
-            </p>
-          </div>
-
-          {/* Close button for mobile/tablet */}
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden mt-4 w-full px-3 py-2 text-sm font-medium text-white rounded"
-            style={{ backgroundColor: COLORS.primary }}
-          >
-            ✕ Close
-          </button>
-        </div>
-
-        {/* Mobile/Tablet Overlay */}
-        {sidebarOpen && (
-          <div
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 lg:hidden z-20"
-          />
-        )}
 
         {/* Right Content - Kid Cards */}
         <div className="w-full overflow-y-auto">
