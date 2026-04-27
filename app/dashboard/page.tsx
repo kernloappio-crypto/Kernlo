@@ -809,7 +809,7 @@ Format as professional homeschool compliance documentation.`;
             {kids.length === 0 ? (
               <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-fit">
+              <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 w-fit">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;
@@ -819,19 +819,19 @@ Format as professional homeschool compliance documentation.`;
                   const progressPercent = totalGoalHours > 0 ? Math.min(100, (loggedHours / totalGoalHours) * 100) : 0;
 
                   return (
-                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-4 sm:p-6 rounded-lg shadow-sm">
+                    <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm">
                       {/* Kid Header */}
-                      <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-4">
+                      <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-3">
                         {kid.name}
                       </h3>
 
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
-                        <div className="mb-4 pb-4 border-b border-gray-200">
-                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
+                        <div className="mb-3 pb-3 border-b border-gray-200">
+                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
                             SUBJECTS BY HOURS
                           </p>
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             {(() => {
                               const subjectHours: { [key: string]: number } = {};
                               kidActivities.forEach((a) => {
@@ -855,12 +855,13 @@ Format as professional homeschool compliance documentation.`;
                       )}
 
                       {/* Goals Progress */}
-                      <div className="mb-4 pb-4 border-b border-gray-200">
-                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
+                      {kidGoals.length > 0 && (
+                      <div className="mb-3 pb-3 border-b border-gray-200">
+                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
                           MONTHLY GOALS: {kidGoals.length}
                         </p>
                         {kidGoals.length > 0 ? (
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             {kidGoals.slice(0, 2).map((g) => (
                               <div key={g.id} className="text-xs">
                                 <p style={{ color: "#1a1a2e" }} className="font-medium">
@@ -897,14 +898,15 @@ Format as professional homeschool compliance documentation.`;
                           </p>
                         )}
                       </div>
+                      )}
 
                       {/* Activity Type Breakdown */}
                       {kidActivities.length > 0 && (
-                        <div className="mb-4 pb-4 border-b border-gray-200">
-                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
+                        <div className="mb-3 pb-3 border-b border-gray-200">
+                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
                             ACTIVITY BREAKDOWN
                           </p>
-                          <div className="space-y-1 text-xs">
+                          <div className="space-y-0.5 text-xs">
                             {(() => {
                               const coreHours = kidActivities
                                 .filter((a) => !a.activity_type || a.activity_type === "Core Subject")
@@ -944,8 +946,8 @@ Format as professional homeschool compliance documentation.`;
                       )}
 
                       {/* Attendance Badge */}
-                      <div className="mb-4 pb-4 border-b border-gray-200">
-                        <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-3 flex items-center justify-between">
+                      <div className="mb-3 pb-3 border-b border-gray-200">
+                        <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2 flex items-center justify-between">
                           <span style={{ color: "#555" }} className="text-xs font-medium">
                             📅 This Month
                           </span>
@@ -956,8 +958,8 @@ Format as professional homeschool compliance documentation.`;
                       </div>
 
                       {/* Compliance Quick View */}
-                      <div className="mb-4">
-                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-2">
+                      <div className="mb-3">
+                        <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
                           COMPLIANCE
                         </p>
                         <p style={{ color: COLORS.primary }} className="text-xs">
