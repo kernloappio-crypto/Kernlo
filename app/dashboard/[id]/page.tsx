@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import TranscriptCard from "@/components/TranscriptCard";
 import { 
   getActivities, 
   addActivity, 
@@ -14,8 +16,6 @@ import {
   getAttendanceDaysYearly,
   getAttendanceDaysMonthly
 } from "@/lib/supabase-data";
-
-// import TranscriptCard from "@/components/TranscriptCard"; // Phase 2 - DEBUG
 
 export const dynamic = "force-dynamic";
 
@@ -711,11 +711,13 @@ Format as professional homeschool compliance documentation.`;
           </div>
 
           {/* Transcript Card - PHASE 2 */}
-          {/* <TranscriptCard
-            kidId={kid.id}
-            kidName={kid.name}
-            onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
-          /> */}
+          <ErrorBoundary>
+            <TranscriptCard
+              kidId={kid.id}
+              kidName={kid.name}
+              onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
+            />
+          </ErrorBoundary>
         </div>
         )}
 

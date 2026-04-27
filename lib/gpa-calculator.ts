@@ -28,28 +28,54 @@ const GRADE_POINTS: { [key: string]: number } = {
  * @returns Cumulative GPA (0.0 to 4.0) or 0 if no courses
  */
 export function calculateGPA(courses: Course[]): number {
-  if (!courses || courses.length === 0) {
+  try {
+    if (!courses || courses.length === 0) {
+      console.log('[GPA Calculator] No courses provided, returning 0.0');
+      return 0.0;
+    }
+
+    console.log('[GPA Calculator] Processing', courses.length, 'courses');
+    let totalGradePoints = 0;
+    let totalCredits = 0;
+
+    courses.forEach((course, idx) => {
+      try {
+        console.log(`[GPA Calculator] Course ${idx}:`, { 
+          id: course.id, 
+          course_name: course.course_name, 
+          grade: course.grade,
+          credits: course.credits,
+          type: typeof course.credits
+        });
+        
+        const gradePoint = GRADE_POINTS[course.grade] ?? 0;
+        const credits = parseFloat(String(course.credits)) || 0;
+
+        console.log(`[GPA Calculator] Calculated for course ${idx}:`, { gradePoint, credits });
+        
+        totalGradePoints += gradePoint * credits;
+        totalCredits += credits;
+      } catch (err) {
+        console.error(`[GPA Calculator] Error processing course ${idx}:`, err, course);
+      }
+    });
+
+    console.log('[GPA Calculator] Totals:', { totalGradePoints, totalCredits });
+
+    if (totalCredits === 0) {
+      console.log('[GPA Calculator] Total credits is 0, returning 0.0');
+      return 0.0;
+    }
+
+    const gpa = totalGradePoints / totalCredits;
+    const rounded = Math.round(gpa * 100) / 100;
+    console.log('[GPA Calculator] Final GPA:', { gpa, rounded });
+    
+    return rounded;
+  } catch (err) {
+    console.error('[GPA Calculator] Fatal error calculating GPA:', err);
     return 0.0;
   }
-
-  let totalGradePoints = 0;
-  let totalCredits = 0;
-
-  courses.forEach((course) => {
-    const gradePoint = GRADE_POINTS[course.grade] ?? 0;
-    const credits = parseFloat(String(course.credits)) || 0;
-
-    totalGradePoints += gradePoint * credits;
-    totalCredits += credits;
-  });
-
-  if (totalCredits === 0) {
-    return 0.0;
-  }
-
-  const gpa = totalGradePoints / totalCredits;
-  // Round to 2 decimal places
-  return Math.round(gpa * 100) / 100;
 }
 
 /**
@@ -58,15 +84,33 @@ export function calculateGPA(courses: Course[]): number {
  * @returns Sum of all credits
  */
 export function calculateTotalCredits(courses: Course[]): number {
-  if (!courses || courses.length === 0) {
+  try {
+    if (!courses || courses.length === 0) {
+      console.log('[Total Credits Calculator] No courses provided, returning 0');
+      return 0;
+    }
+
+    console.log('[Total Credits Calculator] Processing', courses.length, 'courses');
+    
+    const total = courses.reduce((sum, course, idx) => {
+      try {
+        const credits = parseFloat(String(course.credits)) || 0;
+        console.log(`[Total Credits Calculator] Course ${idx} credits:`, credits);
+        return sum + credits;
+      } catch (err) {
+        console.error(`[Total Credits Calculator] Error processing course ${idx}:`, err, course);
+        return sum;
+      }
+    }, 0);
+
+    const rounded = Math.round(total * 10) / 10;
+    console.log('[Total Credits Calculator] Final total:', { total, rounded });
+    
+    return rounded;
+  } catch (err) {
+    console.error('[Total Credits Calculator] Fatal error:', err);
     return 0;
   }
-
-  const total = courses.reduce((sum, course) => {
-    return sum + (parseFloat(String(course.credits)) || 0);
-  }, 0);
-
-  return Math.round(total * 10) / 10; // Round to 1 decimal place
 }
 
 /**
