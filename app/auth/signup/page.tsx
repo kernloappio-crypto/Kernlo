@@ -115,15 +115,15 @@ export default function SignupPage() {
                 backgroundColor: "#e8f5e9",
                 borderLeft: "4px solid #4caf50",
               }}
-              className="p-4 sm:p-6 rounded mb-6 text-center"
+              className="p-4 sm:p-6 rounded mb-6 text-center break-words"
             >
-              <p style={{ color: "#2e7d32" }} className="text-sm sm:text-lg font-bold mb-2">
+              <p style={{ color: "#2e7d32" }} className="text-sm sm:text-lg font-bold mb-2 break-words">
                 ✅ Account Created!
               </p>
-              <p style={{ color: "#666" }} className="text-xs sm:text-sm mb-4">
+              <p style={{ color: "#666", wordBreak: "break-word" }} className="text-xs sm:text-sm mb-4 break-words">
                 Check your email for a verification link. Click it to confirm your account.
               </p>
-              <p style={{ color: "#666" }} className="text-xs sm:text-sm mb-4 sm:mb-6">
+              <p style={{ color: "#666", wordBreak: "break-word" }} className="text-xs sm:text-sm mb-4 sm:mb-6 break-words">
                 Once verified, come back here and sign in:
               </p>
               <Link
@@ -131,14 +131,16 @@ export default function SignupPage() {
                 style={{ 
                   color: "white", 
                   backgroundColor: "#0066cc",
-                  display: "block",
-                  padding: "10px 20px",
+                  display: "inline-block",
+                  padding: "10px 16px",
                   borderRadius: "8px",
                   fontWeight: "600",
                   textDecoration: "none",
-                  fontSize: "0.875rem"
+                  fontSize: "0.875rem",
+                  whiteSpace: "normal",
+                  maxWidth: "100%"
                 }}
-                className="hover:opacity-90"
+                className="hover:opacity-90 overflow-hidden text-ellipsis"
               >
                 → Sign In Now
               </Link>

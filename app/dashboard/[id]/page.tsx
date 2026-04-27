@@ -851,68 +851,7 @@ Format as professional homeschool compliance documentation.`;
           </div>
         )}
 
-        {/* Activities List */}
-        <div>
-          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
-            Activity Log
-          </h2>
 
-          {activities.length === 0 ? (
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
-              <p style={{ color: "#333" }}>No activities logged yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }}
-                  className="p-3 flex items-center justify-between hover:bg-gray-50"
-                >
-                  <div className="flex-1 flex flex-col gap-2">
-                    <div className="flex items-center gap-4">
-                      <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
-                        {new Date(activity.date).toLocaleDateString()}
-                      </span>
-                      <span style={{ backgroundColor: COLORS.light, color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
-                        {activity.subject}
-                      </span>
-                      <span style={{ color: "#333" }} className="text-sm">
-                        {activity.duration}h
-                      </span>
-                      <span style={{ color: "#555" }} className="text-xs">
-                        {activity.platform}
-                      </span>
-                      {activity.activity_type && activity.activity_type !== "Core Subject" && (
-                        <span style={{ backgroundColor: "#fff3cd", color: "#856404" }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
-                          {activity.activity_type}
-                        </span>
-                      )}
-                    </div>
-                    {activity.curriculum && (
-                      <div style={{ color: "#666" }} className="text-xs flex items-center gap-2">
-                        <span className="font-medium">📚 Curriculum:</span>
-                        <span>{activity.curriculum}</span>
-                      </div>
-                    )}
-                    {activity.notes && (
-                      <span style={{ color: "#333" }} className="text-xs italic">
-                        {activity.notes}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteActivity(activity.id)}
-                    style={{ color: "#ff6b6b" }}
-                    className="text-xs font-medium hover:opacity-70 flex-shrink-0 ml-2"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Generated Reports Section */}
         <div className="mt-8">
