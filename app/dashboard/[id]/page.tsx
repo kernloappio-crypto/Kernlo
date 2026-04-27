@@ -15,7 +15,7 @@ import {
   getAttendanceDaysMonthly
 } from "@/lib/supabase-data";
 
-import TranscriptCard from "@/components/TranscriptCard";
+// import TranscriptCard from "@/components/TranscriptCard"; // Phase 2
 
 export const dynamic = "force-dynamic";
 
@@ -710,12 +710,12 @@ Format as professional homeschool compliance documentation.`;
             )}
           </div>
 
-          {/* Transcript Card */}
-          <TranscriptCard
+          {/* Transcript Card - PHASE 2 */}
+          {/* <TranscriptCard
             kidId={kid.id}
             kidName={kid.name}
             onClick={() => router.push(`/dashboard/${kid.id}/transcript`)}
-          />
+          /> */}
         </div>
         )}
 
