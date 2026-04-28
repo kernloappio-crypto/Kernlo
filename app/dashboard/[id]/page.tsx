@@ -611,11 +611,9 @@ Format as professional homeschool compliance documentation. Include mentions of 
         {kid && (() => {
           // Determine if TranscriptCard should be visible
           const showTranscript = !kid.grade || parseInt(kid.grade, 10) >= 9;
-          // 6 cards total: Compliance, Subject Progress, Goals, Extracurricular, Field Trips, Calendar
-          // + Transcript (conditional)
-          const gridColsClass = showTranscript ? "md:grid-cols-6 lg:grid-cols-6" : "md:grid-cols-6 lg:grid-cols-6";
+          // Card grid: 1 col mobile, 2 col tablet, 4 col desktop
           return (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-4 sm:gap-6`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* State Compliance Card (Combined) */}
           <div
             onClick={() => router.push(`/dashboard/${kid.id}/compliance`)}

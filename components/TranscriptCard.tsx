@@ -253,16 +253,16 @@ export default function TranscriptCard({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2">
           <Link
             href={`/dashboard/${kidId}/transcript`}
-            className="flex-1 inline-block text-center bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="w-full inline-block text-center bg-blue-600 text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors h-[44px] flex items-center justify-center"
           >
             Manage Courses
           </Link>
           <Link
             href={`/dashboard/${kidId}/transcript?action=generate`}
-            className="flex-1 inline-block text-center bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            className="w-full inline-block text-center bg-green-600 text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors h-[44px] flex items-center justify-center"
           >
             Generate PDF
           </Link>
@@ -275,7 +275,7 @@ export default function TranscriptCard({
             </p>
             <Link
               href={`/dashboard/${kidId}/transcript`}
-              className="inline-block bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700"
+              className="w-full inline-block text-center bg-blue-600 text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 h-[44px] flex items-center justify-center"
             >
               Add Your First Course
             </Link>
