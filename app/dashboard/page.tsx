@@ -717,7 +717,16 @@ Format as professional homeschool compliance documentation.`;
         <div className="w-full overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col">
             {kids.length === 0 ? (
-              <p style={{ color: "#555" }} className="text-sm">No kids added yet. Add a kid to get started!</p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <p style={{ color: "#555" }} className="text-sm mb-4">No kids added yet. Add a kid to get started!</p>
+                <button
+                  onClick={() => setShowAddKid(true)}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm"
+                >
+                  + Add Child
+                </button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                 {kids.map((kid) => {
@@ -731,9 +740,18 @@ Format as professional homeschool compliance documentation.`;
                   return (
                     <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
                       {/* Kid Header */}
-                      <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold mb-3">
-                        {kid.name}
-                      </h3>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold">
+                            {kid.name}
+                          </h3>
+                          {kid.grade && (
+                            <p style={{ color: "#666", fontSize: "12px" }} className="mt-0.5">
+                              Grade: {kid.grade}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
@@ -877,17 +895,43 @@ Format as professional homeschool compliance documentation.`;
                         </p>
                       </div>
 
-                      {/* View Dashboard Link */}
-                      <Link
-                        href={`/dashboard/${kid.id}`}
-                        style={{ borderColor: COLORS.primary, color: COLORS.primary }}
-                        className="block text-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
-                      >
-                        View Full Dashboard
-                      </Link>
+                      {/* View Dashboard & Edit Buttons */}
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/${kid.id}`}
+                          style={{ borderColor: COLORS.primary, color: COLORS.primary }}
+                          className="flex-1 text-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
+                        >
+                          View
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setNewKidName(kid.name);
+                            setNewKidAge(kid.age?.toString() || "");
+                            setNewKidGrade(kid.grade || "");
+                            // TODO: Store kid ID for edit mode
+                            alert("Edit from individual kid dashboard (✏️ Edit button)");
+                          }}
+                          style={{ color: "#666", borderColor: "#999" }}
+                          className="flex-1 text-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
+              </div>
+            )}
+            {kids.length > 0 && kids.length < 5 && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setShowAddKid(true)}
+                  style={{ backgroundColor: COLORS.secondary, borderColor: COLORS.secondary }}
+                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm border"
+                >
+                  + Add Another Child
+                </button>
               </div>
             )}
           </div>
@@ -1249,6 +1293,99 @@ Format as professional homeschool compliance documentation.`;
                 onClick={() => {
                   setShowAttendanceLog(false);
                   setSelectedKidsForAttendance([]);
+                }}
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Child Modal */}
+      {showAddKid && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
+              Add Child
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={newKidName}
+                  onChange={(e) => setNewKidName(e.target.value)}
+                  placeholder="e.g., Sarah"
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Age (optional)
+                </label>
+                <input
+                  type="number"
+                  value={newKidAge}
+                  onChange={(e) => setNewKidAge(e.target.value)}
+                  placeholder="e.g., 14"
+                  min="1"
+                  max="25"
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Grade (optional but recommended)
+                </label>
+                <select
+                  value={newKidGrade}
+                  onChange={(e) => setNewKidGrade(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Select grade</option>
+                  <option value="K">Kindergarten</option>
+                  <option value="1">1st Grade</option>
+                  <option value="2">2nd Grade</option>
+                  <option value="3">3rd Grade</option>
+                  <option value="4">4th Grade</option>
+                  <option value="5">5th Grade</option>
+                  <option value="6">6th Grade</option>
+                  <option value="7">7th Grade</option>
+                  <option value="8">8th Grade</option>
+                  <option value="9">9th Grade</option>
+                  <option value="10">10th Grade</option>
+                  <option value="11">11th Grade</option>
+                  <option value="12">12th Grade</option>
+                  <option value="13">College/University</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <button
+                onClick={handleAddKid}
+                style={{ backgroundColor: COLORS.primary }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+              >
+                Add Child
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddKid(false);
+                  setNewKidName("");
+                  setNewKidAge("");
+                  setNewKidGrade("");
                 }}
                 style={{ color: "#1a1a2e", borderColor: "#333" }}
                 className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"

@@ -144,6 +144,10 @@ export default function KidDetailPage() {
   const [complianceState, setComplianceState] = useState("CA");
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
   const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
+  const [showEditKid, setShowEditKid] = useState(false);
+  const [editKidName, setEditKidName] = useState("");
+  const [editKidAge, setEditKidAge] = useState("");
+  const [editKidGrade, setEditKidGrade] = useState("");
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -180,6 +184,10 @@ export default function KidDetailPage() {
 
         if (kidData) {
           setKid(kidData as Kid);
+          // Initialize edit form fields
+          setEditKidName(kidData.name);
+          setEditKidAge(kidData.age?.toString() || "");
+          setEditKidGrade(kidData.grade || "");
         }
 
         // Load activities
@@ -328,6 +336,42 @@ export default function KidDetailPage() {
     }
   }
 
+  async function handleEditKid() {
+    if (!kid || !editKidName.trim()) {
+      alert("Kid name is required");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("kids")
+        .update({
+          name: editKidName,
+          age: editKidAge ? parseInt(editKidAge) : null,
+          grade: editKidGrade || null,
+        })
+        .eq("id", kid.id);
+
+      if (error) {
+        alert("Error: " + error.message);
+        return;
+      }
+
+      // Update local state
+      const updatedKid = {
+        ...kid,
+        name: editKidName,
+        age: editKidAge ? parseInt(editKidAge) : undefined,
+        grade: editKidGrade || undefined,
+      };
+      setKid(updatedKid);
+      setShowEditKid(false);
+      alert("Kid updated successfully!");
+    } catch (err) {
+      alert("Failed to update kid");
+    }
+  }
+
   const handleGenerateComprehensiveReport = async () => {
     if (!kid || selectedSubjects.length === 0 || !activities.length) {
       alert("Need activities and selected subjects to generate report");
@@ -472,11 +516,27 @@ Format as professional homeschool compliance documentation.`;
             <Link href="/dashboard" style={{ color: COLORS.primary }} className="text-sm font-medium mb-2 block">
               ← Back to Dashboard
             </Link>
-            <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
-              {kid?.name || "Loading..."}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 style={{ color: COLORS.dark }} className="text-2xl font-bold">
+                {kid?.name || "Loading..."}
+              </h1>
+              {kid?.grade && (
+                <span style={{ color: "#666", fontSize: "14px" }}>
+                  ({kid.grade === "K" ? "K" : kid.grade === "13" ? "College" : `${kid.grade}th`} Grade)
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <button
+              onClick={() => {
+                setShowEditKid(true);
+              }}
+              style={{ backgroundColor: "#666" }}
+              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+            >
+              ✏️ Edit
+            </button>
             <button
               onClick={() => setShowQuickLog(!showQuickLog)}
               style={{ backgroundColor: COLORS.primary }}
@@ -1012,6 +1072,102 @@ Format as professional homeschool compliance documentation.`;
           </div>
         </div>
       ) : null}
+
+      {/* Edit Kid Modal */}
+      {showEditKid && kid && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
+              Edit {kid.name}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={editKidName}
+                  onChange={(e) => setEditKidName(e.target.value)}
+                  placeholder="e.g., Sarah"
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Age (optional)
+                </label>
+                <input
+                  type="number"
+                  value={editKidAge}
+                  onChange={(e) => setEditKidAge(e.target.value)}
+                  placeholder="e.g., 14"
+                  min="1"
+                  max="25"
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Grade (optional)
+                </label>
+                <select
+                  value={editKidGrade}
+                  onChange={(e) => setEditKidGrade(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="">Select grade</option>
+                  <option value="K">Kindergarten</option>
+                  <option value="1">1st Grade</option>
+                  <option value="2">2nd Grade</option>
+                  <option value="3">3rd Grade</option>
+                  <option value="4">4th Grade</option>
+                  <option value="5">5th Grade</option>
+                  <option value="6">6th Grade</option>
+                  <option value="7">7th Grade</option>
+                  <option value="8">8th Grade</option>
+                  <option value="9">9th Grade</option>
+                  <option value="10">10th Grade</option>
+                  <option value="11">11th Grade</option>
+                  <option value="12">12th Grade</option>
+                  <option value="13">College/University</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <button
+                onClick={handleEditKid}
+                style={{ backgroundColor: COLORS.primary }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditKid(false);
+                  // Reset to current values
+                  if (kid) {
+                    setEditKidName(kid.name);
+                    setEditKidAge(kid.age?.toString() || "");
+                    setEditKidGrade(kid.grade || "");
+                  }
+                }}
+                style={{ color: "#1a1a2e", borderColor: "#333" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
     </>
