@@ -583,7 +583,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
               {showQuickLog ? "Cancel" : "+ Log Activity"}
             </button>
             <Link
-              href={`/dashboard/${kid?.id}/calendar-30`}
+              href={`/dashboard/${kid?.id}/calendar`}
               style={{ backgroundColor: COLORS.accent3 }}
               className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial text-center"
             >
@@ -841,24 +841,6 @@ Format as professional homeschool compliance documentation. Include mentions of 
             <div className="flex items-center justify-between">
               <span style={{ color: "#999" }} className="text-xs">This month</span>
               <span style={{ color: COLORS.accent1 }} className="text-lg font-bold">0</span>
-            </div>
-          </div>
-
-          {/* Calendar Card */}
-          <div
-            onClick={() => router.push(`/dashboard/${kid.id}/calendar`)}
-            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
-            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
-          >
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              📅 Calendar
-            </h3>
-            <p style={{ color: "#555" }} className="text-sm mb-3">
-              View all activities & events
-            </p>
-            <div className="flex items-center justify-between">
-              <span style={{ color: "#999" }} className="text-xs">All activities</span>
-              <span style={{ color: COLORS.accent3 }} className="text-lg font-bold">0</span>
             </div>
           </div>
 
