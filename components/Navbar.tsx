@@ -17,6 +17,7 @@ export default function Navbar() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -43,8 +44,25 @@ export default function Navbar() {
   async function handleLogout() {
     await signOut();
     setIsLoggedIn(false);
+    setMobileMenuOpen(false);
     router.push("/");
   }
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isMenuOpen = target.closest('[data-menu]') || target.closest('[data-hamburger]');
+      if (!isMenuOpen && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [mobileMenuOpen]);
 
   return (
     <>
@@ -55,16 +73,77 @@ export default function Navbar() {
         userEmail={userEmail}
       />
       <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 left-0 right-0 z-50">
-      <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center">
-          <div style={{ color: COLORS.primary }} className="text-2xl font-bold hover:opacity-80 transition">
-            kernlo
-          </div>
-        </Link>
+        <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center">
+            <div style={{ color: COLORS.primary }} className="text-2xl font-bold hover:opacity-80 transition">
+              kernlo
+            </div>
+          </Link>
 
+          {/* Hamburger Menu - Mobile Only (lg:hidden) */}
+          {isLoggedIn && (
+            <div className="lg:hidden relative">
+              <button
+                data-hamburger
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{ color: COLORS.dark }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition"
+                aria-label="Toggle menu"
+              >
+                {/* Hamburger Icon */}
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
 
-      </div>
-    </nav>
+              {/* Dropdown Menu */}
+              {mobileMenuOpen && (
+                <div
+                  data-menu
+                  style={{
+                    backgroundColor: "white",
+                    borderColor: "#e5e7eb",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                  }}
+                  className="absolute right-0 top-full mt-2 w-48 rounded-lg border overflow-hidden"
+                >
+                  {/* Profile Button */}
+                  <button
+                    onClick={() => {
+                      setProfileModalOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{ color: COLORS.dark }}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200"
+                  >
+                    👤 Profile
+                  </button>
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    style={{ color: "#dc2626" }}
+                    className="w-full px-4 py-3 text-left hover:bg-red-50 transition font-medium text-sm"
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </nav>
     </>
   );
 }
