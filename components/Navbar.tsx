@@ -13,12 +13,9 @@ const COLORS = {
   dark: "#1a1a2e",
 };
 
-interface NavbarProps {
-  onQuickLogClick?: () => void;
-  onReportClick?: () => void;
-}
+interface NavbarProps {}
 
-export default function Navbar({ onQuickLogClick, onReportClick }: NavbarProps) {
+export default function Navbar({}: NavbarProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userId, setUserId] = useState("");
@@ -85,33 +82,6 @@ export default function Navbar({ onQuickLogClick, onReportClick }: NavbarProps) 
               kernlo
             </div>
           </Link>
-
-          {/* Desktop Navigation - Calendar, Quick Log, Report buttons */}
-          {isLoggedIn && pathname === "/dashboard" && (
-            <div className="hidden sm:flex items-center gap-2">
-              <Link
-                href="/dashboard/calendar"
-                style={{ backgroundColor: COLORS.secondary }}
-                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
-              >
-                📅 Calendar
-              </Link>
-              <button
-                onClick={onQuickLogClick}
-                style={{ backgroundColor: COLORS.primary }}
-                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
-              >
-                + Quick Log
-              </button>
-              <button
-                onClick={onReportClick}
-                style={{ backgroundColor: COLORS.secondary }}
-                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
-              >
-                📄 Report
-              </button>
-            </div>
-          )}
 
           {/* Hamburger Menu - Always visible */}
           {isLoggedIn && (

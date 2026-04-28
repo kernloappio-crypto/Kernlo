@@ -682,18 +682,9 @@ Format as professional homeschool compliance documentation.`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar 
-        onQuickLogClick={() => {
-          setQuickLogKid(quickLogKid || kids[0]);
-          setShowQuickLog(true);
-        }}
-        onReportClick={() => {
-          setReportKid(reportKid || kids[0]);
-          setShowReportGen(true);
-        }}
-      />
+      <Navbar />
 
-      {/* Header - Clean without buttons */}
+      {/* Header - With Calendar, Quick Log, Report buttons on right */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -703,6 +694,37 @@ Format as professional homeschool compliance documentation.`;
             <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
               Manage all your kids' homeschool progress
             </p>
+          </div>
+          
+          {/* Action Buttons - Right side, visible on all screens */}
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-start sm:justify-end">
+            <Link
+              href="/dashboard/calendar"
+              style={{ backgroundColor: COLORS.secondary }}
+              className="px-3 sm:px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap inline-flex items-center justify-center"
+            >
+              📅 Calendar
+            </Link>
+            <button
+              onClick={() => {
+                setQuickLogKid(quickLogKid || kids[0]);
+                setShowQuickLog(true);
+              }}
+              style={{ backgroundColor: COLORS.primary }}
+              className="px-3 sm:px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap inline-flex items-center justify-center"
+            >
+              + Quick Log
+            </button>
+            <button
+              onClick={() => {
+                setReportKid(reportKid || kids[0]);
+                setShowReportGen(true);
+              }}
+              style={{ backgroundColor: COLORS.secondary }}
+              className="px-3 sm:px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap inline-flex items-center justify-center"
+            >
+              📄 Report
+            </button>
           </div>
         </div>
       </div>
