@@ -404,3 +404,131 @@ export async function getAttendanceCalendar(userId: string, childName: string, y
 
   return dateMap;
 }
+
+// ============ EXTRACURRICULAR ACTIVITIES ============
+
+export async function addExtracurricularActivity(
+  userId: string,
+  kidId: string,
+  activityName: string,
+  date: string,
+  notes?: string
+) {
+  const { data, error } = await supabase
+    .from('extracurricular_activities')
+    .insert({
+      user_id: userId,
+      kid_id: kidId,
+      activity_name: activityName,
+      date,
+      notes: notes || null,
+    })
+    .select();
+
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function getExtracurricularActivities(userId: string, kidId?: string) {
+  let query = supabase
+    .from('extracurricular_activities')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (kidId) {
+    query = query.eq('kid_id', kidId);
+  }
+
+  const { data, error } = await query.order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function deleteExtracurricularActivity(activityId: string) {
+  const { error } = await supabase
+    .from('extracurricular_activities')
+    .delete()
+    .eq('id', activityId);
+
+  if (error) throw error;
+}
+
+export async function updateExtracurricularActivity(
+  activityId: string,
+  updates: { activity_name?: string; date?: string; notes?: string }
+) {
+  const { data, error } = await supabase
+    .from('extracurricular_activities')
+    .update(updates)
+    .eq('id', activityId)
+    .select();
+
+  if (error) throw error;
+  return data?.[0];
+}
+
+// ============ FIELD TRIPS ============
+
+export async function addFieldTrip(
+  userId: string,
+  kidId: string,
+  tripName: string,
+  destination: string,
+  date: string,
+  notes?: string
+) {
+  const { data, error } = await supabase
+    .from('field_trips')
+    .insert({
+      user_id: userId,
+      kid_id: kidId,
+      trip_name: tripName,
+      destination,
+      date,
+      notes: notes || null,
+    })
+    .select();
+
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function getFieldTrips(userId: string, kidId?: string) {
+  let query = supabase
+    .from('field_trips')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (kidId) {
+    query = query.eq('kid_id', kidId);
+  }
+
+  const { data, error } = await query.order('date', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function deleteFieldTrip(tripId: string) {
+  const { error } = await supabase
+    .from('field_trips')
+    .delete()
+    .eq('id', tripId);
+
+  if (error) throw error;
+}
+
+export async function updateFieldTrip(
+  tripId: string,
+  updates: { trip_name?: string; destination?: string; date?: string; notes?: string }
+) {
+  const { data, error } = await supabase
+    .from('field_trips')
+    .update(updates)
+    .eq('id', tripId)
+    .select();
+
+  if (error) throw error;
+  return data?.[0];
+}

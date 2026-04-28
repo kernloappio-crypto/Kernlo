@@ -14,7 +14,9 @@ import {
   getGoals, 
   getComplianceState,
   getAttendanceDaysYearly,
-  getAttendanceDaysMonthly
+  getAttendanceDaysMonthly,
+  getExtracurricularActivities,
+  getFieldTrips
 } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
@@ -390,28 +392,64 @@ export default function KidDetailPage() {
       return;
     }
 
+    // Load extracurricular and field trips for this kid
+    let extracurricularList = [];
+    let fieldTripsList = [];
+    try {
+      extracurricularList = await getExtracurricularActivities(userId, kidId);
+      fieldTripsList = await getFieldTrips(userId, kidId);
+    } catch (err) {
+      console.error("Error loading extracurricular/field trips:", err);
+    }
+
     // Prepare activity summary for AI
     const activitySummary = filteredActivities
       .map((a) => `${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}`)
       .join("\n");
 
+    // Prepare extracurricular summary
+    const extracurricularSummary = extracurricularList
+      .filter((e: any) => {
+        const eDate = new Date(e.date);
+        return eDate >= new Date(reportStartDate) && eDate <= new Date(reportEndDate);
+      })
+      .map((e: any) => `${e.date}: ${e.activity_name}${e.notes ? ` - ${e.notes}` : ""}`)
+      .join("\n");
+
+    // Prepare field trips summary
+    const fieldTripsSummary = fieldTripsList
+      .filter((f: any) => {
+        const fDate = new Date(f.date);
+        return fDate >= new Date(reportStartDate) && fDate <= new Date(reportEndDate);
+      })
+      .map((f: any) => `${f.date}: ${f.trip_name} to ${f.destination}${f.notes ? ` - ${f.notes}` : ""}`)
+      .join("\n");
+
     const prompt = `Generate a professional, comprehensive homeschool progress report for ${kid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
 
 Subjects covered: ${selectedSubjects.join(", ")}
-Total activities logged: ${filteredActivities.length}
-Total hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+Total core activities logged: ${filteredActivities.length}
+Total core hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
 
-Activity log:
+Core Subject Activity log:
 ${activitySummary}
 
-Create a narrative-style report that:
+${extracurricularSummary ? `Extracurricular Activities:
+${extracurricularSummary}
+
+` : ""}${fieldTripsSummary ? `Field Trips & Educational Enrichment:
+${fieldTripsSummary}
+
+` : ""}Create a narrative-style report that:
 1. Opens with a summary of learning progress
 2. Details accomplishments in each subject
-3. Highlights engagement and effort
-4. Notes any challenges or areas for growth
-5. Concludes with recommendations for continued learning
+3. Mentions extracurricular activities and their educational value
+4. References field trips and enrichment experiences
+5. Highlights engagement and effort across all areas
+6. Notes any challenges or areas for growth
+7. Concludes with recommendations for continued learning
 
-Format as professional homeschool compliance documentation.`;
+Format as professional homeschool compliance documentation. Include mentions of extracurricular and field trip experiences in the narrative, demonstrating well-rounded education.`;
 
     try {
       const response = await fetch("/api/generate-report", {
@@ -573,9 +611,11 @@ Format as professional homeschool compliance documentation.`;
         {kid && (() => {
           // Determine if TranscriptCard should be visible
           const showTranscript = !kid.grade || parseInt(kid.grade, 10) >= 9;
-          const gridColsClass = showTranscript ? "md:grid-cols-4" : "md:grid-cols-3";
+          // 6 cards total: Compliance, Subject Progress, Goals, Extracurricular, Field Trips, Calendar
+          // + Transcript (conditional)
+          const gridColsClass = showTranscript ? "md:grid-cols-6 lg:grid-cols-6" : "md:grid-cols-6 lg:grid-cols-6";
           return (
-        <div className={`grid grid-cols-1 ${gridColsClass} gap-4 sm:gap-6`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-4 sm:gap-6`}>
           {/* State Compliance Card (Combined) */}
           <div
             onClick={() => router.push(`/dashboard/${kid.id}/compliance`)}
@@ -772,6 +812,60 @@ Format as professional homeschool compliance documentation.`;
                 )}
               </div>
             )}
+          </div>
+
+          {/* Extracurricular Activities Card */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/extracurricular`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              🎭 Extracurricular
+            </h3>
+            <p style={{ color: "#555" }} className="text-sm mb-3">
+              Track music, sports, clubs & hobbies
+            </p>
+            <div className="flex items-center justify-between">
+              <span style={{ color: "#999" }} className="text-xs">This month</span>
+              <span style={{ color: COLORS.primary }} className="text-lg font-bold">0</span>
+            </div>
+          </div>
+
+          {/* Field Trips Card */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/field-trips`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              🚌 Field Trips
+            </h3>
+            <p style={{ color: "#555" }} className="text-sm mb-3">
+              Museums, nature, educational trips
+            </p>
+            <div className="flex items-center justify-between">
+              <span style={{ color: "#999" }} className="text-xs">This month</span>
+              <span style={{ color: COLORS.accent1 }} className="text-lg font-bold">0</span>
+            </div>
+          </div>
+
+          {/* Calendar Card */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/calendar`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              📅 Calendar
+            </h3>
+            <p style={{ color: "#555" }} className="text-sm mb-3">
+              View all activities & events
+            </p>
+            <div className="flex items-center justify-between">
+              <span style={{ color: "#999" }} className="text-xs">All activities</span>
+              <span style={{ color: COLORS.accent3 }} className="text-lg font-bold">0</span>
+            </div>
           </div>
 
           {/* Transcript Card */}

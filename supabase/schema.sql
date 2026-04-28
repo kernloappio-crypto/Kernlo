@@ -85,6 +85,31 @@ CREATE TABLE attendance (
   UNIQUE(user_id, child_name, schooling_date)
 );
 
+-- Extracurricular Activities Table
+CREATE TABLE extracurricular_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kid_id UUID NOT NULL REFERENCES kids(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  activity_name TEXT NOT NULL,
+  date DATE NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Field Trips Table
+CREATE TABLE field_trips (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kid_id UUID NOT NULL REFERENCES kids(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  trip_name TEXT NOT NULL,
+  destination TEXT NOT NULL,
+  date DATE NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX idx_kids_user_id ON kids(user_id);
 CREATE INDEX idx_activities_user_id ON activities(user_id);
@@ -97,6 +122,12 @@ CREATE INDEX idx_compliance_state_user_id ON compliance_state(user_id);
 CREATE INDEX idx_attendance_user_id ON attendance(user_id);
 CREATE INDEX idx_attendance_child_name ON attendance(child_name);
 CREATE INDEX idx_attendance_date ON attendance(schooling_date);
+CREATE INDEX idx_extracurricular_kid_id ON extracurricular_activities(kid_id);
+CREATE INDEX idx_extracurricular_user_id ON extracurricular_activities(user_id);
+CREATE INDEX idx_extracurricular_date ON extracurricular_activities(date);
+CREATE INDEX idx_field_trips_kid_id ON field_trips(kid_id);
+CREATE INDEX idx_field_trips_user_id ON field_trips(user_id);
+CREATE INDEX idx_field_trips_date ON field_trips(date);
 
 -- Enable RLS (Row Level Security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -106,6 +137,8 @@ ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compliance_state ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE extracurricular_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE field_trips ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (users can only see their own data)
 CREATE POLICY "Users can read own data" ON users
@@ -179,3 +212,39 @@ CREATE POLICY "Users can update own attendance" ON attendance
 
 CREATE POLICY "Users can delete own attendance" ON attendance
   FOR DELETE USING (user_id = auth.uid());
+
+-- RLS Policies for extracurricular_activities
+CREATE POLICY "Users can view own extracurricular_activities" 
+  ON extracurricular_activities FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own extracurricular_activities" 
+  ON extracurricular_activities FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own extracurricular_activities" 
+  ON extracurricular_activities FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own extracurricular_activities" 
+  ON extracurricular_activities FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- RLS Policies for field_trips
+CREATE POLICY "Users can view own field_trips" 
+  ON field_trips FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own field_trips" 
+  ON field_trips FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own field_trips" 
+  ON field_trips FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own field_trips" 
+  ON field_trips FOR DELETE
+  USING (auth.uid() = user_id);

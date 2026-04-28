@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
 import { signOut } from "@/lib/supabase-auth";
 import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
+import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
 
 export const dynamic = "force-dynamic";
 
@@ -932,6 +933,13 @@ Format as professional homeschool compliance documentation.`;
                 >
                   + Add Another Child
                 </button>
+              </div>
+            )}
+
+            {/* Parent Dashboard Calendar */}
+            {kids.length > 0 && (
+              <div className="mt-8 w-full">
+                <ParentDashboardCalendar userId={userId} kids={kids} />
               </div>
             )}
           </div>
