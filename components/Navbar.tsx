@@ -80,79 +80,114 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Hamburger Menu - Always Visible */}
+          {/* Desktop Navigation - Hidden on mobile, visible on md+ */}
           {isLoggedIn && (
-            <div className="relative">
-              <button
-                data-hamburger
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                style={{ color: COLORS.dark }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition"
-                aria-label="Toggle menu"
-              >
-                {/* Hamburger Icon */}
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              </button>
-
-              {/* Dropdown Menu */}
-              {mobileMenuOpen && (
-                <div
-                  data-menu
-                  style={{
-                    backgroundColor: "white",
-                    borderColor: "#e5e7eb",
-                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                  }}
-                  className="absolute right-0 top-full mt-2 w-48 rounded-lg border overflow-hidden"
-                >
-                  {/* Calendar Button (Parent Dashboard only) */}
-                  {pathname === "/dashboard" && (
-                    <Link
-                      href="/dashboard/calendar"
-                      onClick={() => setMobileMenuOpen(false)}
-                      style={{ color: COLORS.dark }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200 block"
-                    >
-                      📅 Calendar
-                    </Link>
-                  )}
-
-                  {/* Profile Button */}
-                  <button
-                    onClick={() => {
-                      setProfileModalOpen(true);
-                      setMobileMenuOpen(false);
-                    }}
+            <>
+              {/* Desktop menu for md+ screens */}
+              <div className="hidden md:flex items-center gap-2">
+                {/* Calendar Button (Parent Dashboard only) */}
+                {pathname === "/dashboard" && (
+                  <Link
+                    href="/dashboard/calendar"
                     style={{ color: COLORS.dark }}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200"
+                    className="px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
                   >
-                    👤 Profile
-                  </button>
+                    📅 Calendar
+                  </Link>
+                )}
 
-                  {/* Logout Button */}
-                  <button
-                    onClick={handleLogout}
-                    style={{ color: "#dc2626" }}
-                    className="w-full px-4 py-3 text-left hover:bg-red-50 transition font-medium text-sm"
+                {/* Profile Button */}
+                <button
+                  onClick={() => setProfileModalOpen(true)}
+                  style={{ color: COLORS.dark }}
+                  className="px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                >
+                  👤 Profile
+                </button>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  style={{ color: "#dc2626" }}
+                  className="px-4 py-2 rounded-lg hover:bg-red-50 transition font-medium text-sm"
+                >
+                  🚪 Logout
+                </button>
+              </div>
+
+              {/* Mobile Hamburger Menu - Visible only on mobile */}
+              <div className="md:hidden relative">
+                <button
+                  data-hamburger
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  style={{ color: COLORS.dark }}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition"
+                  aria-label="Toggle menu"
+                >
+                  {/* Hamburger Icon */}
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    🚪 Logout
-                  </button>
-                </div>
-              )}
-            </div>
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
+
+                {/* Mobile Dropdown Menu */}
+                {mobileMenuOpen && (
+                  <div
+                    data-menu
+                    style={{
+                      backgroundColor: "white",
+                      borderColor: "#e5e7eb",
+                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                    }}
+                    className="absolute right-0 top-full mt-2 w-48 rounded-lg border overflow-hidden"
+                  >
+                    {/* Calendar Button (Parent Dashboard only) */}
+                    {pathname === "/dashboard" && (
+                      <Link
+                        href="/dashboard/calendar"
+                        onClick={() => setMobileMenuOpen(false)}
+                        style={{ color: COLORS.dark }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200 block"
+                      >
+                        📅 Calendar
+                      </Link>
+                    )}
+
+                    {/* Profile Button */}
+                    <button
+                      onClick={() => {
+                        setProfileModalOpen(true);
+                        setMobileMenuOpen(false);
+                      }}
+                      style={{ color: COLORS.dark }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200"
+                    >
+                      👤 Profile
+                    </button>
+
+                    {/* Logout Button */}
+                    <button
+                      onClick={handleLogout}
+                      style={{ color: "#dc2626" }}
+                      className="w-full px-4 py-3 text-left hover:bg-red-50 transition font-medium text-sm"
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </nav>

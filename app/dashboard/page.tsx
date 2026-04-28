@@ -667,6 +667,14 @@ Format as professional homeschool compliance documentation.`;
             </p>
           </div>
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            {/* Calendar Button - visible on tablet and up, hidden on mobile */}
+            <Link
+              href="/dashboard/calendar"
+              style={{ backgroundColor: COLORS.secondary }}
+              className="hidden md:block px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap text-center"
+            >
+              📅 Calendar
+            </Link>
             <button
               onClick={() => {
                 if (kids.length === 0) {
@@ -729,7 +737,7 @@ Format as professional homeschool compliance documentation.`;
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                 {kids.map((kid) => {
                   const stats = getKidStats(kid.name);
                   const kidGoals = stats.goals;
@@ -1067,15 +1075,15 @@ Format as professional homeschool compliance documentation.`;
             <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleQuickLogSave}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                style={{ backgroundColor: COLORS.primary, minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base flex items-center justify-center"
               >
                 Save Activity
               </button>
               <button
                 onClick={() => setShowQuickLog(false)}
-                style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
               >
                 Cancel
               </button>
@@ -1183,15 +1191,16 @@ Format as professional homeschool compliance documentation.`;
                 disabled={selectedSubjects.length === 0}
                 style={{
                   backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
+                  minHeight: "44px"
                 }}
-                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base"
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center"
               >
                 Download Report
               </button>
               <button
                 onClick={() => setShowReportGen(false)}
-                style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
               >
                 Cancel
               </button>
@@ -1287,8 +1296,8 @@ Format as professional homeschool compliance documentation.`;
                     alert("Failed to log attendance");
                   }
                 }}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                style={{ backgroundColor: COLORS.primary, minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base flex items-center justify-center"
               >
                 Log Attendance
               </button>
@@ -1297,8 +1306,8 @@ Format as professional homeschool compliance documentation.`;
                   setShowAttendanceLog(false);
                   setSelectedKidsForAttendance([]);
                 }}
-                style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
               >
                 Cancel
               </button>
@@ -1378,8 +1387,8 @@ Format as professional homeschool compliance documentation.`;
             <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleAddKid}
-                style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                style={{ backgroundColor: COLORS.primary, minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base flex items-center justify-center"
               >
                 Add Child
               </button>
@@ -1390,8 +1399,8 @@ Format as professional homeschool compliance documentation.`;
                   setNewKidAge("");
                   setNewKidGrade("");
                 }}
-                style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
               >
                 Cancel
               </button>
