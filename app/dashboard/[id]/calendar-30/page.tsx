@@ -356,7 +356,7 @@ export default function Kid30DayCalendarPage() {
               setShowLogModal(true);
             }}
             style={{ backgroundColor: COLORS.primary }}
-            className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm whitespace-nowrap"
+            className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-sm whitespace-nowrap min-h-11"
           >
             + Log Activity
           </button>

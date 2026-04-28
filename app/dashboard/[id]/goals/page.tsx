@@ -186,7 +186,7 @@ export default function GoalsPage() {
         <button
           onClick={() => setShowAddGoal(!showAddGoal)}
           style={{ backgroundColor: COLORS.primary }}
-          className="px-4 sm:px-6 py-2 sm:py-3 text-white font-medium rounded-lg hover:opacity-90 text-sm sm:text-base"
+          className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-sm sm:text-base min-h-11"
         >
           {showAddGoal ? "Cancel" : "+ Add Goal"}
         </button>
@@ -238,7 +238,7 @@ export default function GoalsPage() {
             <button
               onClick={handleAddGoal}
               style={{ backgroundColor: COLORS.primary }}
-              className="w-full px-4 py-2 text-white font-medium rounded-lg hover:opacity-90"
+              className="w-full px-4 py-2.5 text-white font-medium rounded-lg hover:opacity-90 min-h-11"
             >
               Save Goal
             </button>

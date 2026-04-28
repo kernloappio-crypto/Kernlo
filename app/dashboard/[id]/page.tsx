@@ -571,28 +571,28 @@ Format as professional homeschool compliance documentation. Include mentions of 
                 setShowEditKid(true);
               }}
               style={{ backgroundColor: "#666" }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial min-h-11"
             >
               ✏️ Edit
             </button>
             <button
               onClick={() => setShowQuickLog(!showQuickLog)}
               style={{ backgroundColor: COLORS.primary }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial min-h-11"
             >
               {showQuickLog ? "Cancel" : "+ Log Activity"}
             </button>
             <Link
               href={`/dashboard/${kid?.id}/calendar`}
               style={{ backgroundColor: COLORS.accent3 }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial text-center"
+              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial text-center min-h-11 flex items-center justify-center"
             >
               📅 Calendar
             </Link>
             <button
               onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
               style={{ backgroundColor: COLORS.secondary }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial min-h-11"
             >
               {showComprehensiveReport ? "Cancel" : "📄 Report"}
             </button>
