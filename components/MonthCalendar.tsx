@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActivities, getExtracurricularActivities, getFieldTrips } from "@/lib/supabase-data";
+import { getActivities, getExtracurricularActivities, getFieldTrips, deleteActivity, deleteExtracurricularActivity, deleteFieldTrip, updateExtracurricularActivity, updateFieldTrip, logAttendance } from "@/lib/supabase-data";
+import { supabase } from "@/lib/supabase-client";
 
 interface Activity {
+  id: string;
   date: string;
   type: "activity" | "extracurricular" | "field-trip";
   childName: string;
@@ -46,6 +48,11 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedDayActivities, setSelectedDayActivities] = useState<Activity[]>([]);
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
+  const [editingActivityData, setEditingActivityData] = useState<Partial<Activity> | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showQuickLogModal, setShowQuickLogModal] = useState(false);
+  const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadActivities = async () => {
@@ -63,6 +70,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
           schoolActivities.forEach((a: any) => {
             const kid = kids.find((k) => k.name === a.child_name);
             allActivities.push({
+              id: a.id,
               date: a.date,
               type: "activity",
               childName: a.child_name,
@@ -83,6 +91,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
             const extraActivities = await getExtracurricularActivities(userId, kid.id);
             extraActivities.forEach((a: any) => {
               allActivities.push({
+                id: a.id,
                 date: a.date,
                 type: "extracurricular",
                 childName: kid.name,
@@ -101,6 +110,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
             const trips = await getFieldTrips(userId, kid.id);
             trips.forEach((t: any) => {
               allActivities.push({
+                id: t.id,
                 date: t.date,
                 type: "field-trip",
                 childName: kid.name,
@@ -161,6 +171,103 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
     setSelectedDayActivities(getActivitiesForDate(dateStr));
   };
 
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivityId(activity.id);
+    setEditingActivityData({ ...activity });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingActivityId || !editingActivityData) return;
+
+    try {
+      const activity = activities.find((a) => a.id === editingActivityId);
+      if (!activity) return;
+
+      if (activity.type === "activity") {
+        const { error } = await supabase
+          .from("activities")
+          .update({
+            subject: editingActivityData.name,
+          })
+          .eq("id", editingActivityId);
+
+        if (error) throw error;
+      } else if (activity.type === "extracurricular") {
+        await updateExtracurricularActivity(editingActivityId, {
+          activity_name: editingActivityData.name,
+        });
+      } else if (activity.type === "field-trip") {
+        await updateFieldTrip(editingActivityId, {
+          trip_name: editingActivityData.name,
+        });
+      }
+
+      setActivities(
+        activities.map((a) =>
+          a.id === editingActivityId
+            ? { ...a, name: editingActivityData.name || a.name }
+            : a
+        )
+      );
+      setSelectedDayActivities(
+        selectedDayActivities.map((a) =>
+          a.id === editingActivityId
+            ? { ...a, name: editingActivityData.name || a.name }
+            : a
+        )
+      );
+      setShowEditModal(false);
+      setEditingActivityId(null);
+      setEditingActivityData(null);
+    } catch (error) {
+      console.error("Error saving activity:", error);
+      alert("Failed to save activity");
+    }
+  };
+
+  const handleCompleteActivity = async (activity: Activity) => {
+    try {
+      // Log attendance for the kid on that date
+      if (activity.childId) {
+        await logAttendance(userId, activity.childName, activity.date);
+      }
+
+      // Mark activity as completed
+      setCompletedActivities((prev) => new Set(prev).add(activity.id));
+    } catch (error) {
+      console.error("Error completing activity:", error);
+      alert("Failed to mark activity as completed");
+    }
+  };
+
+  const handleDeleteActivity = async (activity: Activity) => {
+    if (!confirm(`Delete ${activity.name}?`)) return;
+
+    try {
+      if (activity.type === "activity") {
+        await deleteActivity(activity.id);
+      } else if (activity.type === "extracurricular") {
+        await deleteExtracurricularActivity(activity.id);
+      } else if (activity.type === "field-trip") {
+        await deleteFieldTrip(activity.id);
+      }
+
+      const updatedActivities = activities.filter((a) => a.id !== activity.id);
+      setActivities(updatedActivities);
+      setSelectedDayActivities(
+        selectedDayActivities.filter((a) => a.id !== activity.id)
+      );
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+      alert("Failed to delete activity");
+    }
+  };
+
+  const handleOpenQuickLog = () => {
+    setShowQuickLogModal(true);
+  };
+
   return (
     <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
       <div className="flex items-center justify-between mb-6">
@@ -209,7 +316,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
             ))}
           </div>
 
-          {/* Calendar Grid */}
+          {/* Calendar Grid with Activity Previews */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
             {days.map((dateStr, idx) => {
               const isSelected = dateStr === selectedDate;
@@ -233,46 +340,66 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
                         : "#e5e7eb",
                     cursor: dateStr ? "pointer" : "default",
                   }}
-                  className="aspect-square border rounded-lg p-1 sm:p-2 hover:shadow-md transition-all"
+                  className="aspect-square border rounded-lg p-1 sm:p-2 hover:shadow-md transition-all flex flex-col overflow-hidden"
                 >
                   {dateStr && (
-                    <div className="h-full flex flex-col">
+                    <>
                       <span
                         style={{
                           color: isSelected ? "white" : COLORS.dark,
                         }}
-                        className="text-xs sm:text-sm font-bold"
+                        className="text-xs sm:text-sm font-bold flex-shrink-0"
                       >
                         {new Date(dateStr).getDate()}
                       </span>
+                      
+                      {/* Activity previews */}
                       {dayActivities.length > 0 && (
-                        <div className="flex-1 flex items-end">
-                          <div className="flex gap-0.5 flex-wrap">
-                            {dayActivities.slice(0, 4).map((evt, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  backgroundColor:
-                                    ACTIVITY_COLORS[evt.type],
-                                }}
-                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                              />
-                            ))}
-                            {dayActivities.length > 4 && (
-                              <span
-                                style={{
-                                  color: isSelected ? "white" : "#999",
-                                  fontSize: "9px",
-                                }}
-                                className="text-center"
-                              >
-                                +{dayActivities.length - 4}
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex-1 flex flex-col overflow-hidden mt-1 min-w-0">
+                          {dayActivities.slice(0, 2).map((evt, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                backgroundColor: ACTIVITY_COLORS[evt.type],
+                                color: "white",
+                              }}
+                              className="text-xs rounded px-1 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
+                              title={evt.name}
+                            >
+                              {evt.type === "activity"
+                                ? `${evt.subject || evt.name}`
+                                : evt.name}
+                            </div>
+                          ))}
+                          {dayActivities.length > 2 && (
+                            <span
+                              style={{
+                                color: isSelected ? "white" : "#666",
+                                fontSize: "9px",
+                              }}
+                              className="text-center flex-shrink-0"
+                            >
+                              +{dayActivities.length - 2} more
+                            </span>
+                          )}
                         </div>
                       )}
-                    </div>
+
+                      {/* Activity dots (legacy view) */}
+                      {dayActivities.length > 0 && dayActivities.length <= 2 && (
+                        <div className="flex gap-0.5 flex-wrap mt-1">
+                          {dayActivities.map((evt, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                backgroundColor: ACTIVITY_COLORS[evt.type],
+                              }}
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -329,48 +456,68 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
               </p>
             ) : (
               <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
-                {selectedDayActivities.map((activity, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: "#f9fafb",
-                      borderLeft: `4px solid ${ACTIVITY_COLORS[activity.type]}`,
-                    }}
-                    className="p-3 rounded text-sm"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <p style={{ color: COLORS.dark }} className="font-semibold">
-                          {activity.childName}
-                        </p>
-                        <p style={{ color: "#555" }}>
-                          {activity.type === "activity"
-                            ? `${activity.subject} (${activity.duration}h)`
-                            : activity.name}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          style={{ color: "#0066cc", borderColor: "#0066cc" }}
-                          className="px-2 py-1 border rounded text-xs hover:bg-blue-50 font-medium"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          style={{ color: "#dc2626", borderColor: "#dc2626" }}
-                          className="px-2 py-1 border rounded text-xs hover:bg-red-50 font-medium"
-                        >
-                          ✕
-                        </button>
+                {selectedDayActivities.map((activity, idx) => {
+                  const isCompleted = completedActivities.has(activity.id);
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: isCompleted ? "#e8f5e9" : "#f9fafb",
+                        borderLeft: `4px solid ${ACTIVITY_COLORS[activity.type]}`,
+                      }}
+                      className="p-3 rounded text-sm"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p style={{ color: COLORS.dark }} className="font-semibold">
+                            {activity.childName}
+                          </p>
+                          <p style={{ color: "#555" }}>
+                            {activity.type === "activity"
+                              ? `${activity.subject} (${activity.duration}h)`
+                              : activity.name}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                          <button
+                            onClick={() => handleCompleteActivity(activity)}
+                            style={{
+                              color: isCompleted ? "#2e7d32" : "#0066cc",
+                              borderColor: isCompleted ? "#2e7d32" : "#0066cc",
+                              backgroundColor: isCompleted ? "#c8e6c9" : "transparent",
+                            }}
+                            className="px-2 py-1 border rounded text-xs hover:opacity-80 font-medium"
+                            title="Mark as completed"
+                          >
+                            {isCompleted ? "✓ Done" : "✓"}
+                          </button>
+                          <button
+                            onClick={() => handleEditActivity(activity)}
+                            style={{ color: "#0066cc", borderColor: "#0066cc" }}
+                            className="px-2 py-1 border rounded text-xs hover:bg-blue-50 font-medium"
+                            title="Edit activity"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            onClick={() => handleDeleteActivity(activity)}
+                            style={{ color: "#dc2626", borderColor: "#dc2626" }}
+                            className="px-2 py-1 border rounded text-xs hover:bg-red-50 font-medium"
+                            title="Delete activity"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
             <div className="flex gap-2 sm:gap-3 flex-col">
               <button
+                onClick={handleOpenQuickLog}
                 style={{ backgroundColor: COLORS.primary }}
                 className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
               >
@@ -387,6 +534,113 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
                 Close
               </button>
             </div>
+
+            {/* Edit Modal */}
+            {showEditModal && editingActivityData && (
+              <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+                  <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4">
+                    Edit Activity
+                  </h2>
+
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                        Activity Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editingActivityData.name || ""}
+                        onChange={(e) =>
+                          setEditingActivityData({
+                            ...editingActivityData,
+                            name: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                        placeholder="Activity name"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                        Child
+                      </label>
+                      <input
+                        type="text"
+                        value={editingActivityData.childName || ""}
+                        disabled
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editingActivityData.date || ""}
+                        disabled
+                        className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 flex-col">
+                    <button
+                      onClick={handleSaveEdit}
+                      style={{ backgroundColor: COLORS.primary }}
+                      className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditingActivityId(null);
+                        setEditingActivityData(null);
+                      }}
+                      style={{ color: COLORS.dark, borderColor: "#d1d5db" }}
+                      className="w-full px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Log Modal */}
+            {showQuickLogModal && (
+              <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+                  <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4">
+                    Add Activity for {selectedDate ? new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Selected Date"}
+                  </h2>
+                  <p style={{ color: "#555" }} className="text-sm mb-4">
+                    Quick log form - navigate to the child's dashboard for full activity logging.
+                  </p>
+
+                  <div className="flex gap-2 flex-col">
+                    <button
+                      onClick={() => setShowQuickLogModal(false)}
+                      style={{ backgroundColor: COLORS.primary }}
+                      className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+                    >
+                      Open Activity Logger
+                    </button>
+                    <button
+                      onClick={() => setShowQuickLogModal(false)}
+                      style={{ color: COLORS.dark, borderColor: "#d1d5db" }}
+                      className="w-full px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
