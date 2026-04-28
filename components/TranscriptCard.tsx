@@ -9,13 +9,24 @@ interface TranscriptCardProps {
   kidId: string;
   kidName: string;
   onClick?: () => void;
+  minGrade?: number;
+  kidGrade?: number | string;
 }
 
 export default function TranscriptCard({
   kidId,
   kidName,
   onClick,
+  minGrade = 9,
+  kidGrade,
 }: TranscriptCardProps) {
+  // Check if kid's grade meets minimum threshold
+  if (kidGrade !== undefined && kidGrade !== null) {
+    const gradeNum = typeof kidGrade === 'string' ? parseInt(kidGrade, 10) : kidGrade;
+    if (!isNaN(gradeNum) && gradeNum < minGrade) {
+      return null;
+    }
+  }
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

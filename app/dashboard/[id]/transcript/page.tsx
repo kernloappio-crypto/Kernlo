@@ -75,6 +75,19 @@ export default function TranscriptPage() {
         setParent(data.parent);
         setCourses(data.courses);
 
+        // Check grade requirement
+        if (data.kid && data.kid.grade) {
+          const gradeNum = parseInt(data.kid.grade, 10);
+          if (!isNaN(gradeNum) && gradeNum < 9) {
+            // Redirect to dashboard with message
+            setError('Transcripts available for 9th grade and above');
+            setTimeout(() => {
+              router.push(`/dashboard/${kidId}`);
+            }, 2000);
+            return;
+          }
+        }
+
         // Load state from URL or localStorage
         const urlState = searchParams.get('state');
         if (urlState && STATES.includes(urlState)) {
