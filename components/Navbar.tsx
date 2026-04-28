@@ -80,9 +80,9 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Hamburger Menu - Mobile Only (lg:hidden) */}
+          {/* Hamburger Menu - Always Visible */}
           {isLoggedIn && (
-            <div className="lg:hidden relative">
+            <div className="relative">
               <button
                 data-hamburger
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
