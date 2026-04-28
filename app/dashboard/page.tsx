@@ -682,7 +682,16 @@ Format as professional homeschool compliance documentation.`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar />
+      <Navbar 
+        onQuickLogClick={() => {
+          setQuickLogKid(quickLogKid || kids[0]);
+          setShowQuickLog(true);
+        }}
+        onReportClick={() => {
+          setReportKid(reportKid || kids[0]);
+          setShowReportGen(true);
+        }}
+      />
 
       {/* Header - Clean without buttons */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
@@ -905,40 +914,6 @@ Format as professional homeschool compliance documentation.`;
                   className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm border"
                 >
                   + Add Another Child
-                </button>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            {kids.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-3 justify-center">
-                <Link
-                  href="/dashboard/calendar"
-                  style={{ backgroundColor: COLORS.secondary }}
-                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap text-center"
-                >
-                  📅 View Calendar
-                </Link>
-                <button
-                  onClick={() => {
-                    setQuickLogKid(quickLogKid || kids[0]);
-                    setShowQuickLog(true);
-                  }}
-                  style={{ backgroundColor: COLORS.primary }}
-                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
-                >
-                  + Quick Log
-                </button>
-                <button
-                  onClick={() => {
-                    setReportKid(reportKid || kids[0]);
-                    setShowReportGen(true);
-                  }}
-                  disabled={reportDownloaded}
-                  style={{ backgroundColor: reportDownloaded ? "#ccc" : COLORS.secondary }}
-                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap disabled:cursor-not-allowed"
-                >
-                  {reportDownloaded ? "✓ Downloaded" : "📄 Report"}
                 </button>
               </div>
             )}

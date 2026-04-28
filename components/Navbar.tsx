@@ -9,10 +9,16 @@ import ParentProfileModal from "./ParentProfileModal";
 
 const COLORS = {
   primary: "#0066cc",
+  secondary: "#00d4ff",
   dark: "#1a1a2e",
 };
 
-export default function Navbar() {
+interface NavbarProps {
+  onQuickLogClick?: () => void;
+  onReportClick?: () => void;
+}
+
+export default function Navbar({ onQuickLogClick, onReportClick }: NavbarProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userId, setUserId] = useState("");
@@ -73,22 +79,43 @@ export default function Navbar() {
         userEmail={userEmail}
       />
       <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 left-0 right-0 z-50">
-        <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center">
             <div style={{ color: COLORS.primary }} className="text-2xl font-bold hover:opacity-80 transition">
               kernlo
             </div>
           </Link>
 
-          {/* Desktop Navigation - Hidden on mobile, visible on md+ */}
-          {isLoggedIn && (
-            <>
-              {/* Desktop menu for md+ screens - Now hidden, using hamburger only */}
-              <div className="hidden md:flex items-center gap-2">
-              </div>
+          {/* Desktop Navigation - Calendar, Quick Log, Report buttons */}
+          {isLoggedIn && pathname === "/dashboard" && (
+            <div className="hidden sm:flex items-center gap-2">
+              <Link
+                href="/dashboard/calendar"
+                style={{ backgroundColor: COLORS.secondary }}
+                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
+              >
+                📅 Calendar
+              </Link>
+              <button
+                onClick={onQuickLogClick}
+                style={{ backgroundColor: COLORS.primary }}
+                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
+              >
+                + Quick Log
+              </button>
+              <button
+                onClick={onReportClick}
+                style={{ backgroundColor: COLORS.secondary }}
+                className="px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
+              >
+                📄 Report
+              </button>
+            </div>
+          )}
 
-              {/* Hamburger Menu - Always visible */}
-              <div className="relative">
+          {/* Hamburger Menu - Always visible */}
+          {isLoggedIn && (
+            <div className="relative">
                 <button
                   data-hamburger
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -147,8 +174,7 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-            </>
-          )}
+            )}
         </div>
       </nav>
     </>
