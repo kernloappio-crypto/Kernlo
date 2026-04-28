@@ -582,17 +582,13 @@ Format as professional homeschool compliance documentation. Include mentions of 
             >
               {showQuickLog ? "Cancel" : "+ Log Activity"}
             </button>
-            <button
-              onClick={() => {
-                // Open attendance modal with this kid pre-selected
-                // This would require adding attendance modal to [id] page
-                alert("Mark attendance for " + kid?.name + " on today?");
-              }}
+            <Link
+              href={`/dashboard/${kid?.id}/calendar-30`}
               style={{ backgroundColor: COLORS.accent3 }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial"
+              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial text-center"
             >
-              📅 Attendance
-            </button>
+              📅 Calendar
+            </Link>
             <button
               onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
               style={{ backgroundColor: COLORS.secondary }}
