@@ -644,6 +644,9 @@ Format as professional homeschool compliance documentation.`;
       // Download PDF
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
+      // Disable report button
+      setReportDownloaded(true);
+
       setShowReportGen(false);
     } catch (err) {
       console.error("Error generating report:", err);
@@ -682,7 +685,7 @@ Format as professional homeschool compliance documentation.`;
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <Navbar />
 
-      {/* Header with Quick Log and Report */}
+      {/* Header - Clean without buttons */}
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -692,44 +695,6 @@ Format as professional homeschool compliance documentation.`;
             <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
               Manage all your kids' homeschool progress
             </p>
-          </div>
-          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
-            {/* Calendar Button - visible on all screens */}
-            <Link
-              href="/dashboard/calendar"
-              style={{ backgroundColor: COLORS.secondary }}
-              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap text-center"
-            >
-              📅 Calendar
-            </Link>
-            <button
-              onClick={() => {
-                if (kids.length === 0) {
-                  alert("Please add a kid first");
-                  return;
-                }
-                setQuickLogKid(quickLogKid || kids[0]);
-                setShowQuickLog(true);
-              }}
-              style={{ backgroundColor: COLORS.primary }}
-              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap"
-            >
-              + Quick Log
-            </button>
-            <button
-              onClick={() => {
-                if (kids.length === 0) {
-                  alert("Please add a kid first");
-                  return;
-                }
-                setReportKid(reportKid || kids[0]);
-                setShowReportGen(true);
-              }}
-              style={{ backgroundColor: COLORS.secondary }}
-              className="px-4 sm:px-6 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap"
-            >
-              📄 Report
-            </button>
           </div>
         </div>
       </div>
@@ -945,7 +910,39 @@ Format as professional homeschool compliance documentation.`;
               </div>
             )}
 
-            {/* Parent Dashboard Calendar moved to /dashboard/calendar */}
+            {/* Action Buttons */}
+            {kids.length > 0 && (
+              <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                <Link
+                  href="/dashboard/calendar"
+                  style={{ backgroundColor: COLORS.secondary }}
+                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap text-center"
+                >
+                  📅 View Calendar
+                </Link>
+                <button
+                  onClick={() => {
+                    setQuickLogKid(quickLogKid || kids[0]);
+                    setShowQuickLog(true);
+                  }}
+                  style={{ backgroundColor: COLORS.primary }}
+                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap"
+                >
+                  + Quick Log
+                </button>
+                <button
+                  onClick={() => {
+                    setReportKid(reportKid || kids[0]);
+                    setShowReportGen(true);
+                  }}
+                  disabled={reportDownloaded}
+                  style={{ backgroundColor: reportDownloaded ? "#ccc" : COLORS.secondary }}
+                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm whitespace-nowrap disabled:cursor-not-allowed"
+                >
+                  {reportDownloaded ? "✓ Downloaded" : "📄 Report"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -992,61 +989,6 @@ Format as professional homeschool compliance documentation.`;
               </div>
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Subject
-                </label>
-                <select
-                  value={logSubject}
-                  onChange={(e) => setLogSubject(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                >
-                  <option value="">Select subject</option>
-                  {SUBJECTS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Duration (hours)
-                </label>
-                <input
-                  type="number"
-                  value={logDuration}
-                  onChange={(e) => setLogDuration(e.target.value)}
-                  placeholder="1.5"
-                  step="0.5"
-                  style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Platform
-                </label>
-                <input
-                  type="text"
-                  value={logPlatform}
-                  onChange={(e) => setLogPlatform(e.target.value)}
-                  placeholder="Khan Academy, IXL, etc."
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Curriculum/Resource (optional)
-                </label>
-                <input
-                  type="text"
-                  value={logCurriculum}
-                  onChange={(e) => setLogCurriculum(e.target.value)}
-                  placeholder="e.g., Math Mammoth, Khan Academy, Outschool, IXL, Textbook"
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Activity Type
                 </label>
                 <select
@@ -1059,6 +1001,105 @@ Format as professional homeschool compliance documentation.`;
                   <option value="Field Trip / Enrichment">Field Trip / Enrichment</option>
                 </select>
               </div>
+
+              {/* Core Subject Fields */}
+              {logActivityType === "Core Subject" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Subject
+                    </label>
+                    <select
+                      value={logSubject}
+                      onChange={(e) => setLogSubject(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    >
+                      <option value="">Select subject</option>
+                      {SUBJECTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Duration (hours)
+                    </label>
+                    <input
+                      type="number"
+                      value={logDuration}
+                      onChange={(e) => setLogDuration(e.target.value)}
+                      placeholder="1.5"
+                      step="0.5"
+                      style={{ color: "#1a1a2e", borderColor: "#333" }}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Curriculum/Resource
+                    </label>
+                    <input
+                      type="text"
+                      value={logCurriculum}
+                      onChange={(e) => setLogCurriculum(e.target.value)}
+                      placeholder="e.g., Math Mammoth, Khan Academy, Outschool, IXL, Textbook"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Extracurricular Fields */}
+              {logActivityType === "Extracurricular" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Activity Name
+                    </label>
+                    <input
+                      type="text"
+                      value={logActivityName}
+                      onChange={(e) => setLogActivityName(e.target.value)}
+                      placeholder="e.g., Piano Lesson, Basketball Practice"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Field Trip Fields */}
+              {logActivityType === "Field Trip / Enrichment" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Trip Name
+                    </label>
+                    <input
+                      type="text"
+                      value={logTripName}
+                      onChange={(e) => setLogTripName(e.target.value)}
+                      placeholder="e.g., Science Museum Visit"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Destination
+                    </label>
+                    <input
+                      type="text"
+                      value={logDestination}
+                      onChange={(e) => setLogDestination(e.target.value)}
+                      placeholder="e.g., Science Museum"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Notes (for all types) */}
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Notes

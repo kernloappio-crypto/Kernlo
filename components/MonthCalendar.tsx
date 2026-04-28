@@ -300,13 +300,35 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
             </div>
           </div>
 
-          {/* Selected Day Details */}
-          {selectedDate && selectedDayActivities.length > 0 && (
-            <div style={{ borderTop: "1px solid #e5e7eb", marginTop: "24px", paddingTop: "24px" }}>
-              <p style={{ color: COLORS.dark }} className="text-sm font-bold mb-3">
-                Activities for {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}:
+        </div>
+      )}
+
+      {/* Day Details Popup Modal */}
+      {selectedDate && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold">
+                {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+              </h2>
+              <button
+                onClick={() => {
+                  setSelectedDate(null);
+                  setSelectedDayActivities([]);
+                }}
+                style={{ color: COLORS.dark }}
+                className="text-2xl hover:opacity-70 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {selectedDayActivities.length === 0 ? (
+              <p style={{ color: "#555" }} className="text-sm mb-6">
+                No activities logged for this day.
               </p>
-              <div className="space-y-2">
+            ) : (
+              <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                 {selectedDayActivities.map((activity, idx) => (
                   <div
                     key={idx}
@@ -316,8 +338,8 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
                     }}
                     className="p-3 rounded text-sm"
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
                         <p style={{ color: COLORS.dark }} className="font-semibold">
                           {activity.childName}
                         </p>
@@ -327,25 +349,45 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
                             : activity.name}
                         </p>
                       </div>
-                      <span
-                        style={{
-                          backgroundColor: ACTIVITY_COLORS[activity.type],
-                          color: "white",
-                        }}
-                        className="text-xs px-2 py-1 rounded"
-                      >
-                        {activity.type === "activity"
-                          ? "📚"
-                          : activity.type === "extracurricular"
-                            ? "🎭"
-                            : "🚌"}
-                      </span>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          style={{ color: "#0066cc", borderColor: "#0066cc" }}
+                          className="px-2 py-1 border rounded text-xs hover:bg-blue-50 font-medium"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          style={{ color: "#dc2626", borderColor: "#dc2626" }}
+                          className="px-2 py-1 border rounded text-xs hover:bg-red-50 font-medium"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+            )}
+
+            <div className="flex gap-2 sm:gap-3 flex-col">
+              <button
+                style={{ backgroundColor: COLORS.primary }}
+                className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+              >
+                + Add Activity
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedDate(null);
+                  setSelectedDayActivities([]);
+                }}
+                style={{ color: COLORS.dark, borderColor: "#d1d5db" }}
+                className="w-full px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm"
+              >
+                Close
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
