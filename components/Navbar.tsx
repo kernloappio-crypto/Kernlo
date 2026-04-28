@@ -118,6 +118,18 @@ export default function Navbar() {
                   }}
                   className="absolute right-0 top-full mt-2 w-48 rounded-lg border overflow-hidden"
                 >
+                  {/* Calendar Button (Parent Dashboard only) */}
+                  {pathname === "/dashboard" && (
+                    <Link
+                      href="/dashboard/calendar"
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{ color: COLORS.dark }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200 block"
+                    >
+                      📅 Calendar
+                    </Link>
+                  )}
+
                   {/* Profile Button */}
                   <button
                     onClick={() => {
