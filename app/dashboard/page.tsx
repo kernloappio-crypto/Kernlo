@@ -89,10 +89,13 @@ export default function DashboardPage() {
   const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
   const [logSubject, setLogSubject] = useState("");
   const [logDuration, setLogDuration] = useState("");
-  const [logPlatform, setLogPlatform] = useState("");
   const [logNotes, setLogNotes] = useState("");
   const [logCurriculum, setLogCurriculum] = useState("");
   const [logActivityType, setLogActivityType] = useState("Core Subject");
+  const [logActivityName, setLogActivityName] = useState("");
+  const [logTripName, setLogTripName] = useState("");
+  const [logDestination, setLogDestination] = useState("");
+  const [logPlatform, setLogPlatform] = useState("");
 
   // Report Generator states
   const [showReportGen, setShowReportGen] = useState(false);
@@ -100,6 +103,7 @@ export default function DashboardPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [reportDownloaded, setReportDownloaded] = useState(false);
 
   // Add kid states
   const [showAddKid, setShowAddKid] = useState(false);
@@ -425,25 +429,49 @@ export default function DashboardPage() {
   }
 
   async function handleQuickLogSave() {
-    if (!logSubject || !logDuration || !quickLogKid) {
-      alert("Please fill in all required fields");
-      return;
+    // Validate based on activity type
+    if (logActivityType === "Core Subject") {
+      if (!logSubject || !logDuration || !logCurriculum || !quickLogKid) {
+        alert("Please fill in all required fields (Date, Activity Type, Subject, Duration, Curriculum)");
+        return;
+      }
+    } else if (logActivityType === "Extracurricular") {
+      if (!logActivityName || !quickLogKid) {
+        alert("Please fill in all required fields (Date, Activity Type, Activity Name)");
+        return;
+      }
+    } else if (logActivityType === "Field Trip / Enrichment") {
+      if (!logTripName || !logDestination || !quickLogKid) {
+        alert("Please fill in all required fields (Date, Activity Type, Trip Name, Destination)");
+        return;
+      }
     }
 
     try {
+      const insertData: any = {
+        user_id: userId,
+        child_name: quickLogKid?.name,
+        activity_type: logActivityType,
+        date: logDate,
+        notes: logNotes,
+        curriculum: logCurriculum || null,
+      };
+
+      // Add type-specific fields
+      if (logActivityType === "Core Subject") {
+        insertData.subject = logSubject;
+        insertData.duration = parseFloat(logDuration);
+      } else if (logActivityType === "Extracurricular") {
+        insertData.subject = logActivityName;
+        insertData.curriculum = logActivityName;
+      } else if (logActivityType === "Field Trip / Enrichment") {
+        insertData.subject = logTripName;
+        insertData.curriculum = logDestination;
+      }
+
       const { data, error } = await supabase
         .from("activities")
-        .insert({
-          user_id: userId,
-          child_name: quickLogKid.name,
-          subject: logSubject,
-          duration: parseFloat(logDuration),
-          platform: logPlatform || "Other",
-          curriculum: logCurriculum || null,
-          activity_type: logActivityType,
-          date: logDate,
-          notes: logNotes,
-        })
+        .insert(insertData)
         .select();
 
       if (error) {
@@ -458,10 +486,12 @@ export default function DashboardPage() {
       alert("Activity logged!");
       setLogSubject("");
       setLogDuration("");
-      setLogPlatform("");
       setLogNotes("");
       setLogCurriculum("");
       setLogActivityType("Core Subject");
+      setLogActivityName("");
+      setLogTripName("");
+      setLogDestination("");
       setLogDate(new Date().toISOString().split("T")[0]);
       setShowQuickLog(false);
     } catch (err) {
@@ -888,7 +918,7 @@ Format as professional homeschool compliance documentation.`;
                         </p>
                       </div>
 
-                      {/* View Dashboard & Edit Buttons */}
+                      {/* View Dashboard Button */}
                       <div className="flex gap-2">
                         <Link
                           href={`/dashboard/${kid.id}`}
@@ -897,19 +927,6 @@ Format as professional homeschool compliance documentation.`;
                         >
                           View
                         </Link>
-                        <button
-                          onClick={() => {
-                            setNewKidName(kid.name);
-                            setNewKidAge(kid.age?.toString() || "");
-                            setNewKidGrade(kid.grade || "");
-                            // TODO: Store kid ID for edit mode
-                            alert("Edit from individual kid dashboard (✏️ Edit button)");
-                          }}
-                          style={{ color: "#666", borderColor: "#999" }}
-                          className="flex-1 text-center px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium"
-                        >
-                          Edit
-                        </button>
                       </div>
                     </div>
                   );
@@ -947,7 +964,7 @@ Format as professional homeschool compliance documentation.`;
                   Kid
                 </label>
                 <select
-                  value={quickLogKid.id}
+                  value={quickLogKid?.id || ""}
                   onChange={(e) => {
                     const kid = kids.find((k) => k.id === e.target.value);
                     if (kid) setQuickLogKid(kid);

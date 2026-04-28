@@ -83,36 +83,8 @@ export default function Navbar() {
           {/* Desktop Navigation - Hidden on mobile, visible on md+ */}
           {isLoggedIn && (
             <>
-              {/* Desktop menu for md+ screens */}
+              {/* Desktop menu for md+ screens - Now hidden, using hamburger only */}
               <div className="hidden md:flex items-center gap-2">
-                {/* Calendar Button (Parent Dashboard only) */}
-                {pathname === "/dashboard" && (
-                  <Link
-                    href="/dashboard/calendar"
-                    style={{ color: COLORS.dark }}
-                    className="px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-                  >
-                    📅 Calendar
-                  </Link>
-                )}
-
-                {/* Profile Button */}
-                <button
-                  onClick={() => setProfileModalOpen(true)}
-                  style={{ color: COLORS.dark }}
-                  className="px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-                >
-                  👤 Profile
-                </button>
-
-                {/* Logout Button */}
-                <button
-                  onClick={handleLogout}
-                  style={{ color: "#dc2626" }}
-                  className="px-4 py-2 rounded-lg hover:bg-red-50 transition font-medium text-sm"
-                >
-                  🚪 Logout
-                </button>
               </div>
 
               {/* Hamburger Menu - Always visible */}
