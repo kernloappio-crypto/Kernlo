@@ -95,7 +95,6 @@ export default function DashboardPage() {
   const [logActivityName, setLogActivityName] = useState("");
   const [logTripName, setLogTripName] = useState("");
   const [logDestination, setLogDestination] = useState("");
-  const [logPlatform, setLogPlatform] = useState("");
 
   // Report Generator states
   const [showReportGen, setShowReportGen] = useState(false);
