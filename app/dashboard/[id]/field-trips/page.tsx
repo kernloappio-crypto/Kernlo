@@ -197,7 +197,7 @@ export default function FieldTripsPage() {
             <button
               onClick={() => setShowForm(!showForm)}
               style={{ backgroundColor: COLORS.primary }}
-              className="px-4 sm:px-6 py-2 text-white font-medium rounded-lg hover:opacity-90 text-sm"
+              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-sm min-h-12 sm:min-h-auto"
             >
               {showForm ? "Cancel" : "+ Add Trip"}
             </button>
@@ -269,18 +269,18 @@ export default function FieldTripsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <div className="flex gap-3 flex-col">
                 <button
                   onClick={handleSubmit}
                   style={{ backgroundColor: COLORS.primary }}
-                  className="flex-1 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
+                  className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 text-sm min-h-12"
                 >
                   {editingId ? "Update Trip" : "Add Trip"}
                 </button>
                 <button
                   onClick={handleCancel}
                   style={{ color: COLORS.dark, borderColor: "#333" }}
-                  className="flex-1 px-4 py-2 border font-semibold rounded-lg hover:bg-gray-50 text-sm"
+                  className="w-full px-4 py-3 border font-semibold rounded-lg hover:bg-gray-50 text-sm min-h-12"
                 >
                   Cancel
                 </button>
@@ -294,14 +294,14 @@ export default function FieldTripsPage() {
               <p style={{ color: "#555" }}>Loading...</p>
             </div>
           ) : trips.length === 0 ? (
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 text-center border border-gray-200">
               <p style={{ color: "#555" }} className="mb-4">
                 No field trips logged yet.
               </p>
               <button
                 onClick={() => setShowForm(true)}
                 style={{ backgroundColor: COLORS.primary }}
-                className="px-6 py-2 text-white font-medium rounded-lg hover:opacity-90"
+                className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 min-h-12"
               >
                 + Add First Trip
               </button>
@@ -341,18 +341,18 @@ export default function FieldTripsPage() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
                       <button
                         onClick={() => handleEdit(trip)}
                         style={{ color: COLORS.primary }}
-                        className="px-3 py-1 text-sm font-medium hover:opacity-70"
+                        className="px-4 py-2 text-sm font-medium hover:opacity-70 min-h-10 active:bg-blue-50 rounded"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={() => handleDelete(trip.id)}
                         style={{ color: COLORS.accent1 }}
-                        className="px-3 py-1 text-sm font-medium hover:opacity-70"
+                        className="px-4 py-2 text-sm font-medium hover:opacity-70 min-h-10 active:bg-red-50 rounded"
                       >
                         🗑️ Delete
                       </button>

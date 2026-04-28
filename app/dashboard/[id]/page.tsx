@@ -1074,7 +1074,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
       {/* Comprehensive Report Modal */}
       {showComprehensiveReport && kid ? (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 max-w-md w-full my-8">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
             <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
               📄 Comprehensive Report
             </h2>
@@ -1144,21 +1144,21 @@ Format as professional homeschool compliance documentation. Include mentions of 
               ⚠️ Report generation takes ~30 seconds. Please click once and wait.
             </p>
 
-            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
+            <div className="flex gap-3 flex-col">
               <button
                 onClick={handleGenerateComprehensiveReport}
                 disabled={selectedSubjects.length === 0}
                 style={{
                   backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
                 }}
-                className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed min-h-12"
               >
                 Download Report
               </button>
               <button
                 onClick={() => setShowComprehensiveReport(false)}
                 style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2 border text-sm font-medium rounded-lg hover:bg-gray-50"
+                className="w-full px-4 py-3 border text-sm font-medium rounded-lg hover:bg-gray-50 min-h-12"
               >
                 Cancel
               </button>
@@ -1170,7 +1170,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
       {/* Edit Kid Modal */}
       {showEditKid && kid && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
             <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
               Edit {kid.name}
             </h2>
@@ -1235,11 +1235,11 @@ Format as professional homeschool compliance documentation. Include mentions of 
               </div>
             </div>
 
-            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+            <div className="flex gap-3 flex-col">
               <button
                 onClick={handleEditKid}
                 style={{ backgroundColor: COLORS.primary }}
-                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base min-h-12"
               >
                 Save Changes
               </button>
@@ -1254,7 +1254,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
                   }
                 }}
                 style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                className="w-full px-4 py-3 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base min-h-12"
               >
                 Cancel
               </button>

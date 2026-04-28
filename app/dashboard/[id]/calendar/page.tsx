@@ -284,28 +284,28 @@ export default function CalendarPage() {
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 border border-gray-200">
               {/* Calendar Header */}
               <div className="flex items-center justify-between mb-6">
-                <button onClick={prevMonth} style={{ color: COLORS.primary }} className="text-lg font-bold hover:opacity-70">
+                <button onClick={prevMonth} style={{ color: COLORS.primary }} className="text-lg font-bold hover:opacity-70 min-h-10 min-w-10 flex items-center justify-center rounded">
                   ←
                 </button>
-                <h2 style={{ color: COLORS.dark }} className="text-xl font-bold">
+                <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold">
                   {monthStr}
                 </h2>
-                <button onClick={nextMonth} style={{ color: COLORS.primary }} className="text-lg font-bold hover:opacity-70">
+                <button onClick={nextMonth} style={{ color: COLORS.primary }} className="text-lg font-bold hover:opacity-70 min-h-10 min-w-10 flex items-center justify-center rounded">
                   →
                 </button>
               </div>
 
               {/* Weekday Headers */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} style={{ color: COLORS.dark }} className="text-center font-bold text-sm py-2">
+                  <div key={day} style={{ color: COLORS.dark }} className="text-center font-bold text-xs sm:text-sm py-2">
                     {day}
                   </div>
                 ))}
               </div>
 
               {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {days.map((dateStr, idx) => {
                   const isSelected = dateStr === selectedDate;
                   const hasEvent = dateStr && hasEvents(dateStr);
@@ -324,7 +324,7 @@ export default function CalendarPage() {
                     >
                       {dateStr && (
                         <div className="h-full flex flex-col">
-                          <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs font-bold">
+                          <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs sm:text-sm font-bold">
                             {new Date(dateStr).getDate()}
                           </span>
                           {daysEvents.length > 0 && (
@@ -381,7 +381,7 @@ export default function CalendarPage() {
         {/* Event Modal */}
         {showModal && selectedDate && (
           <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
               <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">
                 Log Activity for {new Date(selectedDate).toLocaleDateString()}
               </h2>
@@ -391,43 +391,43 @@ export default function CalendarPage() {
                 <label style={{ color: "#333" }} className="block text-sm font-medium mb-3">
                   Activity Type
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded hover:bg-gray-50 -mx-3">
                     <input
                       type="radio"
                       name="type"
                       value="activity"
                       checked={modalType === "activity"}
                       onChange={() => setModalType("activity")}
-                      className="w-4 h-4"
+                      className="w-5 h-5 cursor-pointer"
                     />
-                    <span style={{ color: "#333" }} className="text-sm">
+                    <span style={{ color: "#333" }} className="text-sm font-medium flex-1">
                       School Subject
                     </span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded hover:bg-gray-50 -mx-3">
                     <input
                       type="radio"
                       name="type"
                       value="extracurricular"
                       checked={modalType === "extracurricular"}
                       onChange={() => setModalType("extracurricular")}
-                      className="w-4 h-4"
+                      className="w-5 h-5 cursor-pointer"
                     />
-                    <span style={{ color: "#333" }} className="text-sm">
+                    <span style={{ color: "#333" }} className="text-sm font-medium flex-1">
                       Extracurricular
                     </span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded hover:bg-gray-50 -mx-3">
                     <input
                       type="radio"
                       name="type"
                       value="field-trip"
                       checked={modalType === "field-trip"}
                       onChange={() => setModalType("field-trip")}
-                      className="w-4 h-4"
+                      className="w-5 h-5 cursor-pointer"
                     />
-                    <span style={{ color: "#333" }} className="text-sm">
+                    <span style={{ color: "#333" }} className="text-sm font-medium flex-1">
                       Field Trip
                     </span>
                   </label>
@@ -551,11 +551,11 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <div className="flex gap-3 flex-col">
                 <button
                   onClick={handleSubmitEvent}
                   style={{ backgroundColor: COLORS.primary }}
-                  className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                  className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base min-h-12"
                 >
                   Save Event
                 </button>
@@ -575,7 +575,7 @@ export default function CalendarPage() {
                     setModalType("activity");
                   }}
                   style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                  className="w-full px-4 py-3 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base min-h-12"
                 >
                   Cancel
                 </button>
