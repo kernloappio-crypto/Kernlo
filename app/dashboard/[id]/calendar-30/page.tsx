@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
-import { getActivities, getGoals } from "@/lib/supabase-data";
+import { getActivities, getGoals, getExtracurricularActivities, getFieldTrips } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +70,8 @@ export default function Kid30DayCalendarPage() {
   const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
+  const [fieldTrips, setFieldTrips] = useState<any[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,6 +140,24 @@ export default function Kid30DayCalendarPage() {
           setActivities([]);
         }
 
+        // Load extracurricular activities
+        try {
+          const extraData = await getExtracurricularActivities(user.id, kidId);
+          setExtracurricularActivities(extraData || []);
+        } catch (err) {
+          console.error("Error loading extracurricular activities:", err);
+          setExtracurricularActivities([]);
+        }
+
+        // Load field trips
+        try {
+          const tripsData = await getFieldTrips(user.id, kidId);
+          setFieldTrips(tripsData || []);
+        } catch (err) {
+          console.error("Error loading field trips:", err);
+          setFieldTrips([]);
+        }
+
         // Load goals
         try {
           const goalsData = await getGoals(user.id, kidData?.name);
@@ -174,11 +194,36 @@ export default function Kid30DayCalendarPage() {
   };
 
   const getActivitiesForDate = (dateStr: string) => {
-    return activities.filter((a) => a.date === dateStr && a.child_name === kid?.name);
+    const schoolActivities = activities.filter((a) => a.date === dateStr && a.child_name === kid?.name);
+    const extraActivities = extracurricularActivities.filter((a) => a.date === dateStr);
+    const trips = fieldTrips.filter((t) => t.date === dateStr);
+    
+    const combined = [
+      ...schoolActivities.map((a) => ({
+        ...a,
+        type: 'school',
+        displayName: a.subject,
+        duration: a.duration,
+      })),
+      ...extraActivities.map((e) => ({
+        ...e,
+        type: 'extracurricular',
+        displayName: e.activity_name,
+        duration: e.duration || 0,
+      })),
+      ...trips.map((t) => ({
+        ...t,
+        type: 'field-trip',
+        displayName: t.trip_name,
+        duration: t.duration || 0,
+      })),
+    ];
+    
+    return combined;
   };
 
   const getTotalHoursForDate = (dateStr: string) => {
-    return getActivitiesForDate(dateStr).reduce((sum, a) => sum + a.duration, 0);
+    return getActivitiesForDate(dateStr).reduce((sum, a) => sum + (a.duration || 0), 0);
   };
 
   const getActivityTypeColor = (activityType?: string) => {
@@ -418,51 +463,67 @@ export default function Kid30DayCalendarPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {dateActivities.map((activity) => (
-                        <div
-                          key={activity.id}
-                          style={{
-                            backgroundColor: "#f9fafb",
-                            borderLeft: `4px solid ${getActivityTypeColor(activity.activity_type)}`,
-                          }}
-                          className="p-3 sm:p-4 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow cursor-pointer"
-                          onClick={() => {
-                            setSelectedActivity(activity);
-                            setEditActivityId(activity.id);
-                            setEditNotes(activity.notes || "");
-                            setShowEditModal(true);
-                          }}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p style={{ color: COLORS.dark }} className="text-sm sm:text-base font-semibold">
-                                {activity.subject}
-                              </p>
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1 text-xs text-gray-600">
-                                <span>⏱️ {activity.duration}h</span>
-                                <span>💻 {activity.platform}</span>
-                                {activity.curriculum && (
-                                  <span>📚 {activity.curriculum}</span>
+                      {dateActivities.map((activity) => {
+                        // Determine color and icon based on activity type
+                        let typeColor = ACTIVITY_COLORS.subject;
+                        let typeIcon = "📖";
+                        let typeLabel = "School";
+                        
+                        if (activity.type === 'extracurricular') {
+                          typeColor = ACTIVITY_COLORS.extracurricular;
+                          typeIcon = "🎭";
+                          typeLabel = "Extracurricular";
+                        } else if (activity.type === 'field-trip') {
+                          typeColor = ACTIVITY_COLORS["field-trip"];
+                          typeIcon = "🚌";
+                          typeLabel = "Field Trip";
+                        }
+
+                        return (
+                          <div
+                            key={activity.id}
+                            style={{
+                              backgroundColor: "#f9fafb",
+                              borderLeft: `4px solid ${typeColor}`,
+                            }}
+                            className="p-3 sm:p-4 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow cursor-pointer"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setEditActivityId(activity.id);
+                              setEditNotes(activity.notes || "");
+                              setShowEditModal(true);
+                            }}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p style={{ color: COLORS.dark }} className="text-sm sm:text-base font-semibold">
+                                  {activity.displayName || activity.subject}
+                                </p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1 text-xs text-gray-600">
+                                  {activity.duration > 0 && <span>⏱️ {activity.duration}h</span>}
+                                  {activity.platform && <span>💻 {activity.platform}</span>}
+                                  {activity.curriculum && <span>📚 {activity.curriculum}</span>}
+                                  {activity.destination && <span>📍 {activity.destination}</span>}
+                                </div>
+                                {activity.notes && (
+                                  <p style={{ color: "#666" }} className="text-xs mt-2 italic">
+                                    {activity.notes}
+                                  </p>
                                 )}
                               </div>
-                              {activity.notes && (
-                                <p style={{ color: "#666" }} className="text-xs mt-2 italic">
-                                  {activity.notes}
-                                </p>
-                              )}
-                            </div>
-                            <div
-                              style={{
-                                backgroundColor: getActivityTypeColor(activity.activity_type),
-                                color: "white",
-                              }}
-                              className="ml-2 px-2 py-1 rounded text-xs font-semibold flex-shrink-0"
-                            >
-                              {activity.activity_type === "Core Subject" ? "📖" : activity.activity_type === "Extracurricular" ? "🎭" : "🚌"}
+                              <div
+                                style={{
+                                  backgroundColor: typeColor,
+                                  color: "white",
+                                }}
+                                className="ml-2 px-2 py-1 rounded text-xs font-semibold flex-shrink-0"
+                              >
+                                {typeIcon}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
