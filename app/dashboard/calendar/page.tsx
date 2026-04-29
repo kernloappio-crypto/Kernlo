@@ -31,12 +31,36 @@ const COLORS = {
   light: "#f0f7ff",
 };
 
+const SUBJECTS = [
+  "Math",
+  "English",
+  "Science",
+  "History",
+  "Social Studies",
+  "Arts",
+  "Physical Education",
+  "Other",
+];
+
 export default function ParentCalendarPage() {
   const [userId, setUserId] = useState("");
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const router = useRouter();
+
+  // Quick Log states (shared with calendar)
+  const [showQuickLog, setShowQuickLog] = useState(false);
+  const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
+  const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [logSubject, setLogSubject] = useState("");
+  const [logDuration, setLogDuration] = useState("");
+  const [logNotes, setLogNotes] = useState("");
+  const [logCurriculum, setLogCurriculum] = useState("");
+  const [logActivityType, setLogActivityType] = useState("Core Subject");
+  const [logActivityName, setLogActivityName] = useState("");
+  const [logTripName, setLogTripName] = useState("");
+  const [logDestination, setLogDestination] = useState("");
 
   useEffect(() => {
     const initUser = async () => {
@@ -216,6 +240,101 @@ export default function ParentCalendarPage() {
     );
   }
 
+  // Handle Quick Log Save
+  const handleQuickLogSave = async () => {
+    if (!quickLogKid || !logDate) {
+      alert("Please select a kid and date");
+      return;
+    }
+
+    try {
+      const activityData: any = {
+        user_id: userId,
+        child_name: quickLogKid.name,
+        date: logDate,
+        activity_type: logActivityType,
+        notes: logNotes,
+      };
+
+      if (logActivityType === "Core Subject") {
+        if (!logSubject || !logDuration) {
+          alert("Please fill in subject and duration");
+          return;
+        }
+        activityData.subject = logSubject;
+        activityData.duration = parseFloat(logDuration);
+        activityData.curriculum = logCurriculum;
+      } else if (logActivityType === "Extracurricular") {
+        if (!logActivityName) {
+          alert("Please enter activity name");
+          return;
+        }
+        activityData.activity_name = logActivityName;
+      } else if (logActivityType === "Field Trip / Enrichment") {
+        if (!logTripName) {
+          alert("Please enter trip name");
+          return;
+        }
+        activityData.trip_name = logTripName;
+        activityData.destination = logDestination;
+      }
+
+      // Save to appropriate table
+      if (logActivityType === "Core Subject") {
+        const { error } = await supabase
+          .from("activities")
+          .insert([activityData]);
+        if (error) throw error;
+      } else if (logActivityType === "Extracurricular") {
+        const { error } = await supabase
+          .from("extracurricular_activities")
+          .insert([{
+            user_id: userId,
+            child_id: quickLogKid.id,
+            activity_name: logActivityName,
+            date: logDate,
+            notes: logNotes,
+          }]);
+        if (error) throw error;
+      } else if (logActivityType === "Field Trip / Enrichment") {
+        const { error } = await supabase
+          .from("field_trips")
+          .insert([{
+            user_id: userId,
+            child_id: quickLogKid.id,
+            trip_name: logTripName,
+            destination: logDestination,
+            date: logDate,
+            notes: logNotes,
+          }]);
+        if (error) throw error;
+      }
+
+      // Reset form and close modal
+      setShowQuickLog(false);
+      setLogSubject("");
+      setLogDuration("");
+      setLogNotes("");
+      setLogCurriculum("");
+      setLogActivityType("Core Subject");
+      setLogActivityName("");
+      setLogTripName("");
+      setLogDestination("");
+      
+      alert("Activity saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving activity:", error);
+      alert(`Failed to save activity: ${error?.message || "Unknown error"}`);
+    }
+  };
+
+  // Handle opening Quick Log from calendar date
+  const handleOpenQuickLogForDate = (dateStr: string) => {
+    setLogDate(dateStr);
+    setQuickLogKid(quickLogKid || kids[0] || null);
+    setShowQuickLog(true);
+  };
+
   if (kids.length === 0) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -270,10 +389,197 @@ export default function ParentCalendarPage() {
       <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
         <div className="w-full overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 w-full">
-            <MonthCalendar userId={userId} kids={kids} />
+            <MonthCalendar userId={userId} kids={kids} onOpenQuickLog={handleOpenQuickLogForDate} />
           </div>
         </div>
       </main>
+
+      {/* Quick Log Modal */}
+      {showQuickLog && quickLogKid && (
+        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
+            <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
+              Quick Log - {quickLogKid.name}
+            </h2>
+
+            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Kid
+                </label>
+                <select
+                  value={quickLogKid?.id || ""}
+                  onChange={(e) => {
+                    const kid = kids.find((k) => k.id === e.target.value);
+                    if (kid) setQuickLogKid(kid);
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  {kids.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={logDate}
+                  onChange={(e) => setLogDate(e.target.value)}
+                  style={{ color: "#1a1a2e", borderColor: "#333" }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Activity Type
+                </label>
+                <select
+                  value={logActivityType}
+                  onChange={(e) => setLogActivityType(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                >
+                  <option value="Core Subject">Core Subject</option>
+                  <option value="Extracurricular">Extracurricular (Music, Sports, Clubs)</option>
+                  <option value="Field Trip / Enrichment">Field Trip / Enrichment</option>
+                </select>
+              </div>
+
+              {/* Core Subject Fields */}
+              {logActivityType === "Core Subject" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Subject
+                    </label>
+                    <select
+                      value={logSubject}
+                      onChange={(e) => setLogSubject(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    >
+                      <option value="">Select subject</option>
+                      {SUBJECTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Duration (hours)
+                    </label>
+                    <input
+                      type="number"
+                      value={logDuration}
+                      onChange={(e) => setLogDuration(e.target.value)}
+                      placeholder="1.5"
+                      step="0.5"
+                      style={{ color: "#1a1a2e", borderColor: "#333" }}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Curriculum/Resource
+                    </label>
+                    <input
+                      type="text"
+                      value={logCurriculum}
+                      onChange={(e) => setLogCurriculum(e.target.value)}
+                      placeholder="e.g., Math Mammoth, Khan Academy, Outschool, IXL, Textbook"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Extracurricular Fields */}
+              {logActivityType === "Extracurricular" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Activity Name
+                    </label>
+                    <input
+                      type="text"
+                      value={logActivityName}
+                      onChange={(e) => setLogActivityName(e.target.value)}
+                      placeholder="e.g., Piano Lesson, Basketball Practice"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Field Trip Fields */}
+              {logActivityType === "Field Trip / Enrichment" && (
+                <>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Trip Name
+                    </label>
+                    <input
+                      type="text"
+                      value={logTripName}
+                      onChange={(e) => setLogTripName(e.target.value)}
+                      placeholder="e.g., Science Museum Visit"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Destination
+                    </label>
+                    <input
+                      type="text"
+                      value={logDestination}
+                      onChange={(e) => setLogDestination(e.target.value)}
+                      placeholder="e.g., Science Museum"
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Notes (for all types) */}
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={logNotes}
+                  onChange={(e) => setLogNotes(e.target.value)}
+                  placeholder="Lesson details..."
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <button
+                onClick={handleQuickLogSave}
+                style={{ backgroundColor: COLORS.primary, minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base flex items-center justify-center"
+              >
+                Save Activity
+              </button>
+              <button
+                onClick={() => setShowQuickLog(false)}
+                style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

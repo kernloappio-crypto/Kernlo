@@ -40,9 +40,10 @@ const ACTIVITY_COLORS = {
 interface MonthCalendarProps {
   userId: string;
   kids: Kid[];
+  onOpenQuickLog?: (dateStr: string) => void;
 }
 
-export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
+export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCalendarProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -51,7 +52,6 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [editingActivityData, setEditingActivityData] = useState<Partial<Activity> | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showQuickLogModal, setShowQuickLogModal] = useState(false);
   const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -264,9 +264,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
     }
   };
 
-  const handleOpenQuickLog = () => {
-    setShowQuickLogModal(true);
-  };
+
 
   return (
     <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-4 sm:p-6 border border-gray-200">
@@ -517,7 +515,11 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
 
             <div className="flex gap-2 sm:gap-3 flex-col">
               <button
-                onClick={handleOpenQuickLog}
+                onClick={() => {
+                  if (onOpenQuickLog && selectedDate) {
+                    onOpenQuickLog(selectedDate);
+                  }
+                }}
                 style={{ backgroundColor: COLORS.primary }}
                 className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
               >
@@ -611,36 +613,7 @@ export default function MonthCalendar({ userId, kids }: MonthCalendarProps) {
               </div>
             )}
 
-            {/* Quick Log Modal */}
-            {showQuickLogModal && (
-              <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
-                  <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4">
-                    Add Activity for {selectedDate ? new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Selected Date"}
-                  </h2>
-                  <p style={{ color: "#555" }} className="text-sm mb-4">
-                    Quick log form - navigate to the child's dashboard for full activity logging.
-                  </p>
 
-                  <div className="flex gap-2 flex-col">
-                    <button
-                      onClick={() => setShowQuickLogModal(false)}
-                      style={{ backgroundColor: COLORS.primary }}
-                      className="w-full px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm"
-                    >
-                      Open Activity Logger
-                    </button>
-                    <button
-                      onClick={() => setShowQuickLogModal(false)}
-                      style={{ color: COLORS.dark, borderColor: "#d1d5db" }}
-                      className="w-full px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
