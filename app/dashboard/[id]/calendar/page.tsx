@@ -223,6 +223,9 @@ export default function CalendarPage() {
     }
   };
 
+  // Get the number of days in the month
+  // Uses month + 1 with day 0 to get last day of current month
+  // e.g., new Date(2026, 4, 0) = April 30 (last day of April)
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
