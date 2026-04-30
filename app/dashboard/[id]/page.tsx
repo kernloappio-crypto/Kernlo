@@ -129,6 +129,8 @@ export default function KidDetailPage() {
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
+  const [fieldTrips, setFieldTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
@@ -226,7 +228,23 @@ export default function KidDetailPage() {
           setGoals([]);
         }
 
+        // Load extracurricular activities
+        try {
+          const extracurricularData = await getExtracurricularActivities(user.id, kidId);
+          setExtracurricularActivities(extracurricularData || []);
+        } catch (err) {
+          console.error("Error loading extracurricular activities:", err);
+          setExtracurricularActivities([]);
+        }
 
+        // Load field trips
+        try {
+          const fieldTripsData = await getFieldTrips(user.id, kidId);
+          setFieldTrips(fieldTripsData || []);
+        } catch (err) {
+          console.error("Error loading field trips:", err);
+          setFieldTrips([]);
+        }
 
         // Load compliance state
         if (kidData?.name) {
@@ -822,7 +840,17 @@ Format as professional homeschool compliance documentation. Include mentions of 
             </p>
             <div className="flex items-center justify-between">
               <span style={{ color: "#999" }} className="text-xs">This month</span>
-              <span style={{ color: COLORS.primary }} className="text-lg font-bold">0</span>
+              <span style={{ color: COLORS.primary }} className="text-lg font-bold">
+                {(() => {
+                  const now = new Date();
+                  const currentMonth = now.getMonth() + 1;
+                  const currentYear = now.getFullYear();
+                  return extracurricularActivities.filter((a: any) => {
+                    const aDate = new Date(a.date);
+                    return aDate.getMonth() + 1 === currentMonth && aDate.getFullYear() === currentYear;
+                  }).length;
+                })()}
+              </span>
             </div>
           </div>
 
@@ -840,7 +868,17 @@ Format as professional homeschool compliance documentation. Include mentions of 
             </p>
             <div className="flex items-center justify-between">
               <span style={{ color: "#999" }} className="text-xs">This month</span>
-              <span style={{ color: COLORS.accent1 }} className="text-lg font-bold">0</span>
+              <span style={{ color: COLORS.accent1 }} className="text-lg font-bold">
+                {(() => {
+                  const now = new Date();
+                  const currentMonth = now.getMonth() + 1;
+                  const currentYear = now.getFullYear();
+                  return fieldTrips.filter((f: any) => {
+                    const fDate = new Date(f.date);
+                    return fDate.getMonth() + 1 === currentMonth && fDate.getFullYear() === currentYear;
+                  }).length;
+                })()}
+              </span>
             </div>
           </div>
 

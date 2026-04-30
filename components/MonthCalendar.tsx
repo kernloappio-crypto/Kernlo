@@ -284,12 +284,24 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   const handleCompleteActivity = async (activity: Activity) => {
     try {
       // Log attendance for the kid on that date
-      if (activity.childId) {
-        await logAttendance(userId, activity.childName, activity.date);
+      await logAttendance(userId, activity.childName, activity.date);
+      
+      // Update activity completion status in database
+      if (activity.type === "activity") {
+        await supabase
+          .from("activities")
+          .update({ is_completed: true })
+          .eq("id", activity.id);
+      } else if (activity.type === "extracurricular") {
+        await updateExtracurricularActivity(activity.id, { is_completed: true });
+      } else if (activity.type === "field-trip") {
+        await updateFieldTrip(activity.id, { is_completed: true });
       }
 
-      // Mark activity as completed
+      // Mark activity as completed in local state
       setCompletedActivities((prev) => new Set(prev).add(activity.id));
+      
+      console.log(`✓ Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
     } catch (error) {
       console.error("Error completing activity:", error);
       alert("Failed to mark activity as completed");

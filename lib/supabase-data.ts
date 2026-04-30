@@ -383,7 +383,7 @@ export async function logAttendance(userId: string, childName: string, date: str
     .insert({
       user_id: userId,
       child_name: childName,
-      date,
+      schooling_date: date,
     })
     .select();
 
@@ -456,7 +456,7 @@ export async function deleteExtracurricularActivity(activityId: string) {
 
 export async function updateExtracurricularActivity(
   activityId: string,
-  updates: { activity_name?: string; date?: string; notes?: string }
+  updates: { activity_name?: string; date?: string; notes?: string; is_completed?: boolean }
 ) {
   const { data, error } = await supabase
     .from('extracurricular_activities')
@@ -521,7 +521,7 @@ export async function deleteFieldTrip(tripId: string) {
 
 export async function updateFieldTrip(
   tripId: string,
-  updates: { trip_name?: string; destination?: string; date?: string; notes?: string }
+  updates: { trip_name?: string; destination?: string; date?: string; notes?: string; is_completed?: boolean }
 ) {
   const { data, error } = await supabase
     .from('field_trips')
