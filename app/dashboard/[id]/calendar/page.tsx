@@ -276,13 +276,19 @@ export default function CalendarPage() {
   if (process.env.NODE_ENV === "development") {
     days.forEach((dateStr, idx) => {
       if (dateStr) {
-        const dateObj = new Date(dateStr);
-        const dateMonth = dateObj.getMonth();
-        const expectedMonth = currentMonth.getMonth();
-        if (dateMonth !== expectedMonth) {
+        // TIMEZONE FIX: Parse string directly, don't use new Date()
+        const parts = dateStr.split('-');
+        const gridYear = parseInt(parts[0], 10);
+        const gridMonth = parseInt(parts[1], 10);
+        const gridDay = parseInt(parts[2], 10);
+        
+        const expectedYear = currentMonth.getFullYear();
+        const expectedMonth = currentMonth.getMonth() + 1;
+        
+        if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
           console.error(
-            `Calendar bug: Cell ${idx} contains ${dateStr} (month ${dateMonth + 1}) ` +
-            `but expected month ${expectedMonth + 1}`
+            `Calendar bug: Cell ${idx} contains ${dateStr} (${gridMonth}/${gridYear}) ` +
+            `but expected month ${expectedMonth}/${expectedYear} with max day ${daysInMonth}`
           );
         }
       }
@@ -349,60 +355,71 @@ export default function CalendarPage() {
               {/* Calendar Days */}
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {days.map((dateStr, idx) => {
+                  // CRITICAL: If dateStr is null, render completely empty invisible cell
+                  // No background color, no border, no interactivity
+                  if (!dateStr) {
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: "transparent",
+                          borderColor: "transparent",
+                        }}
+                        className="aspect-square"
+                      />
+                    );
+                  }
+
                   const isSelected = dateStr === selectedDate;
-                  const hasEvent = dateStr && hasEvents(dateStr);
-                  const daysEvents = dateStr ? getEventsForDate(dateStr) : [];
+                  const hasEvent = hasEvents(dateStr);
+                  const daysEvents = getEventsForDate(dateStr);
 
                   return (
                     <div
                       key={idx}
-                      onClick={() => dateStr && handleDateClick(dateStr)}
+                      onClick={() => handleDateClick(dateStr)}
                       style={{
                         backgroundColor: isSelected ? COLORS.primary : hasEvent ? "#f0f7ff" : "#f9fafb",
                         borderColor: isSelected ? COLORS.primary : hasEvent ? COLORS.primary : "#e5e7eb",
-                        cursor: dateStr ? "pointer" : "default",
+                        cursor: "pointer",
                       }}
                       className="aspect-square border rounded-lg p-1 hover:shadow-md transition-all flex flex-col overflow-hidden"
                     >
-                      {dateStr && (
-                        <>
-                          <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs sm:text-sm font-bold flex-shrink-0">
-                            {new Date(dateStr).getDate()}
-                          </span>
-                          {daysEvents.length > 0 && (
-                            <div className="flex-1 flex flex-col overflow-hidden mt-0.5 min-w-0">
-                              {daysEvents.slice(0, 2).map((evt, i) => (
-                                <div
-                                  key={i}
-                                  style={{
-                                    backgroundColor:
-                                      evt.type === "activity"
-                                        ? COLORS.primary
-                                        : evt.type === "extracurricular"
-                                          ? COLORS.accent3
-                                          : COLORS.accent1,
-                                    color: "white",
-                                  }}
-                                  className="text-xs rounded px-0.5 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
-                                  title={evt.name}
-                                >
-                                  {evt.name}
-                                </div>
-                              ))}
-                              {daysEvents.length > 2 && (
-                                <span
-                                  style={{
-                                    color: isSelected ? "white" : "#666",
-                                    fontSize: "9px",
-                                  }}
-                                  className="text-center flex-shrink-0"
-                                >
-                                  +{daysEvents.length - 2}
-                                </span>
-                              )}
+                      <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs sm:text-sm font-bold flex-shrink-0">
+                        {parseInt(dateStr.split('-')[2], 10)}
+                      </span>
+                      {daysEvents.length > 0 && (
+                        <div className="flex-1 flex flex-col overflow-hidden mt-0.5 min-w-0">
+                          {daysEvents.slice(0, 2).map((evt, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                backgroundColor:
+                                  evt.type === "activity"
+                                    ? COLORS.primary
+                                    : evt.type === "extracurricular"
+                                      ? COLORS.accent3
+                                      : COLORS.accent1,
+                                color: "white",
+                              }}
+                              className="text-xs rounded px-0.5 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
+                              title={evt.name}
+                            >
+                              {evt.name}
                             </div>
+                          ))}
+                          {daysEvents.length > 2 && (
+                            <span
+                              style={{
+                                color: isSelected ? "white" : "#666",
+                                fontSize: "9px",
+                              }}
+                              className="text-center flex-shrink-0"
+                            >
+                              +{daysEvents.length - 2}
+                            </span>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   );
@@ -439,7 +456,11 @@ export default function CalendarPage() {
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold">
-                  {showForm ? "Add Activity" : `Activities for ${new Date(selectedDate).toLocaleDateString()}`}
+                  {showForm ? "Add Activity" : (() => {
+                    const [year, month, day] = selectedDate.split('-').map(Number);
+                    const d = new Date(year, month - 1, day);
+                    return `Activities for ${d.toLocaleDateString()}`;
+                  })()}
                 </h2>
                 <button
                   onClick={() => {

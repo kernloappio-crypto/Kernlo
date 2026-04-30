@@ -426,7 +426,10 @@ export default function Kid30DayCalendarPage() {
                 const dateActivities = getActivitiesForDate(dateStr);
                 if (dateActivities.length === 0) return null;
 
-                const dateObj = new Date(dateStr);
+                // TIMEZONE FIX: Parse date string directly to avoid UTC conversion
+                const [year, month, day] = dateStr.split('-').map(Number);
+                // Create date object from parts (no timezone parsing)
+                const dateObj = new Date(year, month - 1, day);
                 const dateDisplay = dateObj.toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
