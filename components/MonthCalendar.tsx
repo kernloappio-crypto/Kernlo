@@ -134,86 +134,71 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
     loadActivities();
   }, [userId, kids]);
 
-  // Get the number of days in the month
-  // Uses month + 1 with day 0 to get last day of current month
-  // e.g., new Date(2026, 4, 0) = April 30 (last day of April)
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
-
+  // CALENDAR BOUNDARY LOGIC: Only include days that belong to target month
+  // No cross-month dates allowed anywhere in the grid
+  
   const getActivitiesForDate = (dateStr: string) => {
     // Strict string matching to avoid any cross-month contamination
     return activities.filter((a) => a.date === dateStr && a.date !== null);
   };
 
-  // Helper to validate a date belongs to the current month
-  const isDateInCurrentMonth = (dateStr: string | null): boolean => {
-    if (!dateStr) return false;
-    const [yearStr, monthStr] = dateStr.split('-');
-    const parsedMonth = parseInt(monthStr, 10);
-    const expectedMonth = currentDate.getMonth() + 1;
-    const parsedYear = parseInt(yearStr, 10);
-    const expectedYear = currentDate.getFullYear();
-    return parsedYear === expectedYear && parsedMonth === expectedMonth;
-  };
-
   const monthStr = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDay = getFirstDayOfMonth(currentDate);
+  
+  // Build calendar grid for current month ONLY
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth(); // 0-indexed
+  const first = new Date(year, month, 1); // First day of month
+  const last = new Date(year, month + 1, 0); // Last day of month
+  const daysInMonth = last.getDate();
+  const firstDay = first.getDay(); // 0 = Sunday, 6 = Saturday
+  
   const days: (string | null)[] = [];
 
-  // Add padding for days before the 1st of the month
-  // These should remain null (empty cells)
+  // Pad with null for days before month start (previous month dates NOT included)
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
 
-  // Add all days of the current month
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, "0");
-  
-  for (let i = 1; i <= daysInMonth; i++) {
-    const day = String(i).padStart(2, "0");
-    const dateStr = `${year}-${month}-${day}`;
+  // Add ONLY days that belong to this month (1 to daysInMonth)
+  const monthStr2 = String(month + 1).padStart(2, "0");
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const dayStr = String(dayNum).padStart(2, "0");
+    const dateStr = `${year}-${monthStr2}-${dayStr}`;
     days.push(dateStr);
   }
 
-  // Pad end of month to complete the week grid (7 columns)
-  // These should remain null (empty cells for next month)
+  // Pad end with null to complete grid weeks (no next month dates included)
   while (days.length % 7 !== 0) {
     days.push(null);
   }
 
-  // Validation: ensure no cross-month dates snuck in
-  // Parse date strings locally (not UTC) to avoid timezone shift issues
+  // Validation: verify grid contains ONLY target month dates (dev only)
   if (process.env.NODE_ENV === "development") {
-    days.forEach((dateStr, idx) => {
-      if (dateStr) {
-        // Parse YYYY-MM-DD string directly without Date constructor timezone shift
-        const [yearStr, monthStr, dayStr] = dateStr.split('-');
-        const parsedMonth = parseInt(monthStr, 10) - 1; // Convert to 0-indexed
-        const expectedMonth = currentDate.getMonth();
-        
-        if (parsedMonth !== expectedMonth) {
-          console.error(
-            `Calendar bug: Cell ${idx} contains ${dateStr} (month ${parsedMonth + 1}) ` +
-            `but expected month ${expectedMonth + 1}`
-          );
-        }
-      }
-    });
-
-    // Verify day count
-    const labeledDays = days.filter((d) => d !== null).length;
-    if (labeledDays !== daysInMonth) {
+    const monthDates = days.filter((d) => d !== null);
+    
+    // Check count matches expected
+    if (monthDates.length !== daysInMonth) {
       console.error(
-        `Calendar bug: Expected ${daysInMonth} days but got ${labeledDays} labeled days`
+        `🚨 Calendar grid error: Expected ${daysInMonth} days, got ${monthDates.length}`
       );
     }
+    
+    // Check every date string belongs to current month
+    monthDates.forEach((dateStr) => {
+      const parts = dateStr.split('-');
+      const gridYear = parseInt(parts[0], 10);
+      const gridMonth = parseInt(parts[1], 10);
+      const gridDay = parseInt(parts[2], 10);
+      
+      const expectedYear = year;
+      const expectedMonth = month + 1;
+      
+      if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
+        console.error(
+          `🚨 Cross-month date in grid: ${dateStr} (expected month ${expectedMonth}/${expectedYear})`
+        );
+      }
+    });
   }
 
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
@@ -371,16 +356,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           {/* Calendar Grid with Activity Previews */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
             {days.map((dateStr, idx) => {
-              // STRICT BOUNDARY CHECK: reject any date not in current month
-              if (dateStr && !isDateInCurrentMonth(dateStr)) {
-                console.error(
-                  `[CALENDAR BUG] Day ${idx} has cross-month date: ${dateStr}. ` +
-                  `Expected month ${currentDate.getMonth() + 1}/${currentDate.getFullYear()}. ` +
-                  `Not rendering.`
-                );
-                return null; // Don't render cross-month dates
-              }
-              
+              // Grid is built with month-boundary logic: all dates here are guaranteed to belong to currentDate's month
               const isSelected = dateStr === selectedDate;
               const dayActivities = dateStr ? getActivitiesForDate(dateStr) : [];
               const hasEvents = dayActivities.length > 0;
