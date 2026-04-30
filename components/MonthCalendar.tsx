@@ -172,7 +172,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
     days.push(null);
   }
 
-  // Validation: verify grid contains ONLY target month dates (dev only)
+  // Validation: verify grid contains ONLY target month dates
   if (process.env.NODE_ENV === "development") {
     const monthDates = days.filter((d) => d !== null);
     
@@ -199,6 +199,20 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         );
       }
     });
+  }
+
+  // Always log grid summary (not just dev)
+  const monthDatesCount = days.filter((d) => d !== null).length;
+  const monthStr_Log = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (monthDatesCount !== daysInMonth) {
+    console.warn(
+      `⚠️ ${monthStr_Log} calendar grid has ${monthDatesCount} dates, expected ${daysInMonth}`
+    );
+  }
+  // Check for specific March 31 leakage
+  const hasMarch31 = days.some(d => d && d.endsWith("-03-31"));
+  if (hasMarch31) {
+    console.error(`🚨🚨🚨 MARCH 31 DETECTED IN CALENDAR GRID!!! ${monthStr_Log}`);
   }
 
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
@@ -356,6 +370,38 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           {/* Calendar Grid with Activity Previews */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
             {days.map((dateStr, idx) => {
+              // SAFETY CHECK: validate dateStr belongs to current month or is null
+              // This catches any cross-month dates that shouldn't be in the grid
+              if (dateStr) {
+                const parts = dateStr.split('-');
+                const gridYear = parseInt(parts[0], 10);
+                const gridMonth = parseInt(parts[1], 10);
+                const gridDay = parseInt(parts[2], 10);
+                
+                const expectedYear = currentDate.getFullYear();
+                const expectedMonth = currentDate.getMonth() + 1;
+                
+                // If date doesn't belong to current month, render empty cell and log error
+                if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
+                  console.error(
+                    `🚨 CROSS-MONTH BUG: Grid index ${idx} contains ${dateStr} (${gridMonth}/${gridYear}), expected month ${expectedMonth}/${expectedYear}. Rendering empty cell.`
+                  );
+                  
+                  // Render empty padding cell instead of cross-month date
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: "#f9fafb",
+                        borderColor: "#e5e7eb",
+                        cursor: "default",
+                      }}
+                      className="aspect-square border rounded-lg p-1 sm:p-2 hover:shadow-md transition-all flex flex-col overflow-hidden"
+                    />
+                  );
+                }
+              }
+              
               // Grid is built with month-boundary logic: all dates here are guaranteed to belong to currentDate's month
               const isSelected = dateStr === selectedDate;
               const dayActivities = dateStr ? getActivitiesForDate(dateStr) : [];
