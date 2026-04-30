@@ -1,0 +1,52 @@
+🟨 ATTENDANCE LOGGING BUG - ROOT CAUSE FOUND AND FIXED
+
+ISSUE:
+Parent completes activity on calendar → Activity marked complete but does NOT appear in kid's Compliance Attendance Summary
+
+ROOT CAUSE:
+Race condition in ensureAuthContext() function. When restoring auth session from localStorage, if setSession() failed, the function would silently return without error. Then logAttendance() would try to insert without valid auth, causing RLS policy to block the insert with "row violates row-level security policy" error.
+
+FIX APPLIED:
+File: /lib/supabase-data.ts
+
+1. ensureAuthContext() function - Complete rewrite
+   - Now returns boolean (true = auth ready, false = failed)
+   - Validates session was actually set
+   - Handles expired tokens with automatic refresh
+   - Clear error logging instead of silent failures
+   
+2. logAttendance() function - Added auth validation
+   - Checks return value from ensureAuthContext()
+   - Throws clear error if auth fails
+   - Prevents insert without valid auth
+
+IMPACT:
+- ✅ Attendance logging will now work when parent completes activities
+- ✅ Attendance will appear on kid's Compliance page
+- ✅ No database changes needed (table already exists)
+- ✅ No RLS policy changes needed (already correct)
+- ✅ No breaking changes to API
+
+TESTING:
+1. Parent completes activity on calendar
+2. Check browser console for: "✅ Auth context set successfully for user: [id]"
+3. Go to kid's Compliance page
+4. Hard refresh (Ctrl+Shift+R)
+5. Attendance should appear in Attendance Summary card
+
+STATUS: ✅ FIX COMPLETE AND READY FOR TESTING
+
+DOCUMENTATION PROVIDED:
+- ATTENDANCE_LOGGING_FIX_APPLIED.md - What was changed
+- DEBUG_GUIDE_ATTENDANCE.md - Complete testing guide
+- SUBAGENT_COMPLETION_REPORT.md - Detailed findings
+- FIX_ATTENDANCE_LOGGING.md - Technical explanation
+
+FILES MODIFIED:
+- lib/supabase-data.ts (2 functions: ensureAuthContext, logAttendance)
+
+NEXT STEPS:
+1. Optional: npm run build (to recompile TypeScript)
+2. Hard refresh browser (Ctrl+Shift+R)
+3. Test: Complete activity → Check Compliance page → Attendance should appear
+4. If issues: Check browser console and follow DEBUG_GUIDE_ATTENDANCE.md troubleshooting

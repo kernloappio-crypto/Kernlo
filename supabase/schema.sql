@@ -79,9 +79,7 @@ CREATE TABLE attendance (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   child_name TEXT NOT NULL,
   schooling_date DATE NOT NULL,
-  schooled_today BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(user_id, child_name, schooling_date)
 );
 

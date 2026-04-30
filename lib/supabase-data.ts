@@ -4,52 +4,124 @@ import { supabase } from './supabase-client';
  * Ensure auth session is restored on the supabase client
  * This is critical for RLS policies to work (auth.uid() must be set)
  * Called before every sensitive database operation
+ * 
+ * RETURNS: boolean - true if auth is ready, false if auth failed
  */
 export async function ensureAuthContext() {
   try {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return false;
     
-    // Try to get current session from client
+    // Step 1: Check if auth is already set on client
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     
     if (currentSession && currentSession.access_token) {
-      // Session already set and has token, good to go
-      return;
-    }
-    
-    // No valid session on client, try to restore from localStorage
-    const sessionStr = localStorage.getItem('kernlo_session');
-    if (sessionStr) {
+      // Check if token is expired
       try {
-        const savedSession = JSON.parse(sessionStr);
-        
-        // Check if saved session has required fields
-        if (!savedSession.access_token || !savedSession.refresh_token) {
-          console.warn('⚠️ Invalid session format in localStorage');
-          return;
-        }
-        
-        // Set the session on the client
-        const { data, error } = await supabase.auth.setSession(savedSession);
-        
-        if (error) {
-          console.warn('⚠️ Failed to restore session:', error.message);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('✅ Auth context restored from localStorage');
+        const parts = currentSession.access_token.split('.');
+        if (parts.length === 3) {
+          const decoded = JSON.parse(atob(parts[1]));
+          const now = Math.floor(Date.now() / 1000);
+          
+          if (decoded.exp && decoded.exp > now) {
+            console.log('✅ Auth context already set with valid token');
+            return true;
+          } else {
+            console.log('⚠️  Current token expired, attempting refresh');
+          }
         }
       } catch (e) {
-        console.warn('⚠️ Could not parse session from localStorage:', e);
+        // Continue anyway
       }
-    } else {
-      // No session in localStorage - user might not be logged in
-      // This is okay, RLS will reject the operation
-      console.warn('⚠️ No kernlo_session in localStorage - user may not be logged in');
     }
+    
+    // Step 2: Try to restore from localStorage
+    const sessionStr = localStorage.getItem('kernlo_session');
+    if (!sessionStr) {
+      console.warn('⚠️ No kernlo_session in localStorage - user may not be logged in');
+      return false;
+    }
+    
+    let savedSession;
+    try {
+      savedSession = JSON.parse(sessionStr);
+    } catch (e) {
+      console.warn('⚠️ Could not parse session from localStorage:', e);
+      return false;
+    }
+    
+    // Validate session has required fields
+    if (!savedSession.access_token) {
+      console.warn('⚠️ Session missing access_token');
+      return false;
+    }
+    
+    // Check if token is expired, try to refresh
+    try {
+      const parts = savedSession.access_token.split('.');
+      if (parts.length === 3) {
+        const decoded = JSON.parse(atob(parts[1]));
+        const now = Math.floor(Date.now() / 1000);
+        
+        if (decoded.exp && decoded.exp < now) {
+          console.log('⚠️ Stored token expired, attempting refresh...');
+          
+          if (!savedSession.refresh_token) {
+            console.warn('⚠️ Cannot refresh: no refresh_token in session');
+            return false;
+          }
+          
+          // Try to refresh the token
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession({
+            refresh_token: savedSession.refresh_token,
+          });
+          
+          if (refreshError) {
+            console.warn('⚠️ Token refresh failed:', refreshError.message);
+            return false;
+          }
+          
+          if (refreshData.session) {
+            // Update stored session
+            localStorage.setItem('kernlo_session', JSON.stringify(refreshData.session));
+            savedSession = refreshData.session;
+            console.log('✅ Token refreshed successfully');
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Token validation/refresh error:', e);
+      // Continue anyway with stored token
+    }
+    
+    // Step 3: Set session on Supabase client
+    const { data, error } = await supabase.auth.setSession(savedSession);
+    
+    if (error) {
+      console.error('❌ Failed to set auth session:', error.message);
+      console.error('Session details:', {
+        hasAccessToken: !!savedSession.access_token,
+        hasRefreshToken: !!savedSession.refresh_token,
+        hasUser: !!savedSession.user,
+      });
+      return false;
+    }
+    
+    // Verify session was actually set
+    if (!data.session) {
+      console.warn('⚠️ setSession returned no session data');
+      return false;
+    }
+    
+    console.log('✅ Auth context set successfully for user:', data.session.user?.id);
+    
+    // Give Supabase a moment to register the auth context
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
+    return true;
+    
   } catch (err) {
-    console.warn('⚠️ ensureAuthContext error:', err);
+    console.error('⚠️ ensureAuthContext error:', err);
+    return false;
   }
 }
 
@@ -437,7 +509,11 @@ export async function getAttendanceDaysMonthly(userId: string, childName: string
  */
 export async function logAttendance(userId: string, childName: string, date: string) {
   // Ensure auth session is set on client for RLS policy to work
-  await ensureAuthContext();
+  const authReady = await ensureAuthContext();
+  
+  if (!authReady) {
+    throw new Error('Failed to authenticate: session could not be restored. Please refresh the page and try again.');
+  }
   
   const { data, error } = await supabase
     .from('attendance')

@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS attendance (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   child_name TEXT NOT NULL,
   schooling_date DATE NOT NULL,
-  schooled_today BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, child_name, schooling_date)
@@ -18,8 +17,14 @@ CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(schooling_date);
 -- Enable RLS
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view own attendance" ON attendance;
+DROP POLICY IF EXISTS "Users can insert own attendance" ON attendance;
+DROP POLICY IF EXISTS "Users can delete own attendance" ON attendance;
+DROP POLICY IF EXISTS "Users can read own attendance" ON attendance;
+DROP POLICY IF EXISTS "Users can update own attendance" ON attendance;
+
 -- Create RLS policies
-CREATE POLICY "Users can read own attendance" ON attendance FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own attendance" ON attendance FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own attendance" ON attendance FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own attendance" ON attendance FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own attendance" ON attendance FOR DELETE USING (auth.uid() = user_id);
