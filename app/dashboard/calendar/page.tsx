@@ -290,7 +290,7 @@ export default function ParentCalendarPage() {
           .from("extracurricular_activities")
           .insert([{
             user_id: userId,
-            child_id: quickLogKid.id,
+            kid_id: quickLogKid.id,
             activity_name: logActivityName,
             date: logDate,
             notes: logNotes,
@@ -301,7 +301,7 @@ export default function ParentCalendarPage() {
           .from("field_trips")
           .insert([{
             user_id: userId,
-            child_id: quickLogKid.id,
+            kid_id: quickLogKid.id,
             trip_name: logTripName,
             destination: logDestination,
             date: logDate,
