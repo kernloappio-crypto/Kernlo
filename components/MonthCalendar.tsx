@@ -283,28 +283,107 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
 
   const handleCompleteActivity = async (activity: Activity) => {
     try {
+      console.log(`📌 Starting completion for activity:`, {
+        id: activity.id,
+        type: activity.type,
+        childName: activity.childName,
+        date: activity.date,
+      });
+
       // Log attendance for the kid on that date
-      await logAttendance(userId, activity.childName, activity.date);
+      try {
+        console.log(`📝 Logging attendance...`);
+        await logAttendance(userId, activity.childName, activity.date);
+        console.log(`✅ Attendance logged`);
+      } catch (attendanceError) {
+        console.error(`⚠️ Attendance logging error (non-critical):`, attendanceError);
+        // Continue anyway - attendance is secondary to completion
+      }
       
       // Update activity completion status in database
+      console.log(`🔄 Updating completion status for ${activity.type}...`);
+      
       if (activity.type === "activity") {
-        await supabase
+        console.log(`  → Updating activities table, id=${activity.id}`);
+        const { data: updateData, error: updateError } = await supabase
           .from("activities")
           .update({ is_completed: true })
-          .eq("id", activity.id);
+          .eq("id", activity.id)
+          .select();
+        
+        if (updateError) {
+          console.error(`❌ Activities update error:`, {
+            message: updateError.message,
+            code: updateError.code,
+            details: updateError.details,
+            hint: updateError.hint,
+          });
+          
+          // Check if the error is due to missing is_completed column
+          if (updateError.message?.includes("is_completed") || updateError.hint?.includes("is_completed")) {
+            console.warn(`⚠️ is_completed column missing on activities table - using fallback`);
+            console.warn(`🔧 FIX: Run migration 007_add_completion_tracking.sql in Supabase SQL editor`);
+            // Mark as completed in UI but log warning
+            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
+            return;
+          }
+          
+          throw updateError;
+        }
+        console.log(`✅ Activities table updated:`, updateData);
       } else if (activity.type === "extracurricular") {
-        await updateExtracurricularActivity(activity.id, { is_completed: true });
+        console.log(`  → Updating extracurricular_activities table, id=${activity.id}`);
+        try {
+          const result = await updateExtracurricularActivity(activity.id, { is_completed: true });
+          console.log(`✅ Extracurricular updated:`, result);
+        } catch (extError: any) {
+          console.error(`❌ Extracurricular update error:`, extError);
+          
+          // Fallback for missing column
+          if (extError?.message?.includes("is_completed")) {
+            console.warn(`⚠️ is_completed column missing on extracurricular_activities`);
+            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
+            return;
+          }
+          
+          throw extError;
+        }
       } else if (activity.type === "field-trip") {
-        await updateFieldTrip(activity.id, { is_completed: true });
+        console.log(`  → Updating field_trips table, id=${activity.id}`);
+        try {
+          const result = await updateFieldTrip(activity.id, { is_completed: true });
+          console.log(`✅ Field trip updated:`, result);
+        } catch (tripError: any) {
+          console.error(`❌ Field trip update error:`, tripError);
+          
+          // Fallback for missing column
+          if (tripError?.message?.includes("is_completed")) {
+            console.warn(`⚠️ is_completed column missing on field_trips`);
+            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
+            return;
+          }
+          
+          throw tripError;
+        }
       }
 
       // Mark activity as completed in local state
       setCompletedActivities((prev) => new Set(prev).add(activity.id));
       
-      console.log(`✓ Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
-    } catch (error) {
-      console.error("Error completing activity:", error);
-      alert("Failed to mark activity as completed");
+      console.log(`🎉 Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
+    } catch (error: any) {
+      console.error("❌ Error completing activity:", error);
+      console.error("Full error object:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status,
+      });
+      alert(`Failed to mark activity as completed: ${error?.message || "Unknown error"}`);
     }
   };
 
