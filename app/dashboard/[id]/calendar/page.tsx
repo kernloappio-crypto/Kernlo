@@ -255,6 +255,11 @@ export default function CalendarPage() {
     days.push(`${year}-${month}-${day}`);
   }
 
+  // Pad end of month to complete the week grid (7 columns)
+  while (days.length % 7 !== 0) {
+    days.push(null);
+  }
+
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
 

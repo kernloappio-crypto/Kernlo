@@ -162,6 +162,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
     days.push(`${year}-${month}-${day}`);
   }
 
+  // Pad end of month to complete the week grid (7 columns)
+  while (days.length % 7 !== 0) {
+    days.push(null);
+  }
+
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
   const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
 
