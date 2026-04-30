@@ -382,6 +382,15 @@ export default function DashboardPage() {
     };
 
     loadAttendance();
+
+    // Auto-refresh attendance when window regains focus
+    const handleFocus = async () => {
+      console.log("🔄 Window focus detected - refreshing attendance...");
+      await loadAttendance();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [kids, userId]);
 
 

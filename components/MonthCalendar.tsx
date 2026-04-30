@@ -14,6 +14,7 @@ interface Activity {
   subject?: string;
   duration?: number;
   platform?: string;
+  is_completed?: boolean;
 }
 
 interface Kid {
@@ -52,7 +53,6 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [editingActivityData, setEditingActivityData] = useState<Partial<Activity> | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [completedActivities, setCompletedActivities] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadActivities = async () => {
@@ -79,6 +79,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
               subject: a.subject,
               duration: a.duration,
               platform: a.platform,
+              is_completed: a.is_completed || false,
             });
           });
         } catch (err) {
@@ -97,6 +98,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                 childName: kid.name,
                 childId: kid.id,
                 name: a.activity_name,
+                is_completed: a.is_completed || false,
               });
             });
           } catch (err) {
@@ -116,6 +118,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                 childName: kid.name,
                 childId: kid.id,
                 name: t.trip_name,
+                is_completed: t.is_completed || false,
               });
             });
           } catch (err) {
@@ -327,7 +330,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
             console.warn(`⚠️ is_completed column missing on activities table - using fallback`);
             console.warn(`🔧 FIX: Run migration 007_add_completion_tracking.sql in Supabase SQL editor`);
             // Mark as completed in UI but log warning
-            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            setActivities((prev) =>
+              prev.map((a) =>
+                a.id === activity.id ? { ...a, is_completed: true } : a
+              )
+            );
             alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
             return;
           }
@@ -346,7 +353,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           // Fallback for missing column
           if (extError?.message?.includes("is_completed")) {
             console.warn(`⚠️ is_completed column missing on extracurricular_activities`);
-            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            setActivities((prev) =>
+              prev.map((a) =>
+                a.id === activity.id ? { ...a, is_completed: true } : a
+              )
+            );
             alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
             return;
           }
@@ -364,7 +375,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           // Fallback for missing column
           if (tripError?.message?.includes("is_completed")) {
             console.warn(`⚠️ is_completed column missing on field_trips`);
-            setCompletedActivities((prev) => new Set(prev).add(activity.id));
+            setActivities((prev) =>
+              prev.map((a) =>
+                a.id === activity.id ? { ...a, is_completed: true } : a
+              )
+            );
             alert("✅ Marked as completed locally. Note: Database migration may not be applied yet.");
             return;
           }
@@ -373,8 +388,19 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         }
       }
 
-      // Mark activity as completed in local state
-      setCompletedActivities((prev) => new Set(prev).add(activity.id));
+      // Update the activity in the state with is_completed = true
+      setActivities((prev) =>
+        prev.map((a) =>
+          a.id === activity.id ? { ...a, is_completed: true } : a
+        )
+      );
+      
+      // Also update selected day activities
+      setSelectedDayActivities((prev) =>
+        prev.map((a) =>
+          a.id === activity.id ? { ...a, is_completed: true } : a
+        )
+      );
       
       console.log(`🎉 Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
     } catch (error: any) {
@@ -647,7 +673,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
             ) : (
               <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                 {selectedDayActivities.map((activity, idx) => {
-                  const isCompleted = completedActivities.has(activity.id);
+                  const isCompleted = activity.is_completed || false;
                   return (
                     <div
                       key={idx}
