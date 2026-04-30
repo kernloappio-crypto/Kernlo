@@ -146,7 +146,19 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   };
 
   const getActivitiesForDate = (dateStr: string) => {
-    return activities.filter((a) => a.date === dateStr);
+    // Strict string matching to avoid any cross-month contamination
+    return activities.filter((a) => a.date === dateStr && a.date !== null);
+  };
+
+  // Helper to validate a date belongs to the current month
+  const isDateInCurrentMonth = (dateStr: string | null): boolean => {
+    if (!dateStr) return false;
+    const [yearStr, monthStr] = dateStr.split('-');
+    const parsedMonth = parseInt(monthStr, 10);
+    const expectedMonth = currentDate.getMonth() + 1;
+    const parsedYear = parseInt(yearStr, 10);
+    const expectedYear = currentDate.getFullYear();
+    return parsedYear === expectedYear && parsedMonth === expectedMonth;
   };
 
   const monthStr = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -177,15 +189,18 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   }
 
   // Validation: ensure no cross-month dates snuck in
+  // Parse date strings locally (not UTC) to avoid timezone shift issues
   if (process.env.NODE_ENV === "development") {
     days.forEach((dateStr, idx) => {
       if (dateStr) {
-        const dateObj = new Date(dateStr);
-        const dateMonth = dateObj.getMonth();
+        // Parse YYYY-MM-DD string directly without Date constructor timezone shift
+        const [yearStr, monthStr, dayStr] = dateStr.split('-');
+        const parsedMonth = parseInt(monthStr, 10) - 1; // Convert to 0-indexed
         const expectedMonth = currentDate.getMonth();
-        if (dateMonth !== expectedMonth) {
+        
+        if (parsedMonth !== expectedMonth) {
           console.error(
-            `Calendar bug: Cell ${idx} contains ${dateStr} (month ${dateMonth + 1}) ` +
+            `Calendar bug: Cell ${idx} contains ${dateStr} (month ${parsedMonth + 1}) ` +
             `but expected month ${expectedMonth + 1}`
           );
         }
@@ -356,6 +371,16 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           {/* Calendar Grid with Activity Previews */}
           <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
             {days.map((dateStr, idx) => {
+              // STRICT BOUNDARY CHECK: reject any date not in current month
+              if (dateStr && !isDateInCurrentMonth(dateStr)) {
+                console.error(
+                  `[CALENDAR BUG] Day ${idx} has cross-month date: ${dateStr}. ` +
+                  `Expected month ${currentDate.getMonth() + 1}/${currentDate.getFullYear()}. ` +
+                  `Not rendering.`
+                );
+                return null; // Don't render cross-month dates
+              }
+              
               const isSelected = dateStr === selectedDate;
               const dayActivities = dateStr ? getActivitiesForDate(dateStr) : [];
               const hasEvents = dayActivities.length > 0;
