@@ -438,7 +438,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                         }}
                         className="text-xs sm:text-sm font-bold flex-shrink-0"
                       >
-                        {new Date(dateStr).getDate()}
+                        {parseInt(dateStr.split('-')[2], 10)}
                       </span>
                       
                       {/* Activity previews */}
@@ -528,7 +528,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
             <div className="flex items-center justify-between mb-6">
               <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold">
-                {new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                {(() => {
+                  const [year, month, day] = selectedDate.split('-').map(Number);
+                  const d = new Date(year, month - 1, day);
+                  return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+                })()}
               </h2>
               <button
                 onClick={() => {
