@@ -245,22 +245,53 @@ export default function CalendarPage() {
   const monthStr = currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const daysInMonth = getDaysInMonth(currentMonth);
   const firstDay = getFirstDayOfMonth(currentMonth);
-  const days = [];
+  const days: (string | null)[] = [];
 
+  // Add padding for days before the 1st of the month
+  // These should remain null (empty cells)
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
 
+  // Add all days of the current month
+  const year = currentMonth.getFullYear();
+  const month = String(currentMonth.getMonth() + 1).padStart(2, "0");
+  
   for (let i = 1; i <= daysInMonth; i++) {
-    const year = currentMonth.getFullYear();
-    const month = String(currentMonth.getMonth() + 1).padStart(2, "0");
     const day = String(i).padStart(2, "0");
-    days.push(`${year}-${month}-${day}`);
+    const dateStr = `${year}-${month}-${day}`;
+    days.push(dateStr);
   }
 
   // Pad end of month to complete the week grid (7 columns)
+  // These should remain null (empty cells for next month)
   while (days.length % 7 !== 0) {
     days.push(null);
+  }
+
+  // Validation: ensure no cross-month dates snuck in
+  if (process.env.NODE_ENV === "development") {
+    days.forEach((dateStr, idx) => {
+      if (dateStr) {
+        const dateObj = new Date(dateStr);
+        const dateMonth = dateObj.getMonth();
+        const expectedMonth = currentMonth.getMonth();
+        if (dateMonth !== expectedMonth) {
+          console.error(
+            `Calendar bug: Cell ${idx} contains ${dateStr} (month ${dateMonth + 1}) ` +
+            `but expected month ${expectedMonth + 1}`
+          );
+        }
+      }
+    });
+
+    // Verify day count
+    const labeledDays = days.filter((d) => d !== null).length;
+    if (labeledDays !== daysInMonth) {
+      console.error(
+        `Calendar bug: Expected ${daysInMonth} days but got ${labeledDays} labeled days`
+      );
+    }
   }
 
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
