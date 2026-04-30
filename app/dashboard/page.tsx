@@ -353,7 +353,7 @@ export default function DashboardPage() {
     initUser();
   }, [router]);
 
-  // Load attendance data for all kids
+  // Load attendance data for all kids - refetch whenever dashboard is viewed
   useEffect(() => {
     if (kids.length === 0 || !userId) return;
 
@@ -382,15 +382,6 @@ export default function DashboardPage() {
     };
 
     loadAttendance();
-
-    // Auto-refresh attendance when window regains focus
-    const handleFocus = async () => {
-      console.log("🔄 Window focus detected - refreshing attendance...");
-      await loadAttendance();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
   }, [kids, userId]);
 
 

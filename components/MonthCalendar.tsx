@@ -389,18 +389,19 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
       }
 
       // Update the activity in the state with is_completed = true
-      setActivities((prev) =>
-        prev.map((a) =>
+      setActivities((prev) => {
+        const updated = prev.map((a) =>
           a.id === activity.id ? { ...a, is_completed: true } : a
-        )
-      );
-      
-      // Also update selected day activities
-      setSelectedDayActivities((prev) =>
-        prev.map((a) =>
-          a.id === activity.id ? { ...a, is_completed: true } : a
-        )
-      );
+        );
+        
+        // Immediately sync selectedDayActivities to reflect the change in the open modal
+        if (selectedDate) {
+          const dayActivities = updated.filter((a) => a.date === selectedDate && a.date !== null);
+          setSelectedDayActivities(dayActivities);
+        }
+        
+        return updated;
+      });
       
       console.log(`🎉 Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
     } catch (error: any) {
@@ -673,39 +674,41 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
             ) : (
               <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
                 {selectedDayActivities.map((activity, idx) => {
-                  const isCompleted = activity.is_completed || false;
+                  // Get the latest activity state from parent activities array
+                  const latestActivity = activities.find((a) => a.id === activity.id) || activity;
+                  const isCompleted = latestActivity.is_completed || false;
                   return (
                     <div
                       key={idx}
                       style={{
                         backgroundColor: isCompleted ? "#e8f5e9" : "#f9fafb",
-                        borderLeft: `4px solid ${ACTIVITY_COLORS[activity.type]}`,
+                        borderLeft: `4px solid ${ACTIVITY_COLORS[latestActivity.type]}`,
                       }}
                       className="p-3 rounded text-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <p style={{ color: COLORS.dark }} className="font-semibold">
-                            {activity.childName}
+                            {latestActivity.childName}
                           </p>
                           <p style={{ color: "#555" }}>
-                            {activity.type === "activity"
-                              ? `${activity.subject} (${activity.duration}h)`
-                              : activity.name}
+                            {latestActivity.type === "activity"
+                              ? `${latestActivity.subject} (${latestActivity.duration}h)`
+                              : latestActivity.name}
                           </p>
                         </div>
                         <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
                           <button
-                            onClick={() => handleCompleteActivity(activity)}
+                            onClick={() => handleCompleteActivity(latestActivity)}
                             style={{
                               color: isCompleted ? "#2e7d32" : "#0066cc",
                               borderColor: isCompleted ? "#2e7d32" : "#0066cc",
                               backgroundColor: isCompleted ? "#c8e6c9" : "transparent",
                             }}
-                            className="px-2 py-1 border rounded text-xs hover:opacity-80 font-medium"
+                            className="px-2 py-1 border rounded text-xs hover:opacity-80 font-medium transition-all"
                             title="Mark as completed"
                           >
-                            {isCompleted ? "✓ Done" : "✓"}
+                            {isCompleted ? "✓ Done" : "✓ Complete"}
                           </button>
                           <button
                             onClick={() => handleEditActivity(activity)}

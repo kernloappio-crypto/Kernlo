@@ -209,41 +209,6 @@ export default function CompliancePage() {
           setLastAttendanceDates(lastDates);
         }
 
-        // Auto-refresh attendance when window regains focus
-        const handleFocus = async () => {
-          if (kidData?.name && user?.id) {
-            console.log("🔄 Window focus detected - refreshing attendance on compliance page...");
-            try {
-              const now = new Date();
-              const currentYear = now.getFullYear();
-              const currentMonth = now.getMonth() + 1;
-
-              const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
-              setAttendanceDaysYear(yearlyDays);
-
-              const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
-              setAttendanceDaysMonth(monthlyDays);
-
-              const lastDates = await getLastAttendanceDates(user.id, kidData.name, 10);
-              setLastAttendanceDates(lastDates);
-
-              // Reload all attendance records
-              const { data: attendanceData } = await supabase
-                .from("attendance")
-                .select("*")
-                .eq("user_id", user.id)
-                .eq("child_name", kidData.name)
-                .order("schooling_date", { ascending: false });
-              setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
-            } catch (err) {
-              console.error("Error refreshing attendance on compliance page:", err);
-            }
-          }
-        };
-
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
-
         setLoading(false);
       } catch (err) {
         console.error("Error initializing:", err);
@@ -253,6 +218,42 @@ export default function CompliancePage() {
 
     initializeUser();
   }, [kidId, router]);
+
+  // Refetch attendance when arriving at compliance page (triggers on route/kidId change)
+  useEffect(() => {
+    if (!kid?.name || !userId) return;
+
+    const refreshAttendance = async () => {
+      console.log("🔄 Navigated to compliance page - refreshing attendance...");
+      try {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        const yearlyDays = await getAttendanceDaysYearly(userId, kid.name, currentYear);
+        setAttendanceDaysYear(yearlyDays);
+
+        const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
+        setAttendanceDaysMonth(monthlyDays);
+
+        const lastDates = await getLastAttendanceDates(userId, kid.name, 10);
+        setLastAttendanceDates(lastDates);
+
+        // Reload all attendance records
+        const { data: attendanceData } = await supabase
+          .from("attendance")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("child_name", kid.name)
+          .order("schooling_date", { ascending: false });
+        setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
+      } catch (err) {
+        console.error("Error refreshing attendance on compliance page:", err);
+      }
+    };
+
+    refreshAttendance();
+  }, [kidId, userId, kid?.name]);
 
   async function handleStateChange(state: string) {
     setSelectedState(state);

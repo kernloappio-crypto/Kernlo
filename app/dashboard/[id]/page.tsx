@@ -281,29 +281,6 @@ export default function KidDetailPage() {
           }
         }
 
-        // Auto-refresh attendance when window regains focus
-        const handleFocus = async () => {
-          if (kidData?.name && user?.id) {
-            console.log("🔄 Window focus detected - refreshing attendance...");
-            try {
-              const now = new Date();
-              const currentYear = now.getFullYear();
-              const currentMonth = now.getMonth() + 1;
-
-              const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
-              setAttendanceDaysYear(yearlyDays);
-
-              const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
-              setAttendanceDaysMonth(monthlyDays);
-            } catch (err) {
-              console.error("Error refreshing attendance:", err);
-            }
-          }
-        };
-
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
-
         // Initialize date range (last 30 days)
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -319,6 +296,30 @@ export default function KidDetailPage() {
 
     initializeUser();
   }, [kidId, router]);
+
+  // Refetch attendance when arriving at this page (triggers on route/kidId change)
+  useEffect(() => {
+    if (!kid?.name || !userId) return;
+
+    const refreshAttendance = async () => {
+      console.log("🔄 Navigated to kid detail page - refreshing attendance...");
+      try {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        const yearlyDays = await getAttendanceDaysYearly(userId, kid.name, currentYear);
+        setAttendanceDaysYear(yearlyDays);
+
+        const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
+        setAttendanceDaysMonth(monthlyDays);
+      } catch (err) {
+        console.error("Error refreshing attendance:", err);
+      }
+    };
+
+    refreshAttendance();
+  }, [kidId, userId, kid?.name]);
 
   async function handleQuickLog() {
     if (!logSubject || !logDuration || !logPlatform) {
