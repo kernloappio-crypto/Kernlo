@@ -320,34 +320,47 @@ export default function CalendarPage() {
                         borderColor: isSelected ? COLORS.primary : hasEvent ? COLORS.primary : "#e5e7eb",
                         cursor: dateStr ? "pointer" : "default",
                       }}
-                      className="aspect-square border rounded-lg p-1 hover:shadow-md transition-all"
+                      className="aspect-square border rounded-lg p-1 hover:shadow-md transition-all flex flex-col overflow-hidden"
                     >
                       {dateStr && (
-                        <div className="h-full flex flex-col">
-                          <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs sm:text-sm font-bold">
+                        <>
+                          <span style={{ color: isSelected ? "white" : COLORS.dark }} className="text-xs sm:text-sm font-bold flex-shrink-0">
                             {new Date(dateStr).getDate()}
                           </span>
                           {daysEvents.length > 0 && (
-                            <div className="flex-1 flex items-end">
-                              <div className="flex gap-0.5">
-                                {daysEvents.map((evt, i) => (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      backgroundColor:
-                                        evt.type === "activity"
-                                          ? COLORS.primary
-                                          : evt.type === "extracurricular"
-                                            ? COLORS.accent3
-                                            : COLORS.accent1,
-                                    }}
-                                    className="w-1 h-1 rounded-full"
-                                  />
-                                ))}
-                              </div>
+                            <div className="flex-1 flex flex-col overflow-hidden mt-0.5 min-w-0">
+                              {daysEvents.slice(0, 2).map((evt, i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    backgroundColor:
+                                      evt.type === "activity"
+                                        ? COLORS.primary
+                                        : evt.type === "extracurricular"
+                                          ? COLORS.accent3
+                                          : COLORS.accent1,
+                                    color: "white",
+                                  }}
+                                  className="text-xs rounded px-0.5 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
+                                  title={evt.name}
+                                >
+                                  {evt.name}
+                                </div>
+                              ))}
+                              {daysEvents.length > 2 && (
+                                <span
+                                  style={{
+                                    color: isSelected ? "white" : "#666",
+                                    fontSize: "9px",
+                                  }}
+                                  className="text-center flex-shrink-0"
+                                >
+                                  +{daysEvents.length - 2}
+                                </span>
+                              )}
                             </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   );

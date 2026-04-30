@@ -354,21 +354,25 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                       {/* Activity previews */}
                       {dayActivities.length > 0 && (
                         <div className="flex-1 flex flex-col overflow-hidden mt-1 min-w-0">
-                          {dayActivities.slice(0, 2).map((evt, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                backgroundColor: ACTIVITY_COLORS[evt.type],
-                                color: "white",
-                              }}
-                              className="text-xs rounded px-1 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
-                              title={evt.name}
-                            >
-                              {evt.type === "activity"
-                                ? `${evt.subject || evt.name}`
-                                : evt.name}
-                            </div>
-                          ))}
+                          {dayActivities.slice(0, 2).map((evt, i) => {
+                            const activityName = evt.type === "activity"
+                              ? `${evt.subject || evt.name}`
+                              : evt.name;
+                            const displayText = `${evt.childName} - ${activityName}`;
+                            return (
+                              <div
+                                key={i}
+                                style={{
+                                  backgroundColor: ACTIVITY_COLORS[evt.type],
+                                  color: "white",
+                                }}
+                                className="text-xs rounded px-1 py-0.5 truncate flex-shrink-0 mb-0.5 line-clamp-1 leading-tight"
+                                title={displayText}
+                              >
+                                {displayText}
+                              </div>
+                            );
+                          })}
                           {dayActivities.length > 2 && (
                             <span
                               style={{
