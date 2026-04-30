@@ -308,9 +308,9 @@ export async function getAttendanceByYear(userId: string, childName: string, yea
     .select('*')
     .eq('user_id', userId)
     .eq('child_name', childName)
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .order('date', { ascending: false });
+    .gte('schooling_date', startDate)
+    .lte('schooling_date', endDate)
+    .order('schooling_date', { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -330,9 +330,9 @@ export async function getAttendanceByMonth(userId: string, childName: string, ye
     .select('*')
     .eq('user_id', userId)
     .eq('child_name', childName)
-    .gte('date', startDate)
-    .lt('date', endDate)
-    .order('date', { ascending: false });
+    .gte('schooling_date', startDate)
+    .lt('schooling_date', endDate)
+    .order('schooling_date', { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -344,14 +344,14 @@ export async function getAttendanceByMonth(userId: string, childName: string, ye
 export async function getLastAttendanceDates(userId: string, childName: string, limit: number = 10) {
   const { data, error } = await supabase
     .from('attendance')
-    .select('date')
+    .select('schooling_date')
     .eq('user_id', userId)
     .eq('child_name', childName)
-    .order('date', { ascending: false })
+    .order('schooling_date', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
-  return (data || []).map((d) => d.date);
+  return (data || []).map((d) => d.schooling_date);
 }
 
 /**
@@ -360,7 +360,7 @@ export async function getLastAttendanceDates(userId: string, childName: string, 
 export async function getAttendanceDaysYearly(userId: string, childName: string, year: number) {
   const records = await getAttendanceByYear(userId, childName, year);
   // Get unique dates (in case multiple entries per day)
-  const uniqueDates = new Set(records.map((r) => r.date));
+  const uniqueDates = new Set(records.map((r) => r.schooling_date));
   return uniqueDates.size;
 }
 
@@ -370,7 +370,7 @@ export async function getAttendanceDaysYearly(userId: string, childName: string,
 export async function getAttendanceDaysMonthly(userId: string, childName: string, year: number, month: number) {
   const records = await getAttendanceByMonth(userId, childName, year, month);
   // Get unique dates (in case multiple entries per day)
-  const uniqueDates = new Set(records.map((r) => r.date));
+  const uniqueDates = new Set(records.map((r) => r.schooling_date));
   return uniqueDates.size;
 }
 
@@ -399,7 +399,7 @@ export async function getAttendanceCalendar(userId: string, childName: string, y
   const dateMap: { [key: string]: boolean } = {};
   
   records.forEach((record) => {
-    dateMap[record.date] = true;
+    dateMap[record.schooling_date] = true;
   });
 
   return dateMap;

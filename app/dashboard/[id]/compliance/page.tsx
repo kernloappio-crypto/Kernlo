@@ -190,7 +190,7 @@ export default function CompliancePage() {
           .select("*")
           .eq("user_id", user.id)
           .eq("child_name", kidData?.name)
-          .order("date", { ascending: false });
+          .order("schooling_date", { ascending: false });
         setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
 
         // Load attendance statistics
@@ -268,7 +268,7 @@ export default function CompliancePage() {
         .select("*")
         .eq("user_id", userId)
         .eq("child_name", kid.name)
-        .order("date", { ascending: false });
+        .order("schooling_date", { ascending: false });
       setAttendanceRecords((attendanceData as AttendanceRecord[]) || []);
 
       setAttendanceDate(new Date().toISOString().split("T")[0]);

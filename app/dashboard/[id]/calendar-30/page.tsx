@@ -276,14 +276,14 @@ export default function Kid30DayCalendarPage() {
           .select("id")
           .eq("user_id", userId)
           .eq("child_name", kid.name)
-          .eq("date", selectedDate)
+          .eq("schooling_date", selectedDate)
           .single();
 
         if (!existingAttendance) {
           await supabase.from("attendance").insert({
             user_id: userId,
             child_name: kid.name,
-            date: selectedDate,
+            schooling_date: selectedDate,
           });
         }
       } catch (err) {
