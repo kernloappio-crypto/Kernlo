@@ -146,9 +146,9 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   
   // Build calendar grid for current month ONLY
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-indexed
+  const month = currentDate.getMonth(); // 0-indexed (0=Jan, 11=Dec)
   const first = new Date(year, month, 1); // First day of month
-  const last = new Date(year, month + 1, 0); // Last day of month
+  const last = new Date(year, month + 1, 0); // Last day of month (day 0 of next month = last day of this month)
   const daysInMonth = last.getDate();
   const firstDay = first.getDay(); // 0 = Sunday, 6 = Saturday
   
@@ -160,6 +160,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   }
 
   // Add ONLY days that belong to this month (1 to daysInMonth)
+  // CRITICAL: Use month+1 to convert from 0-indexed to calendar month (1-12)
   const monthStr2 = String(month + 1).padStart(2, "0");
   for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
     const dayStr = String(dayNum).padStart(2, "0");
@@ -168,51 +169,52 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
   }
 
   // Pad end with null to complete grid weeks (no next month dates included)
+  // Grid must be exactly 5 or 6 weeks (35 or 42 cells)
   while (days.length % 7 !== 0) {
     days.push(null);
   }
 
-  // Validation: verify grid contains ONLY target month dates
-  if (process.env.NODE_ENV === "development") {
-    const monthDates = days.filter((d) => d !== null);
-    
-    // Check count matches expected
-    if (monthDates.length !== daysInMonth) {
-      console.error(
-        `🚨 Calendar grid error: Expected ${daysInMonth} days, got ${monthDates.length}`
-      );
-    }
-    
-    // Check every date string belongs to current month
-    monthDates.forEach((dateStr) => {
-      const parts = dateStr.split('-');
-      const gridYear = parseInt(parts[0], 10);
-      const gridMonth = parseInt(parts[1], 10);
-      const gridDay = parseInt(parts[2], 10);
-      
-      const expectedYear = year;
-      const expectedMonth = month + 1;
-      
-      if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
-        console.error(
-          `🚨 Cross-month date in grid: ${dateStr} (expected month ${expectedMonth}/${expectedYear})`
-        );
-      }
-    });
-  }
-
-  // Always log grid summary (not just dev)
-  const monthDatesCount = days.filter((d) => d !== null).length;
-  const monthStr_Log = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  if (monthDatesCount !== daysInMonth) {
-    console.warn(
-      `⚠️ ${monthStr_Log} calendar grid has ${monthDatesCount} dates, expected ${daysInMonth}`
+  // STRICT VALIDATION: verify grid contains ONLY target month dates
+  const monthDates = days.filter((d) => d !== null);
+  
+  // Check count matches expected
+  if (monthDates.length !== daysInMonth) {
+    console.error(
+      `🚨 CRITICAL BUG: Calendar grid has ${monthDates.length} dates, expected ${daysInMonth} for ${monthStr}`
     );
+    // Dump the dates to see what's wrong
+    console.error("Grid contents:", days);
   }
-  // Check for specific March 31 leakage
-  const hasMarch31 = days.some(d => d && d.endsWith("-03-31"));
-  if (hasMarch31) {
-    console.error(`🚨🚨🚨 MARCH 31 DETECTED IN CALENDAR GRID!!! ${monthStr_Log}`);
+  
+  // Check every date string belongs to current month - FAIL FAST
+  const expectedYear = year;
+  const expectedMonth = month + 1;
+  let hasCrossMonthBug = false;
+  
+  monthDates.forEach((dateStr) => {
+    const parts = dateStr.split('-');
+    const gridYear = parseInt(parts[0], 10);
+    const gridMonth = parseInt(parts[1], 10);
+    const gridDay = parseInt(parts[2], 10);
+    
+    if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
+      console.error(
+        `🚨 CROSS-MONTH BUG DETECTED: Grid contains ${dateStr}, but viewing ${expectedMonth}/${expectedYear}. Expected day range 1-${daysInMonth}`
+      );
+      hasCrossMonthBug = true;
+    }
+  });
+  
+  if (hasCrossMonthBug) {
+    console.error(`🚨🚨🚨 CALENDAR HAS CROSS-MONTH CONTAMINATION. DUMP:`, days);
+  }
+  
+  // Log summary for debugging
+  const monthStr_Log = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      `📅 Calendar grid for ${monthStr_Log}: ${monthDates.length} days (expected ${daysInMonth}), grid size ${days.length} cells`
+    );
   }
 
   const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
@@ -371,7 +373,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-6">
             {days.map((dateStr, idx) => {
               // SAFETY CHECK: validate dateStr belongs to current month or is null
-              // This catches any cross-month dates that shouldn't be in the grid
+              // This is a failsafe: the grid construction above should guarantee this
               if (dateStr) {
                 const parts = dateStr.split('-');
                 const gridYear = parseInt(parts[0], 10);
@@ -380,14 +382,16 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                 
                 const expectedYear = currentDate.getFullYear();
                 const expectedMonth = currentDate.getMonth() + 1;
+                const expectedMaxDay = daysInMonth;
                 
-                // If date doesn't belong to current month, render empty cell and log error
-                if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > daysInMonth) {
+                // CRITICAL: If date doesn't belong to current month, render empty cell and log error
+                // This should NEVER happen if grid construction is correct
+                if (gridYear !== expectedYear || gridMonth !== expectedMonth || gridDay < 1 || gridDay > expectedMaxDay) {
                   console.error(
-                    `🚨 CROSS-MONTH BUG: Grid index ${idx} contains ${dateStr} (${gridMonth}/${gridYear}), expected month ${expectedMonth}/${expectedYear}. Rendering empty cell.`
+                    `🚨 RENDER BUG: Cell ${idx} has ${dateStr} but expecting ${expectedMonth}/${expectedYear} with max day ${expectedMaxDay}. RENDERING EMPTY CELL.`
                   );
                   
-                  // Render empty padding cell instead of cross-month date
+                  // Force empty cell instead of rendering wrong date
                   return (
                     <div
                       key={idx}
@@ -402,7 +406,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                 }
               }
               
-              // Grid is built with month-boundary logic: all dates here are guaranteed to belong to currentDate's month
+              // If we reach here, dateStr is either null (padding) or a valid date for this month
               const isSelected = dateStr === selectedDate;
               const dayActivities = dateStr ? getActivitiesForDate(dateStr) : [];
               const hasEvents = dayActivities.length > 0;
