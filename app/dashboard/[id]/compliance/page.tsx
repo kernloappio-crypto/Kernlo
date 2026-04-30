@@ -245,6 +245,7 @@ export default function CompliancePage() {
     try {
       // Only log if schooled_today is true
       if (schooledToday) {
+        console.log('Calling logAttendance with:', { userId, childName: kid.name, date: attendanceDate });
         await logAttendance(userId, kid.name, attendanceDate);
       }
 
@@ -276,7 +277,8 @@ export default function CompliancePage() {
       alert("Attendance recorded!");
     } catch (err) {
       console.error("Error saving attendance:", err);
-      alert("Failed to save attendance");
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert(`Failed to save attendance: ${errorMsg}`);
     }
   }
 

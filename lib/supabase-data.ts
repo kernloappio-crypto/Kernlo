@@ -1,6 +1,59 @@
 import { supabase } from './supabase-client';
 
 /**
+ * Ensure auth session is restored on the supabase client
+ * This is critical for RLS policies to work (auth.uid() must be set)
+ * Called before every sensitive database operation
+ */
+export async function ensureAuthContext() {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    // Try to get current session from client
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (currentSession && currentSession.access_token) {
+      // Session already set and has token, good to go
+      return;
+    }
+    
+    // No valid session on client, try to restore from localStorage
+    const sessionStr = localStorage.getItem('kernlo_session');
+    if (sessionStr) {
+      try {
+        const savedSession = JSON.parse(sessionStr);
+        
+        // Check if saved session has required fields
+        if (!savedSession.access_token || !savedSession.refresh_token) {
+          console.warn('⚠️ Invalid session format in localStorage');
+          return;
+        }
+        
+        // Set the session on the client
+        const { data, error } = await supabase.auth.setSession(savedSession);
+        
+        if (error) {
+          console.warn('⚠️ Failed to restore session:', error.message);
+          return;
+        }
+        
+        if (data.session) {
+          console.log('✅ Auth context restored from localStorage');
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not parse session from localStorage:', e);
+      }
+    } else {
+      // No session in localStorage - user might not be logged in
+      // This is okay, RLS will reject the operation
+      console.warn('⚠️ No kernlo_session in localStorage - user may not be logged in');
+    }
+  } catch (err) {
+    console.warn('⚠️ ensureAuthContext error:', err);
+  }
+}
+
+/**
  * Supabase Data Layer
  * Replaces all localStorage data operations with Supabase real-time sync
  */
@@ -217,6 +270,9 @@ export async function deleteReport(reportId: string) {
 // ============ COMPLIANCE STATE ============
 
 export async function setComplianceState(userId: string, state: string, childName?: string) {
+  // Ensure auth context for RLS
+  await ensureAuthContext();
+  
   // Delete existing state for this kid (or user if no childName)
   if (childName) {
     await supabase
@@ -376,8 +432,13 @@ export async function getAttendanceDaysMonthly(userId: string, childName: string
 
 /**
  * Log attendance for a kid
+ * IMPORTANT: Ensures auth context is set before inserting
+ * Handles duplicate entries gracefully (idempotent)
  */
 export async function logAttendance(userId: string, childName: string, date: string) {
+  // Ensure auth session is set on client for RLS policy to work
+  await ensureAuthContext();
+  
   const { data, error } = await supabase
     .from('attendance')
     .insert({
@@ -387,7 +448,32 @@ export async function logAttendance(userId: string, childName: string, date: str
     })
     .select();
 
-  if (error) throw error;
+  if (error) {
+    // Check if it's a unique constraint violation (duplicate entry)
+    if (error.code === '23505' || error.message?.includes('duplicate')) {
+      console.log('Attendance already exists for this date, returning existing record');
+      // Fetch and return existing record
+      const { data: existing } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('child_name', childName)
+        .eq('schooling_date', date)
+        .single();
+      return existing;
+    }
+    
+    console.error('logAttendance error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      userId,
+      childName,
+      date,
+    });
+    throw new Error(`Failed to log attendance: ${error.message}`);
+  }
   return data?.[0];
 }
 

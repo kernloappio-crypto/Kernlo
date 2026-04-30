@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getActivities, getExtracurricularActivities, getFieldTrips, deleteActivity, deleteExtracurricularActivity, deleteFieldTrip, updateExtracurricularActivity, updateFieldTrip, logAttendance } from "@/lib/supabase-data";
+import { getActivities, getExtracurricularActivities, getFieldTrips, deleteActivity, deleteExtracurricularActivity, deleteFieldTrip, updateExtracurricularActivity, updateFieldTrip, logAttendance, ensureAuthContext } from "@/lib/supabase-data";
 import { supabase } from "@/lib/supabase-client";
 
 interface Activity {
@@ -289,6 +289,9 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         childName: activity.childName,
         date: activity.date,
       });
+
+      // Ensure auth context for all database operations
+      await ensureAuthContext();
 
       // Log attendance for the kid on that date
       try {
