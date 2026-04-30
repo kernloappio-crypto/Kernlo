@@ -62,6 +62,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showForm, setShowForm] = useState(false); // Track if user clicked "Add Activity"
   const [modalType, setModalType] = useState<"activity" | "extracurricular" | "field-trip">("activity");
   const [formData, setFormData] = useState({
     subject: "",
@@ -169,6 +170,7 @@ export default function CalendarPage() {
 
   const handleDateClick = (dateStr: string) => {
     setSelectedDate(dateStr);
+    setShowForm(false); // Show activities list first, not the form
     setShowModal(true);
   };
 
@@ -206,6 +208,7 @@ export default function CalendarPage() {
 
       await loadEvents(userId);
       setShowModal(false);
+      setShowForm(false);
       setSelectedDate(null);
       setFormData({
         subject: "",
@@ -434,12 +437,70 @@ export default function CalendarPage() {
         {showModal && selectedDate && (
           <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
-              <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">
-                Log Activity for {new Date(selectedDate).toLocaleDateString()}
-              </h2>
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold">
+                  {showForm ? "Add Activity" : `Activities for ${new Date(selectedDate).toLocaleDateString()}`}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setShowForm(false);
+                    setSelectedDate(null);
+                  }}
+                  style={{ color: "#666" }}
+                  className="text-2xl font-bold hover:opacity-70"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
 
-              {/* Type Selector */}
-              <div className="mb-6">
+              {/* Activities List (shown first) */}
+              {!showForm && (
+                <div className="mb-6">
+                  {getEventsForDate(selectedDate).length > 0 ? (
+                    <div className="space-y-3 mb-6">
+                      {getEventsForDate(selectedDate).map((evt, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: "#f9fafb",
+                            borderColor:
+                              evt.type === "activity"
+                                ? COLORS.primary
+                                : evt.type === "extracurricular"
+                                  ? COLORS.accent3
+                                  : COLORS.accent1,
+                          }}
+                          className="p-4 border-l-4 rounded"
+                        >
+                          <div style={{ color: COLORS.dark }} className="font-bold text-sm mb-1">
+                            {evt.type === "activity" ? "📚 School Activity" : evt.type === "extracurricular" ? "⭐ Extracurricular" : "🚌 Field Trip"}
+                          </div>
+                          <div style={{ color: "#333" }} className="text-sm mb-1">
+                            <strong>{evt.name}</strong>
+                          </div>
+                          {evt.details && (
+                            <div style={{ color: "#666" }} className="text-xs">
+                              {evt.details}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: "#999", backgroundColor: "#f9fafb" }} className="p-4 rounded text-sm text-center mb-6">
+                      No activities logged for this date yet.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Form (shown only when "Add Activity" is clicked) */}
+              {showForm && (
+                <>
+                  {/* Type Selector */}
+                  <div className="mb-6">
                 <label style={{ color: "#333" }} className="block text-sm font-medium mb-3">
                   Activity Type
                 </label>
@@ -613,8 +674,7 @@ export default function CalendarPage() {
                 </button>
                 <button
                   onClick={() => {
-                    setShowModal(false);
-                    setSelectedDate(null);
+                    setShowForm(false);
                     setFormData({
                       subject: "",
                       duration: "",
@@ -629,9 +689,38 @@ export default function CalendarPage() {
                   style={{ color: "#1a1a2e", borderColor: "#333" }}
                   className="w-full px-4 py-3 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base min-h-12"
                 >
-                  Cancel
+                  Back to Activities
                 </button>
               </div>
+                </>
+              )}
+
+              {/* Action Buttons (shown when not in form) */}
+              {!showForm && (
+                <div className="flex gap-3 flex-col">
+                  <button
+                    onClick={() => {
+                      setShowForm(true);
+                      setModalType("activity");
+                    }}
+                    style={{ backgroundColor: COLORS.primary }}
+                    className="w-full px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base min-h-12"
+                  >
+                    + Add Activity
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      setShowForm(false);
+                      setSelectedDate(null);
+                    }}
+                    style={{ color: "#666", borderColor: "#ddd" }}
+                    className="w-full px-4 py-3 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base min-h-12"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
