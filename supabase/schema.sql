@@ -36,6 +36,7 @@ CREATE TABLE activities (
   curriculum TEXT, -- e.g., "Math Mammoth", "Khan Academy", "Outschool", "IXL", "Textbook"
   activity_type TEXT DEFAULT 'Core Subject', -- 'Core Subject', 'Extracurricular', 'Field Trip / Enrichment'
   date DATE NOT NULL DEFAULT CURRENT_DATE,
+  is_completed BOOLEAN DEFAULT FALSE, -- track completion status
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -91,6 +92,7 @@ CREATE TABLE extracurricular_activities (
   activity_name TEXT NOT NULL,
   date DATE NOT NULL,
   notes TEXT,
+  is_completed BOOLEAN DEFAULT FALSE, -- track completion status
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -104,6 +106,7 @@ CREATE TABLE field_trips (
   destination TEXT NOT NULL,
   date DATE NOT NULL,
   notes TEXT,
+  is_completed BOOLEAN DEFAULT FALSE, -- track completion status
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -114,6 +117,7 @@ CREATE INDEX idx_activities_user_id ON activities(user_id);
 CREATE INDEX idx_activities_date ON activities(date);
 CREATE INDEX idx_activities_activity_type ON activities(activity_type);
 CREATE INDEX idx_activities_curriculum ON activities(curriculum);
+CREATE INDEX idx_activities_is_completed ON activities(is_completed);
 CREATE INDEX idx_goals_user_id ON goals(user_id);
 CREATE INDEX idx_reports_user_id ON reports(user_id);
 CREATE INDEX idx_compliance_state_user_id ON compliance_state(user_id);
@@ -123,9 +127,11 @@ CREATE INDEX idx_attendance_date ON attendance(schooling_date);
 CREATE INDEX idx_extracurricular_kid_id ON extracurricular_activities(kid_id);
 CREATE INDEX idx_extracurricular_user_id ON extracurricular_activities(user_id);
 CREATE INDEX idx_extracurricular_date ON extracurricular_activities(date);
+CREATE INDEX idx_extracurricular_is_completed ON extracurricular_activities(is_completed);
 CREATE INDEX idx_field_trips_kid_id ON field_trips(kid_id);
 CREATE INDEX idx_field_trips_user_id ON field_trips(user_id);
 CREATE INDEX idx_field_trips_date ON field_trips(date);
+CREATE INDEX idx_field_trips_is_completed ON field_trips(is_completed);
 
 -- Enable RLS (Row Level Security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

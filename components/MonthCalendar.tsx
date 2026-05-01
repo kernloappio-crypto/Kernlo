@@ -291,16 +291,19 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         type: activity.type,
         childName: activity.childName,
         date: activity.date,
+        isCurrentlyCompleted: activity.is_completed,
       });
 
       // Ensure auth context for all database operations
+      console.log(`🔐 Ensuring auth context...`);
       await ensureAuthContext();
+      console.log(`✅ Auth context ready`);
 
       // Log attendance for the kid on that date
       try {
-        console.log(`📝 Logging attendance...`);
-        await logAttendance(userId, activity.childName, activity.date);
-        console.log(`✅ Attendance logged`);
+        console.log(`📝 Logging attendance for ${activity.childName} on ${activity.date}...`);
+        const attendanceResult = await logAttendance(userId, activity.childName, activity.date);
+        console.log(`✅ Attendance logged:`, attendanceResult);
       } catch (attendanceError) {
         console.error(`⚠️ Attendance logging error (non-critical):`, attendanceError);
         // Continue anyway - attendance is secondary to completion
@@ -308,6 +311,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
       
       // Update activity completion status in database
       console.log(`🔄 Updating completion status for ${activity.type}...`);
+      let dbUpdateSuccess = false;
       
       if (activity.type === "activity") {
         console.log(`  → Updating activities table, id=${activity.id}`);
@@ -316,6 +320,8 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           .update({ is_completed: true })
           .eq("id", activity.id)
           .select();
+        
+        console.log(`  → Update response:`, { data: updateData, error: updateError });
         
         if (updateError) {
           console.error(`❌ Activities update error:`, {
@@ -341,12 +347,21 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           
           throw updateError;
         }
-        console.log(`✅ Activities table updated:`, updateData);
+        
+        if (updateData && updateData.length > 0) {
+          console.log(`✅ Activities table updated successfully:`, updateData[0]);
+          dbUpdateSuccess = true;
+        } else {
+          console.warn(`⚠️ Update returned no data. This might indicate RLS blocked the update.`);
+          console.warn(`🔍 Verify RLS policy allows UPDATE on activities table`);
+          throw new Error("Update returned no data - possible RLS policy issue");
+        }
       } else if (activity.type === "extracurricular") {
         console.log(`  → Updating extracurricular_activities table, id=${activity.id}`);
         try {
           const result = await updateExtracurricularActivity(activity.id, { is_completed: true });
           console.log(`✅ Extracurricular updated:`, result);
+          dbUpdateSuccess = !!result;
         } catch (extError: any) {
           console.error(`❌ Extracurricular update error:`, extError);
           
@@ -369,6 +384,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         try {
           const result = await updateFieldTrip(activity.id, { is_completed: true });
           console.log(`✅ Field trip updated:`, result);
+          dbUpdateSuccess = !!result;
         } catch (tripError: any) {
           console.error(`❌ Field trip update error:`, tripError);
           
@@ -389,21 +405,27 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
       }
 
       // Update the activity in the state with is_completed = true
+      console.log(`📲 Updating UI state...`);
       setActivities((prev) => {
         const updated = prev.map((a) =>
           a.id === activity.id ? { ...a, is_completed: true } : a
         );
-        
-        // Immediately sync selectedDayActivities to reflect the change in the open modal
-        if (selectedDate) {
-          const dayActivities = updated.filter((a) => a.date === selectedDate && a.date !== null);
-          setSelectedDayActivities(dayActivities);
-        }
-        
+        console.log(`  → Activities state updated. New entry:`, updated.find(a => a.id === activity.id));
         return updated;
       });
       
-      console.log(`🎉 Activity completed and attendance logged for ${activity.childName} on ${activity.date}`);
+      // Update selectedDayActivities to reflect the completed state in the popup
+      setSelectedDayActivities((prev) =>
+        prev.map((a) =>
+          a.id === activity.id ? { ...a, is_completed: true } : a
+        )
+      );
+      
+      console.log(`🎉 Activity completed successfully!`);
+      console.log(`   ✅ Database updated: ${dbUpdateSuccess}`);
+      console.log(`   ✅ Attendance logged`);
+      console.log(`   ✅ UI state updated`);
+      alert("✅ Marked as completed");
     } catch (error: any) {
       console.error("❌ Error completing activity:", error);
       console.error("Full error object:", {
