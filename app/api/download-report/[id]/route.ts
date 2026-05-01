@@ -10,23 +10,161 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: reportId } = await params;
 
-    // Fetch report from database
-    const { data: report, error } = await supabase
-      .from("reports")
+    // Fetch report metadata from generated_reports table
+    const { data: reportMetadata, error: metadataError } = await supabase
+      .from("generated_reports")
       .select("*")
-      .eq("id", id)
+      .eq("id", reportId)
       .single();
 
-    if (error || !report) {
+    if (metadataError || !reportMetadata) {
+      console.error("Report metadata not found:", metadataError);
       return NextResponse.json(
         { error: "Report not found" },
         { status: 404 }
       );
     }
 
-    // Generate PDF dynamically
+    const {
+      user_id,
+      kid_id,
+      child_name,
+      start_date,
+      end_date,
+      selected_subjects = [],
+      selected_activity_types = ["Core Subject", "Extracurricular", "Field Trip / Enrichment"],
+    } = reportMetadata;
+
+    // Fetch activities for the kid within the date range
+    const { data: activities = [] } = await supabase
+      .from("activities")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("child_name", child_name)
+      .gte("date", start_date)
+      .lte("date", end_date);
+
+    // Fetch extracurricular activities
+    const { data: extracurricularActivities = [] } = await supabase
+      .from("extracurricular_activities")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("kid_id", kid_id)
+      .gte("date", start_date)
+      .lte("date", end_date);
+
+    // Fetch field trips
+    const { data: fieldTrips = [] } = await supabase
+      .from("field_trips")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("kid_id", kid_id)
+      .gte("date", start_date)
+      .lte("date", end_date);
+
+    // Build summaries for AI prompt
+    let coreSubjectsSummary = "";
+    if (activities && activities.length > 0) {
+      const subjectMap: { [key: string]: any[] } = {};
+      activities.forEach((activity: any) => {
+        const subject = activity.subject || "Other";
+        if (!subjectMap[subject]) {
+          subjectMap[subject] = [];
+        }
+        subjectMap[subject].push(activity);
+      });
+
+      coreSubjectsSummary = Object.entries(subjectMap)
+        .map(([subject, acts]) => {
+          const totalHours = (acts as any[]).reduce((sum, a) => sum + (a.duration || 0), 0);
+          const platformSet = new Set((acts as any[]).map((a) => a.platform));
+          const platforms = Array.from(platformSet).join(", ");
+          return `${subject}: ${totalHours} hours (${acts.length} sessions) via ${platforms || "various platforms"}`;
+        })
+        .join("\n");
+    }
+
+    let extracurricularSummary = "";
+    if (extracurricularActivities && extracurricularActivities.length > 0) {
+      extracurricularSummary = extracurricularActivities
+        .map((activity: any) => `${activity.activity_name}: ${activity.notes || ""}`)
+        .join("\n");
+    }
+
+    let fieldTripsSummary = "";
+    if (fieldTrips && fieldTrips.length > 0) {
+      fieldTripsSummary = fieldTrips
+        .map((trip: any) => `${trip.location}: ${trip.date} - ${trip.notes || ""}`)
+        .join("\n");
+    }
+
+    // Build AI prompt
+    const prompt = `
+Student: ${child_name}
+Period: ${start_date} to ${end_date}
+
+Core Subject Activities:
+${coreSubjectsSummary || "No core subject activities recorded"}
+
+${
+  extracurricularSummary
+    ? `Extracurricular Activities:
+${extracurricularSummary}`
+    : ""
+}
+
+${
+  fieldTripsSummary
+    ? `Field Trips & Enrichment:
+${fieldTripsSummary}`
+    : ""
+}
+
+Create a narrative-style report that:
+1. Opens with a summary of learning progress
+2. Details accomplishments in each subject
+3. Mentions extracurricular activities and their educational value
+4. References field trips and enrichment experiences
+5. Highlights engagement and effort across all areas
+6. Notes any challenges or areas for growth
+7. Concludes with recommendations for continued learning
+
+Format as professional homeschool compliance documentation. Include mentions of extracurricular and field trip experiences in the narrative, demonstrating well-rounded education.`;
+
+    // Call generate-report API to get the narrative
+    let narrative = "";
+    try {
+      const reportResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/generate-report`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            studentName: child_name,
+            startDate: start_date,
+            endDate: end_date,
+          }),
+        }
+      );
+
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json();
+        narrative = reportData.narrative || "";
+      } else {
+        console.warn("Failed to generate narrative from AI, using fallback");
+        narrative =
+          "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
+      }
+    } catch (error) {
+      console.warn("Error calling generate-report API:", error);
+      narrative =
+        "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
+    }
+
+    // Generate PDF
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -45,16 +183,19 @@ export async function GET(
     // Student info
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Student: ${report.child_name}`, marginLeft, yPosition);
+    doc.text(`Student: ${child_name}`, marginLeft, yPosition);
     yPosition += 6;
-    doc.text(`Period: ${report.start_date} to ${report.end_date}`, marginLeft, yPosition);
+    doc.text(`Period: ${start_date} to ${end_date}`, marginLeft, yPosition);
     yPosition += 6;
-    doc.text(`Generated: ${new Date(report.generated_date).toLocaleDateString()}`, marginLeft, yPosition);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, marginLeft, yPosition);
     yPosition += 12;
 
     // Narrative
     doc.setFontSize(10);
-    const narrativeLines = (doc.splitTextToSize(report.report_content, pageWidth - marginLeft - marginRight)) as string[];
+    const narrativeLines = (doc.splitTextToSize(
+      narrative,
+      pageWidth - marginLeft - marginRight
+    )) as string[];
     narrativeLines.forEach((line) => {
       if (yPosition > pageHeight - 20) {
         doc.addPage();
@@ -64,31 +205,13 @@ export async function GET(
       yPosition += 5;
     });
 
-    yPosition += 8;
-
-    // Summary
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    if (yPosition > pageHeight - 40) {
-      doc.addPage();
-      yPosition = marginTop;
-    }
-    doc.text("REPORT SUMMARY", marginLeft, yPosition);
-    yPosition += 8;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Subjects: ${report.subjects}`, marginLeft, yPosition);
-    yPosition += 6;
-    doc.text(`Generated: ${new Date(report.generated_date).toLocaleDateString()}`, marginLeft, yPosition);
-
     // Return PDF
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
 
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${report.child_name}-report-${report.start_date}-${report.end_date}.pdf"`,
+        "Content-Disposition": `attachment; filename="${child_name}-report-${start_date}-${end_date}.pdf"`,
       },
     });
   } catch (error) {
