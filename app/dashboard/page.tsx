@@ -86,7 +86,10 @@ export default function DashboardPage() {
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
-  const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [logDate, setLogDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [logSubject, setLogSubject] = useState("");
   const [logDuration, setLogDuration] = useState("");
   const [logNotes, setLogNotes] = useState("");
@@ -530,7 +533,8 @@ export default function DashboardPage() {
       setLogActivityName("");
       setLogTripName("");
       setLogDestination("");
-      setLogDate(new Date().toISOString().split("T")[0]);
+      const d = new Date();
+      setLogDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
       setShowQuickLog(false);
     } catch (err) {
       console.error("Save error:", err);

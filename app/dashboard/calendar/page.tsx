@@ -52,7 +52,10 @@ export default function ParentCalendarPage() {
   // Quick Log states (shared with calendar)
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
-  const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [logDate, setLogDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [logSubject, setLogSubject] = useState("");
   const [logDuration, setLogDuration] = useState("");
   const [logNotes, setLogNotes] = useState("");
