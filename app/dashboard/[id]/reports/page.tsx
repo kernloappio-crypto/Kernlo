@@ -44,6 +44,7 @@ export default function ReportsPage() {
   const [kid, setKid] = useState<Kid | null>(null);
   const [reports, setReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -137,6 +138,27 @@ export default function ReportsPage() {
     }
   };
 
+  const handleDownloadReport = async (report: GeneratedReport) => {
+    try {
+      setDownloadingId(report.id);
+      
+      // Trigger the download
+      const link = document.createElement("a");
+      link.href = `/api/download-report/${report.id}`;
+      link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Keep button disabled for a moment to prevent double-clicks
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (err) {
+      console.error("Download error:", err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -221,16 +243,17 @@ export default function ReportsPage() {
                       </div>
                     </div>
 
-                    <a
-                      href={`/api/download-report/${report.id}`}
-                      download={`${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`}
+                    <button
+                      onClick={() => handleDownloadReport(report)}
+                      disabled={downloadingId === report.id}
                       style={{
-                        backgroundColor: COLORS.primary,
+                        backgroundColor: downloadingId === report.id ? "#999" : COLORS.primary,
+                        opacity: downloadingId === report.id ? 0.7 : 1,
                       }}
-                      className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 flex-shrink-0 text-center min-w-32"
+                      className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 flex-shrink-0 text-center min-w-32 disabled:cursor-not-allowed disabled:hover:opacity-70"
                     >
-                      📥 Download
-                    </a>
+                      {downloadingId === report.id ? "📥 Downloading..." : "📥 Download Report"}
+                    </button>
                   </div>
                 ))}
               </div>

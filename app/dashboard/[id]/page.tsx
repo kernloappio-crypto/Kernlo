@@ -144,6 +144,7 @@ export default function KidDetailPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [goals, setGoals] = useState<any[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
@@ -436,6 +437,8 @@ export default function KidDetailPage() {
       return;
     }
 
+    setIsGeneratingReport(true);
+
     const filteredActivities = activities.filter(
       (a) =>
         new Date(a.date) >= new Date(reportStartDate) &&
@@ -610,6 +613,8 @@ Format as professional homeschool compliance documentation. Include mentions of 
     } catch (err) {
       console.error("Error generating report:", err);
       alert("Failed to generate report. Please try again.");
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -1195,13 +1200,13 @@ Format as professional homeschool compliance documentation. Include mentions of 
             <div className="flex gap-3 flex-col">
               <button
                 onClick={handleGenerateComprehensiveReport}
-                disabled={selectedSubjects.length === 0}
+                disabled={selectedSubjects.length === 0 || isGeneratingReport}
                 style={{
-                  backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
+                  backgroundColor: selectedSubjects.length === 0 || isGeneratingReport ? "#ccc" : COLORS.primary,
                 }}
                 className="w-full px-4 py-3 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed min-h-12"
               >
-                Download Report
+                {isGeneratingReport ? "Generating & Downloading..." : "Download Report"}
               </button>
               <button
                 onClick={() => setShowComprehensiveReport(false)}
