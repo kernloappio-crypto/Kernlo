@@ -107,8 +107,6 @@ export default function DashboardPage() {
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(["Core Subject"]);
-  const [reportDownloaded, setReportDownloaded] = useState(false);
-
   // Add kid states
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
@@ -859,9 +857,6 @@ Format as professional homeschool compliance documentation.`;
 
       // Download PDF
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
-
-      // Disable report button
-      setReportDownloaded(true);
 
       setShowReportGen(false);
     } catch (err) {
