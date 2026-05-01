@@ -447,45 +447,81 @@ export default function DashboardPage() {
     }
 
     try {
-      const insertData: any = {
-        user_id: userId,
-        child_name: quickLogKid?.name,
-        activity_type: logActivityType,
-        date: logDate,
-        notes: logNotes,
-        curriculum: logCurriculum || null,
-        duration: null, // Default to null for non-Core Subject activities
-      };
-
-      // Add type-specific fields
+      // Route to correct table based on activity type
       if (logActivityType === "Core Subject") {
-        insertData.subject = logSubject;
-        insertData.duration = parseFloat(logDuration); // Include duration for Core Subject
+        // Core Subject → activities table (with duration)
+        const insertData = {
+          user_id: userId,
+          child_name: quickLogKid?.name,
+          activity_type: logActivityType,
+          date: logDate,
+          notes: logNotes,
+          curriculum: logCurriculum || null,
+          subject: logSubject,
+          duration: parseFloat(logDuration),
+        };
+
+        const { data, error } = await supabase
+          .from("activities")
+          .insert(insertData)
+          .select();
+
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
+
+        if (data) {
+          setActivities([...data, ...activities]);
+        }
+
+        alert("Activity logged!");
       } else if (logActivityType === "Extracurricular") {
-        insertData.subject = logActivityName;
-        insertData.curriculum = logActivityName;
-        insertData.duration = null; // Explicitly set duration to null
+        // Extracurricular → extracurricular_activities table (no duration)
+        const insertData = {
+          user_id: userId,
+          kid_id: quickLogKid?.id,
+          activity_name: logActivityName,
+          date: logDate,
+          notes: logNotes,
+        };
+
+        const { data, error } = await supabase
+          .from("extracurricular_activities")
+          .insert(insertData)
+          .select();
+
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
+
+        alert("Extracurricular activity logged!");
       } else if (logActivityType === "Field Trip / Enrichment") {
-        insertData.subject = logTripName;
-        insertData.curriculum = logDestination;
-        insertData.duration = null; // Explicitly set duration to null
+        // Field Trip → field_trips table (no duration)
+        const insertData = {
+          user_id: userId,
+          kid_id: quickLogKid?.id,
+          trip_name: logTripName,
+          destination: logDestination,
+          date: logDate,
+          notes: logNotes,
+        };
+
+        const { data, error } = await supabase
+          .from("field_trips")
+          .insert(insertData)
+          .select();
+
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
+
+        alert("Field trip logged!");
       }
 
-      const { data, error } = await supabase
-        .from("activities")
-        .insert(insertData)
-        .select();
-
-      if (error) {
-        alert("Error: " + error.message);
-        return;
-      }
-
-      if (data) {
-        setActivities([...data, ...activities]);
-      }
-
-      alert("Activity logged!");
+      // Reset form
       setLogSubject("");
       setLogDuration("");
       setLogNotes("");
@@ -497,6 +533,7 @@ export default function DashboardPage() {
       setLogDate(new Date().toISOString().split("T")[0]);
       setShowQuickLog(false);
     } catch (err) {
+      console.error("Save error:", err);
       alert("Failed to save activity");
     }
   }
