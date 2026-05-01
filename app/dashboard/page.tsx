@@ -1014,25 +1014,31 @@ Format as professional homeschool compliance documentation.`;
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                   Kids (Select Multiple)
                 </label>
-                <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
+                <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
                   {kids.map((k) => (
-                    <label key={k.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedKidsForLog.includes(k.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedKidsForLog([...selectedKidsForLog, k.id]);
-                          } else {
-                            setSelectedKidsForLog(selectedKidsForLog.filter((id) => id !== k.id));
-                          }
-                        }}
-                        className="w-4 h-4 cursor-pointer"
-                      />
-                      <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
-                        {k.name}
-                      </span>
-                    </label>
+                    <button
+                      key={k.id}
+                      type="button"
+                      onClick={() => {
+                        if (selectedKidsForLog.includes(k.id)) {
+                          setSelectedKidsForLog(selectedKidsForLog.filter((id) => id !== k.id));
+                        } else {
+                          setSelectedKidsForLog([...selectedKidsForLog, k.id]);
+                        }
+                      }}
+                      className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
+                        selectedKidsForLog.includes(k.id)
+                          ? "bg-blue-500 text-white shadow-md"
+                          : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
+                      }`}
+                      style={
+                        selectedKidsForLog.includes(k.id)
+                          ? { backgroundColor: "#0066cc", color: "white" }
+                          : { color: "#1a1a2e" }
+                      }
+                    >
+                      {k.name}
+                    </button>
                   ))}
                 </div>
                 {selectedKidsForLog.length > 0 && (
