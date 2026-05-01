@@ -304,8 +304,11 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         console.log(`📝 Logging attendance for ${activity.childName} on ${activity.date}...`);
         const attendanceResult = await logAttendance(userId, activity.childName, activity.date);
         console.log(`✅ Attendance logged:`, attendanceResult);
-      } catch (attendanceError) {
+      } catch (attendanceError: any) {
         console.error(`⚠️ Attendance logging error (non-critical):`, attendanceError);
+        console.error(`  → Code: ${attendanceError?.code || 'N/A'}`);
+        console.error(`  → Message: ${attendanceError?.message || 'N/A'}`);
+        console.error(`  → Details: ${JSON.stringify(attendanceError?.details) || 'N/A'}`);
         // Continue anyway - attendance is secondary to completion
       }
       
@@ -324,12 +327,13 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
         console.log(`  → Update response:`, { data: updateData, error: updateError });
         
         if (updateError) {
-          console.error(`❌ Activities update error:`, {
-            message: updateError.message,
-            code: updateError.code,
-            details: updateError.details,
-            hint: updateError.hint,
-          });
+          console.error(`❌❌❌ SUPABASE ERROR - Activities table update FAILED ❌❌❌`);
+          console.error(`Error message: ${updateError.message}`);
+          console.error(`Error code: ${updateError.code}`);
+          console.error(`Error details:`, updateError.details);
+          console.error(`Error hint: ${updateError.hint}`);
+
+          console.error(`Full error object:`, JSON.stringify(updateError, null, 2));
           
           // Check if the error is due to missing is_completed column
           if (updateError.message?.includes("is_completed") || updateError.hint?.includes("is_completed")) {
@@ -363,7 +367,12 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           console.log(`✅ Extracurricular updated:`, result);
           dbUpdateSuccess = !!result;
         } catch (extError: any) {
-          console.error(`❌ Extracurricular update error:`, extError);
+          console.error(`❌❌❌ SUPABASE ERROR - Extracurricular update FAILED ❌❌❌`);
+          console.error(`Error message: ${extError?.message}`);
+          console.error(`Error code: ${extError?.code}`);
+          console.error(`Error details:`, extError?.details);
+          console.error(`Error hint: ${extError?.hint}`);
+          console.error(`Full error object:`, JSON.stringify(extError, null, 2));
           
           // Fallback for missing column
           if (extError?.message?.includes("is_completed")) {
@@ -386,7 +395,12 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
           console.log(`✅ Field trip updated:`, result);
           dbUpdateSuccess = !!result;
         } catch (tripError: any) {
-          console.error(`❌ Field trip update error:`, tripError);
+          console.error(`❌❌❌ SUPABASE ERROR - Field trip update FAILED ❌❌❌`);
+          console.error(`Error message: ${tripError?.message}`);
+          console.error(`Error code: ${tripError?.code}`);
+          console.error(`Error details:`, tripError?.details);
+          console.error(`Error hint: ${tripError?.hint}`);
+          console.error(`Full error object:`, JSON.stringify(tripError, null, 2));
           
           // Fallback for missing column
           if (tripError?.message?.includes("is_completed")) {
@@ -427,15 +441,17 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
       console.log(`   ✅ UI state updated`);
       alert("✅ Marked as completed");
     } catch (error: any) {
-      console.error("❌ Error completing activity:", error);
-      console.error("Full error object:", {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        status: error?.status,
-      });
-      alert(`Failed to mark activity as completed: ${error?.message || "Unknown error"}`);
+      console.error("❌❌❌ FATAL ERROR COMPLETING ACTIVITY ❌❌❌");
+      console.error("Error message:", error?.message || "No message");
+      console.error("Error code:", error?.code || "No code");
+      console.error("Error details:", error?.details || "No details");
+      console.error("Error hint:", error?.hint || "No hint");
+
+      console.error("Full error object:", JSON.stringify(error, null, 2));
+      console.error("Error stack:", error?.stack || "No stack trace");
+      
+      const errorMsg = error?.message || "Unknown error";
+      alert(`Failed to mark activity as completed: ${errorMsg}`);
     }
   };
 
