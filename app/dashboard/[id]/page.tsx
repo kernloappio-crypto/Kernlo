@@ -43,6 +43,16 @@ interface Report {
   report_content?: string;
 }
 
+interface GeneratedReport {
+  id: string;
+  child_name: string;
+  date_range: string;
+  date_generated: string;
+  report_type: string;
+  start_date: string;
+  end_date: string;
+}
+
 interface Kid {
   id: string;
   name: string;
@@ -129,6 +139,7 @@ export default function KidDetailPage() {
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
   const [fieldTrips, setFieldTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,6 +228,20 @@ export default function KidDetailPage() {
         } catch (err) {
           console.error("Error loading reports:", err);
           setReports([]);
+        }
+
+        // Load generated reports
+        try {
+          const { data: generatedReportsData } = await supabase
+            .from("generated_reports")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("kid_id", kidId)
+            .order("date_generated", { ascending: false });
+          setGeneratedReports((generatedReportsData as GeneratedReport[]) || []);
+        } catch (err) {
+          console.error("Error loading generated reports:", err);
+          setGeneratedReports([]);
         }
 
         // Load goals
@@ -512,6 +537,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
       const { data: { user } } = await supabase.auth.getUser();
 
       // Save report to Supabase
+      const reportId = crypto.randomUUID();
       try {
         await supabase
           .from("reports")
@@ -529,6 +555,37 @@ Format as professional homeschool compliance documentation. Include mentions of 
             },
           ]);
 
+        // Also save to generated_reports table with additional tracking
+        const startMonth = new Date(reportStartDate).toLocaleDateString("en-US", { month: "short" });
+        const endMonth = new Date(reportEndDate).toLocaleDateString("en-US", { month: "short" });
+        const startDay = new Date(reportStartDate).getDate();
+        const endDay = new Date(reportEndDate).getDate();
+        const year = new Date(reportEndDate).getFullYear();
+        
+        let dateRange = "";
+        if (startMonth === endMonth) {
+          dateRange = `${startMonth} ${startDay}-${endDay}, ${year}`;
+        } else {
+          dateRange = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+        }
+
+        await supabase
+          .from("generated_reports")
+          .insert([
+            {
+              user_id: user?.id,
+              kid_id: kidId,
+              child_name: kid.name,
+              report_type: "comprehensive",
+              date_range: dateRange,
+              date_generated: new Date().toISOString(),
+              start_date: reportStartDate,
+              end_date: reportEndDate,
+              selected_subjects: selectedSubjects,
+              selected_activity_types: ["Core Subject", "Extracurricular", "Field Trip / Enrichment"],
+            },
+          ]);
+
         // Refetch reports to update display
         const { data: updatedReports } = await supabase
           .from("reports")
@@ -536,6 +593,15 @@ Format as professional homeschool compliance documentation. Include mentions of 
           .eq("user_id", user?.id)
           .eq("child_name", kid.name);
         setReports((updatedReports as Report[]) || []);
+
+        // Refetch generated reports
+        const { data: updatedGeneratedReports } = await supabase
+          .from("generated_reports")
+          .select("*")
+          .eq("user_id", user?.id)
+          .eq("kid_id", kidId)
+          .order("date_generated", { ascending: false });
+        setGeneratedReports((updatedGeneratedReports as GeneratedReport[]) || []);
       } catch (err) {
         console.error("Failed to save report to DB:", err);
       }
@@ -912,6 +978,26 @@ Format as professional homeschool compliance documentation. Include mentions of 
                     return fMonth === currentMonth && fYear === currentYear;
                   }).length;
                 })()}
+              </span>
+            </div>
+          </div>
+
+          {/* Reports Card */}
+          <div
+            onClick={() => router.push(`/dashboard/${kid.id}/reports`)}
+            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
+            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
+          >
+            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
+              📊 Reports
+            </h3>
+            <p style={{ color: "#555" }} className="text-sm mb-3">
+              View all generated reports
+            </p>
+            <div className="flex items-center justify-between">
+              <span style={{ color: "#999" }} className="text-xs">Generated</span>
+              <span style={{ color: COLORS.secondary }} className="text-lg font-bold">
+                {generatedReports.length}
               </span>
             </div>
           </div>
