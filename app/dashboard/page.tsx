@@ -831,22 +831,52 @@ Format as professional homeschool compliance documentation.`;
         });
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-
       // Download PDF first
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
+
+      // Ensure auth context before attempting insert
+      console.log('🔑 Ensuring auth context before report logging...');
+      try {
+        const sessionStr = localStorage.getItem('kernlo_session');
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            const result = await supabase.auth.setSession(session);
+            if (result.error) {
+              console.log(`⚠️ setSession error: ${result.error.message}`);
+            } else {
+              console.log(`✅ Auth context restored for report logging`);
+            }
+          } catch (e) {
+            console.log(`⚠️ Could not restore session from storage`);
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (e: any) {
+        console.log(`⚠️ Auth context error: ${e?.message}`);
+      }
+
+      // Get fresh user data
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserId = user?.id;
 
       // Log report to generated_reports table
       const startDate = new Date(reportStartDate);
       const endDate = new Date(reportEndDate);
       const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}-${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${endDate.getFullYear()}`;
       
+      console.log('📝 Attempting to log report:', {
+        userId: currentUserId,
+        kidId: reportKid?.id,
+        childName: reportKid?.name,
+        dateRange: dateRange,
+      });
+
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('generated_reports')
           .insert({
-            user_id: user?.id,
+            user_id: currentUserId,
             kid_id: reportKid.id,
             child_name: reportKid.name,
             report_type: 'comprehensive',
@@ -859,12 +889,21 @@ Format as professional homeschool compliance documentation.`;
           });
         
         if (error) {
-          console.error('Error logging report:', error);
+          console.error('❌ REPORT LOG ERROR:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            fullError: error,
+          });
         } else {
-          console.log('Report logged successfully');
+          console.log('✅ Report logged successfully:', data);
         }
       } catch (err) {
-        console.error('Failed to log report:', err);
+        console.error('❌ REPORT LOG EXCEPTION:', {
+          error: err,
+          message: err instanceof Error ? err.message : String(err),
+        });
       }
 
       setShowReportGen(false);
