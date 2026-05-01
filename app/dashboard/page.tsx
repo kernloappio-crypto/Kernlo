@@ -1430,58 +1430,73 @@ Format as professional homeschool compliance documentation.`;
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
                   Activity Types
                 </label>
-                <div className="space-y-2 border border-gray-200 rounded-lg p-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedActivityTypes.includes("Core Subject")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedActivityTypes([...selectedActivityTypes, "Core Subject"]);
-                        } else {
-                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Core Subject"));
-                        }
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
-                      ☑ Core Subjects
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedActivityTypes.includes("Extracurricular")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedActivityTypes([...selectedActivityTypes, "Extracurricular"]);
-                        } else {
-                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Extracurricular"));
-                        }
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
-                      ☐ Extracurricular
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedActivityTypes.includes("Field Trips")}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedActivityTypes([...selectedActivityTypes, "Field Trips"]);
-                        } else {
-                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Field Trips"));
-                        }
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
-                      ☐ Field Trips
-                    </span>
-                  </label>
+                <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedActivityTypes.includes("Core Subject")) {
+                        setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Core Subject"));
+                      } else {
+                        setSelectedActivityTypes([...selectedActivityTypes, "Core Subject"]);
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
+                      selectedActivityTypes.includes("Core Subject")
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
+                    }`}
+                    style={
+                      selectedActivityTypes.includes("Core Subject")
+                        ? { backgroundColor: "#0066cc", color: "white" }
+                        : { color: "#1a1a2e" }
+                    }
+                  >
+                    Core Subjects
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedActivityTypes.includes("Extracurricular")) {
+                        setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Extracurricular"));
+                      } else {
+                        setSelectedActivityTypes([...selectedActivityTypes, "Extracurricular"]);
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
+                      selectedActivityTypes.includes("Extracurricular")
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
+                    }`}
+                    style={
+                      selectedActivityTypes.includes("Extracurricular")
+                        ? { backgroundColor: "#0066cc", color: "white" }
+                        : { color: "#1a1a2e" }
+                    }
+                  >
+                    Extracurricular
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedActivityTypes.includes("Field Trips")) {
+                        setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Field Trips"));
+                      } else {
+                        setSelectedActivityTypes([...selectedActivityTypes, "Field Trips"]);
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
+                      selectedActivityTypes.includes("Field Trips")
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
+                    }`}
+                    style={
+                      selectedActivityTypes.includes("Field Trips")
+                        ? { backgroundColor: "#0066cc", color: "white" }
+                        : { color: "#1a1a2e" }
+                    }
+                  >
+                    Field Trips
+                  </button>
                 </div>
               </div>
 
@@ -1490,30 +1505,36 @@ Format as professional homeschool compliance documentation.`;
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
                   Subjects
                 </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
                   {Array.from(new Set(activities.filter((a) => a.child_name === reportKid.name).map((a) => a.subject))).length === 0 ? (
                     <p style={{ color: "#555" }} className="text-sm">
                       No subjects found. Log activities first.
                     </p>
                   ) : (
                     Array.from(new Set(activities.filter((a) => a.child_name === reportKid.name).map((a) => a.subject))).map((subject) => (
-                      <label key={subject} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedSubjects.includes(subject)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedSubjects([...selectedSubjects, subject]);
-                            } else {
-                              setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
-                            }
-                          }}
-                          className="w-4 h-4"
-                        />
-                        <span style={{ color: "#1a1a2e" }} className="text-sm">
-                          {subject}
-                        </span>
-                      </label>
+                      <button
+                        key={subject}
+                        type="button"
+                        onClick={() => {
+                          if (selectedSubjects.includes(subject)) {
+                            setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
+                          } else {
+                            setSelectedSubjects([...selectedSubjects, subject]);
+                          }
+                        }}
+                        className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
+                          selectedSubjects.includes(subject)
+                            ? "bg-blue-500 text-white shadow-md"
+                            : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
+                        }`}
+                        style={
+                          selectedSubjects.includes(subject)
+                            ? { backgroundColor: "#0066cc", color: "white" }
+                            : { color: "#1a1a2e" }
+                        }
+                      >
+                        {subject}
+                      </button>
                     ))
                   )}
                 </div>
