@@ -454,18 +454,21 @@ export default function DashboardPage() {
         date: logDate,
         notes: logNotes,
         curriculum: logCurriculum || null,
+        duration: null, // Default to null for non-Core Subject activities
       };
 
       // Add type-specific fields
       if (logActivityType === "Core Subject") {
         insertData.subject = logSubject;
-        insertData.duration = parseFloat(logDuration);
+        insertData.duration = parseFloat(logDuration); // Include duration for Core Subject
       } else if (logActivityType === "Extracurricular") {
         insertData.subject = logActivityName;
         insertData.curriculum = logActivityName;
+        insertData.duration = null; // Explicitly set duration to null
       } else if (logActivityType === "Field Trip / Enrichment") {
         insertData.subject = logTripName;
         insertData.curriculum = logDestination;
+        insertData.duration = null; // Explicitly set duration to null
       }
 
       const { data, error } = await supabase
@@ -989,7 +992,11 @@ Format as professional homeschool compliance documentation.`;
                 </label>
                 <select
                   value={logActivityType}
-                  onChange={(e) => setLogActivityType(e.target.value)}
+                  onChange={(e) => {
+                    setLogActivityType(e.target.value);
+                    // Clear duration when activity type changes
+                    setLogDuration("");
+                  }}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
                 >
                   <option value="Core Subject">Core Subject</option>
@@ -1020,14 +1027,15 @@ Format as professional homeschool compliance documentation.`;
                   </div>
                   <div>
                     <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                      Duration (hours)
+                      Duration (hours) *
                     </label>
                     <input
                       type="number"
                       value={logDuration}
                       onChange={(e) => setLogDuration(e.target.value)}
-                      placeholder="1.5"
+                      placeholder="Hours (e.g., 2.5)"
                       step="0.5"
+                      min="0"
                       style={{ color: "#1a1a2e", borderColor: "#333" }}
                       className="w-full px-3 py-2 border rounded-lg text-sm"
                     />
