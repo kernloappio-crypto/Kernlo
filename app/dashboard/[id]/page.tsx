@@ -747,7 +747,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
                 
                 activities.forEach((activity) => {
                   if (!subjectMap.has(activity.subject) || 
-                      new Date(activity.date) > new Date(subjectMap.get(activity.subject)!.date)) {
+                      activity.date > subjectMap.get(activity.subject)!.date) {
                     subjectMap.set(activity.subject, {
                       topic: activity.notes || undefined,
                       date: activity.date,
@@ -758,14 +758,18 @@ Format as professional homeschool compliance documentation. Include mentions of 
 
                 const subjectsWithDates = Array.from(subjectMap.entries())
                   .map(([subject, data]) => ({ subject, ...data }))
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .sort((a, b) => b.date.localeCompare(a.date))
                   .slice(0, 5);
 
                 return (
                   <div className="space-y-3">
                     {subjectsWithDates.map((item, idx) => {
-                      const dateObj = new Date(item.date);
-                      const dateStr = dateObj.toLocaleDateString("en-US", {
+                      // TIMEZONE FIX: Parse date string directly without UTC conversion
+                      const parts = item.date.split('-');
+                      const year = parseInt(parts[0], 10);
+                      const month = parseInt(parts[1], 10);
+                      const day = parseInt(parts[2], 10);
+                      const dateStr = new Date(year, month - 1, day).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                       });
@@ -870,8 +874,11 @@ Format as professional homeschool compliance documentation. Include mentions of 
                   const currentMonth = now.getMonth() + 1;
                   const currentYear = now.getFullYear();
                   return extracurricularActivities.filter((a: any) => {
-                    const aDate = new Date(a.date);
-                    return aDate.getMonth() + 1 === currentMonth && aDate.getFullYear() === currentYear;
+                    // TIMEZONE FIX: Parse date string directly without UTC conversion
+                    const parts = a.date.split('-');
+                    const aYear = parseInt(parts[0], 10);
+                    const aMonth = parseInt(parts[1], 10);
+                    return aMonth === currentMonth && aYear === currentYear;
                   }).length;
                 })()}
               </span>
@@ -898,8 +905,11 @@ Format as professional homeschool compliance documentation. Include mentions of 
                   const currentMonth = now.getMonth() + 1;
                   const currentYear = now.getFullYear();
                   return fieldTrips.filter((f: any) => {
-                    const fDate = new Date(f.date);
-                    return fDate.getMonth() + 1 === currentMonth && fDate.getFullYear() === currentYear;
+                    // TIMEZONE FIX: Parse date string directly without UTC conversion
+                    const parts = f.date.split('-');
+                    const fYear = parseInt(parts[0], 10);
+                    const fMonth = parseInt(parts[1], 10);
+                    return fMonth === currentMonth && fYear === currentYear;
                   }).length;
                 })()}
               </span>
