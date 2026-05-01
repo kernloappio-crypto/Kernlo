@@ -322,12 +322,12 @@ export default function KidDetailPage() {
     initializeUser();
   }, [kidId, router]);
 
-  // Refetch attendance when arriving at this page (triggers on route/kidId change)
+  // Refetch attendance and generated reports when arriving at this page (triggers on route/kidId change)
   useEffect(() => {
     if (!kid?.name || !userId) return;
 
     const refreshAttendance = async () => {
-      console.log("🔄 Navigated to kid detail page - refreshing attendance...");
+      console.log("🔄 Navigated to kid detail page - refreshing attendance and reports...");
       try {
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -338,6 +338,19 @@ export default function KidDetailPage() {
 
         const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
         setAttendanceDaysMonth(monthlyDays);
+
+        // Refresh generated reports
+        try {
+          const { data: generatedReportsData } = await supabase
+            .from("generated_reports")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("kid_id", kidId)
+            .order("date_generated", { ascending: false });
+          setGeneratedReports((generatedReportsData as GeneratedReport[]) || []);
+        } catch (err) {
+          console.error("Error refreshing generated reports:", err);
+        }
       } catch (err) {
         console.error("Error refreshing attendance:", err);
       }
