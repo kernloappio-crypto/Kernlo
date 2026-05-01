@@ -52,6 +52,7 @@ export default function ParentCalendarPage() {
   // Quick Log states (shared with calendar)
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
+  const [selectedKidsForLog, setSelectedKidsForLog] = useState<string[]>([]);
   const [logDate, setLogDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -245,73 +246,86 @@ export default function ParentCalendarPage() {
 
   // Handle Quick Log Save
   const handleQuickLogSave = async () => {
-    if (!quickLogKid || !logDate) {
-      alert("Please select a kid and date");
+    if (!logDate || selectedKidsForLog.length === 0) {
+      alert("Please select at least one kid and a date");
       return;
     }
 
     try {
-      const activityData: any = {
-        user_id: userId,
-        child_name: quickLogKid.name,
-        date: logDate,
-        activity_type: logActivityType,
-        notes: logNotes,
-      };
+      const selectedKidObjects = kids.filter((k) => selectedKidsForLog.includes(k.id));
 
       if (logActivityType === "Core Subject") {
         if (!logSubject || !logDuration) {
           alert("Please fill in subject and duration");
           return;
         }
-        activityData.subject = logSubject;
-        activityData.duration = parseFloat(logDuration);
-        activityData.curriculum = logCurriculum;
       } else if (logActivityType === "Extracurricular") {
         if (!logActivityName) {
           alert("Please enter activity name");
           return;
         }
-        activityData.activity_name = logActivityName;
       } else if (logActivityType === "Field Trip / Enrichment") {
         if (!logTripName) {
           alert("Please enter trip name");
           return;
         }
-        activityData.trip_name = logTripName;
-        activityData.destination = logDestination;
       }
 
-      // Save to appropriate table
+      let totalCreated = 0;
+
+      // Save to appropriate table for each selected kid
       if (logActivityType === "Core Subject") {
-        const { error } = await supabase
-          .from("activities")
-          .insert([activityData]);
-        if (error) throw error;
+        for (const kid of selectedKidObjects) {
+          const activityData: any = {
+            user_id: userId,
+            child_name: kid.name,
+            date: logDate,
+            activity_type: logActivityType,
+            notes: logNotes,
+            subject: logSubject,
+            duration: parseFloat(logDuration),
+            curriculum: logCurriculum,
+          };
+
+          const { error } = await supabase
+            .from("activities")
+            .insert([activityData]);
+          if (error) throw error;
+          totalCreated++;
+        }
       } else if (logActivityType === "Extracurricular") {
-        const { error } = await supabase
-          .from("extracurricular_activities")
-          .insert([{
-            user_id: userId,
-            kid_id: quickLogKid.id,
-            activity_name: logActivityName,
-            date: logDate,
-            notes: logNotes,
-          }]);
-        if (error) throw error;
+        for (const kid of selectedKidObjects) {
+          const { error } = await supabase
+            .from("extracurricular_activities")
+            .insert([{
+              user_id: userId,
+              kid_id: kid.id,
+              activity_name: logActivityName,
+              date: logDate,
+              notes: logNotes,
+            }]);
+          if (error) throw error;
+          totalCreated++;
+        }
       } else if (logActivityType === "Field Trip / Enrichment") {
-        const { error } = await supabase
-          .from("field_trips")
-          .insert([{
-            user_id: userId,
-            kid_id: quickLogKid.id,
-            trip_name: logTripName,
-            destination: logDestination,
-            date: logDate,
-            notes: logNotes,
-          }]);
-        if (error) throw error;
+        for (const kid of selectedKidObjects) {
+          const { error } = await supabase
+            .from("field_trips")
+            .insert([{
+              user_id: userId,
+              kid_id: kid.id,
+              trip_name: logTripName,
+              destination: logDestination,
+              date: logDate,
+              notes: logNotes,
+            }]);
+          if (error) throw error;
+          totalCreated++;
+        }
       }
+
+      const kidNames = selectedKidObjects.map((k) => k.name).join(", ");
+      alert(`Activity created for ${selectedKidObjects.length} kid${selectedKidObjects.length > 1 ? "s" : ""}: ${kidNames}`);
 
       // Reset form and close modal
       setShowQuickLog(false);
@@ -323,8 +337,7 @@ export default function ParentCalendarPage() {
       setLogActivityName("");
       setLogTripName("");
       setLogDestination("");
-      
-      alert("Activity saved successfully!");
+      setSelectedKidsForLog([]);
     } catch (error: any) {
       console.error("Error saving activity:", error);
       alert(`Failed to save activity: ${error?.message || "Unknown error"}`);
@@ -334,7 +347,10 @@ export default function ParentCalendarPage() {
   // Handle opening Quick Log from calendar date
   const handleOpenQuickLogForDate = (dateStr: string) => {
     setLogDate(dateStr);
-    setQuickLogKid(quickLogKid || kids[0] || null);
+    if (kids.length > 0) {
+      setQuickLogKid(kids[0]);
+      setSelectedKidsForLog([kids[0].id]);
+    }
     setShowQuickLog(true);
   };
 
@@ -398,32 +414,44 @@ export default function ParentCalendarPage() {
       </main>
 
       {/* Quick Log Modal */}
-      {showQuickLog && quickLogKid && (
+      {showQuickLog && (
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
             <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
-              Quick Log - {quickLogKid.name}
+              Quick Log
             </h2>
 
             <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Kid
+                  Kids (Select Multiple)
                 </label>
-                <select
-                  value={quickLogKid?.id || ""}
-                  onChange={(e) => {
-                    const kid = kids.find((k) => k.id === e.target.value);
-                    if (kid) setQuickLogKid(kid);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                >
+                <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
                   {kids.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.name}
-                    </option>
+                    <label key={k.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedKidsForLog.includes(k.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedKidsForLog([...selectedKidsForLog, k.id]);
+                          } else {
+                            setSelectedKidsForLog(selectedKidsForLog.filter((id) => id !== k.id));
+                          }
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                        {k.name}
+                      </span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {selectedKidsForLog.length > 0 && (
+                  <p style={{ color: "#0066cc" }} className="text-xs mt-2 font-medium">
+                    {selectedKidsForLog.length} kid{selectedKidsForLog.length > 1 ? "s" : ""} selected
+                  </p>
+                )}
               </div>
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">

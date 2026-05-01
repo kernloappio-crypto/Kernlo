@@ -86,6 +86,7 @@ export default function DashboardPage() {
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [quickLogKid, setQuickLogKid] = useState<Kid | null>(null);
+  const [selectedKidsForLog, setSelectedKidsForLog] = useState<string[]>([]);
   const [logDate, setLogDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -433,96 +434,107 @@ export default function DashboardPage() {
   async function handleQuickLogSave() {
     // Validate based on activity type
     if (logActivityType === "Core Subject") {
-      if (!logSubject || !logDuration || !logCurriculum || !quickLogKid) {
+      if (!logSubject || !logDuration || !logCurriculum) {
         alert("Please fill in all required fields (Date, Activity Type, Subject, Duration, Curriculum)");
         return;
       }
     } else if (logActivityType === "Extracurricular") {
-      if (!logActivityName || !quickLogKid) {
+      if (!logActivityName) {
         alert("Please fill in all required fields (Date, Activity Type, Activity Name)");
         return;
       }
     } else if (logActivityType === "Field Trip / Enrichment") {
-      if (!logTripName || !logDestination || !quickLogKid) {
+      if (!logTripName || !logDestination) {
         alert("Please fill in all required fields (Date, Activity Type, Trip Name, Destination)");
         return;
       }
     }
 
+    if (selectedKidsForLog.length === 0) {
+      alert("Please select at least one kid");
+      return;
+    }
+
     try {
+      const selectedKidObjects = kids.filter((k) => selectedKidsForLog.includes(k.id));
+      let totalCreated = 0;
+
       // Route to correct table based on activity type
       if (logActivityType === "Core Subject") {
         // Core Subject → activities table (with duration)
-        const insertData = {
-          user_id: userId,
-          child_name: quickLogKid?.name,
-          activity_type: logActivityType,
-          date: logDate,
-          notes: logNotes,
-          curriculum: logCurriculum || null,
-          subject: logSubject,
-          duration: parseFloat(logDuration),
-        };
+        for (const kid of selectedKidObjects) {
+          const insertData = {
+            user_id: userId,
+            child_name: kid.name,
+            activity_type: logActivityType,
+            date: logDate,
+            notes: logNotes,
+            curriculum: logCurriculum || null,
+            subject: logSubject,
+            duration: parseFloat(logDuration),
+          };
 
-        const { data, error } = await supabase
-          .from("activities")
-          .insert(insertData)
-          .select();
+          const { error } = await supabase
+            .from("activities")
+            .insert(insertData)
+            .select();
 
-        if (error) {
-          alert("Error: " + error.message);
-          return;
+          if (error) {
+            alert("Error: " + error.message);
+            return;
+          }
+          totalCreated++;
         }
-
-        if (data) {
-          setActivities([...data, ...activities]);
-        }
-
-        alert("Activity logged!");
       } else if (logActivityType === "Extracurricular") {
         // Extracurricular → extracurricular_activities table (no duration)
-        const insertData = {
-          user_id: userId,
-          kid_id: quickLogKid?.id,
-          activity_name: logActivityName,
-          date: logDate,
-          notes: logNotes,
-        };
+        for (const kid of selectedKidObjects) {
+          const insertData = {
+            user_id: userId,
+            kid_id: kid.id,
+            activity_name: logActivityName,
+            date: logDate,
+            notes: logNotes,
+          };
 
-        const { data, error } = await supabase
-          .from("extracurricular_activities")
-          .insert(insertData)
-          .select();
+          const { error } = await supabase
+            .from("extracurricular_activities")
+            .insert(insertData)
+            .select();
 
-        if (error) {
-          alert("Error: " + error.message);
-          return;
+          if (error) {
+            alert("Error: " + error.message);
+            return;
+          }
+          totalCreated++;
         }
-
-        alert("Extracurricular activity logged!");
       } else if (logActivityType === "Field Trip / Enrichment") {
         // Field Trip → field_trips table (no duration)
-        const insertData = {
-          user_id: userId,
-          kid_id: quickLogKid?.id,
-          trip_name: logTripName,
-          destination: logDestination,
-          date: logDate,
-          notes: logNotes,
-        };
+        for (const kid of selectedKidObjects) {
+          const insertData = {
+            user_id: userId,
+            kid_id: kid.id,
+            trip_name: logTripName,
+            destination: logDestination,
+            date: logDate,
+            notes: logNotes,
+          };
 
-        const { data, error } = await supabase
-          .from("field_trips")
-          .insert(insertData)
-          .select();
+          const { error } = await supabase
+            .from("field_trips")
+            .insert(insertData)
+            .select();
 
-        if (error) {
-          alert("Error: " + error.message);
-          return;
+          if (error) {
+            alert("Error: " + error.message);
+            return;
+          }
+          totalCreated++;
         }
-
-        alert("Field trip logged!");
       }
+
+      // Success message
+      const kidNames = selectedKidObjects.map((k) => k.name).join(", ");
+      alert(`Activity created for ${selectedKidObjects.length} kid${selectedKidObjects.length > 1 ? "s" : ""}: ${kidNames}`);
 
       // Reset form
       setLogSubject("");
@@ -533,6 +545,7 @@ export default function DashboardPage() {
       setLogActivityName("");
       setLogTripName("");
       setLogDestination("");
+      setSelectedKidsForLog([]);
       const d = new Date();
       setLogDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
       setShowQuickLog(false);
@@ -751,7 +764,8 @@ Format as professional homeschool compliance documentation.`;
             </Link>
             <button
               onClick={() => {
-                setQuickLogKid(quickLogKid || kids[0]);
+                setQuickLogKid(kids[0] || null);
+                setSelectedKidsForLog(kids.length > 0 ? [kids[0].id] : []);
                 setShowQuickLog(true);
               }}
               style={{ backgroundColor: COLORS.primary }}
@@ -992,28 +1006,40 @@ Format as professional homeschool compliance documentation.`;
         <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
             <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold mb-4 sm:mb-6">
-              Quick Log - {quickLogKid.name}
+              Quick Log
             </h2>
 
             <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Kid
+                  Kids (Select Multiple)
                 </label>
-                <select
-                  value={quickLogKid?.id || ""}
-                  onChange={(e) => {
-                    const kid = kids.find((k) => k.id === e.target.value);
-                    if (kid) setQuickLogKid(kid);
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                >
+                <div className="border rounded-lg p-3 space-y-2 bg-gray-50">
                   {kids.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.name}
-                    </option>
+                    <label key={k.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedKidsForLog.includes(k.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedKidsForLog([...selectedKidsForLog, k.id]);
+                          } else {
+                            setSelectedKidsForLog(selectedKidsForLog.filter((id) => id !== k.id));
+                          }
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                        {k.name}
+                      </span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {selectedKidsForLog.length > 0 && (
+                  <p style={{ color: "#0066cc" }} className="text-xs mt-2 font-medium">
+                    {selectedKidsForLog.length} kid{selectedKidsForLog.length > 1 ? "s" : ""} selected
+                  </p>
+                )}
               </div>
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
