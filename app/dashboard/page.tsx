@@ -107,6 +107,7 @@ export default function DashboardPage() {
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(["Core Subject"]);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   // Add kid states
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
@@ -566,6 +567,7 @@ export default function DashboardPage() {
       return;
     }
 
+    setIsGeneratingReport(true);
     try {
       // Fetch all activity types data
       let coreSubjectActivities: any[] = [];
@@ -862,6 +864,8 @@ Format as professional homeschool compliance documentation.`;
     } catch (err) {
       console.error("Error generating report:", err);
       alert("Failed to generate report. Please try again.");
+    } finally {
+      setIsGeneratingReport(false);
     }
   }
 
@@ -1544,14 +1548,15 @@ Format as professional homeschool compliance documentation.`;
             <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleGenerateReport}
-                disabled={selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0)}
+                disabled={isGeneratingReport || selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0)}
                 style={{
-                  backgroundColor: selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0) ? "#ccc" : COLORS.primary,
-                  minHeight: "44px"
+                  backgroundColor: isGeneratingReport ? "#999" : (selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0) ? "#ccc" : COLORS.primary),
+                  minHeight: "44px",
+                  opacity: isGeneratingReport ? 0.8 : 1
                 }}
                 className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center"
               >
-                Download Report
+                {isGeneratingReport ? "Generating Report..." : "Download Report"}
               </button>
               <button
                 onClick={() => setShowReportGen(false)}
