@@ -33,16 +33,6 @@ interface Activity {
   activity_type?: string;
 }
 
-interface Report {
-  id: string;
-  child_name: string;
-  generated_date: string;
-  start_date: string;
-  end_date: string;
-  subjects?: string;
-  report_content?: string;
-}
-
 interface GeneratedReport {
   id: string;
   child_name: string;
@@ -138,7 +128,6 @@ export default function KidDetailPage() {
   const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
   const [fieldTrips, setFieldTrips] = useState<any[]>([]);
@@ -215,19 +204,6 @@ export default function KidDetailPage() {
         } catch (err) {
           console.error("Error loading activities:", err);
           setActivities([]);
-        }
-
-        // Load reports
-        try {
-          const { data: reportsData } = await supabase
-            .from("reports")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("child_name", kidData?.name);
-          setReports((reportsData as Report[]) || []);
-        } catch (err) {
-          console.error("Error loading reports:", err);
-          setReports([]);
         }
 
         // Load generated reports
@@ -549,26 +525,8 @@ Format as professional homeschool compliance documentation. Include mentions of 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Save report to Supabase
-      const reportId = crypto.randomUUID();
+      // Save to generated_reports table
       try {
-        await supabase
-          .from("reports")
-          .insert([
-            {
-              user_id: user?.id,
-              child_name: kid.name,
-              report_type: "comprehensive",
-              generated_date: new Date().toISOString(),
-              subjects: selectedSubjects.join(","),
-              report_content: data.narrative,
-              start_date: reportStartDate,
-              end_date: reportEndDate,
-              notes: `Report for ${reportStartDate} to ${reportEndDate}`,
-            },
-          ]);
-
-        // Also save to generated_reports table with additional tracking
         const startMonth = new Date(reportStartDate).toLocaleDateString("en-US", { month: "short" });
         const endMonth = new Date(reportEndDate).toLocaleDateString("en-US", { month: "short" });
         const startDay = new Date(reportStartDate).getDate();
@@ -598,14 +556,6 @@ Format as professional homeschool compliance documentation. Include mentions of 
               selected_activity_types: ["Core Subject", "Extracurricular", "Field Trip / Enrichment"],
             },
           ]);
-
-        // Refetch reports to update display
-        const { data: updatedReports } = await supabase
-          .from("reports")
-          .select("*")
-          .eq("user_id", user?.id)
-          .eq("child_name", kid.name);
-        setReports((updatedReports as Report[]) || []);
 
         // Refetch generated reports
         const { data: updatedGeneratedReports } = await supabase
@@ -657,7 +607,6 @@ Format as professional homeschool compliance documentation. Include mentions of 
       doc.save(`${kid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
       setShowComprehensiveReport(false);
-      setReports([...reports]); // Trigger re-render
     } catch (err) {
       console.error("Error generating report:", err);
       alert("Failed to generate report. Please try again.");
@@ -1167,55 +1116,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
 
 
 
-        {/* Generated Reports Section */}
-        <div className="mt-8">
-          <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-4">
-            Generated Reports
-          </h2>
 
-          {reports.length === 0 ? (
-            <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 text-center border border-gray-200">
-              <p style={{ color: "#333" }}>No reports generated yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {reports
-                .sort((a, b) => new Date(b.generated_date).getTime() - new Date(a.generated_date).getTime())
-                .map((report) => (
-                  <div
-                    key={report.id}
-                    style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }}
-                    className="p-3 flex items-center justify-between hover:bg-gray-50"
-                  >
-                    <div className="flex-1 flex items-center gap-4">
-                      <span style={{ color: "#555" }} className="text-xs w-24 flex-shrink-0">
-                        {new Date(report.generated_date).toLocaleDateString()}
-                      </span>
-                      <span style={{ backgroundColor: COLORS.light, color: COLORS.secondary }} className="px-2 py-1 rounded text-xs font-medium flex-shrink-0">
-                        Report
-                      </span>
-                      <span style={{ color: "#333" }} className="text-sm">
-                        {report.start_date} to {report.end_date}
-                      </span>
-                      {report.subjects && (
-                        <span style={{ color: "#555" }} className="text-xs">
-                          {report.subjects.split(",").length} subjects
-                        </span>
-                      )}
-                    </div>
-                    <a
-                      href={`/api/download-report/${report.id}`}
-                      download={`${kid?.name}-report-${report.start_date}-${report.end_date}.pdf`}
-                      style={{ color: COLORS.primary }}
-                      className="text-xs font-medium hover:opacity-70 flex-shrink-0 ml-2"
-                    >
-                      Download
-                    </a>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Comprehensive Report Modal */}
