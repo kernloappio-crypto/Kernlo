@@ -543,7 +543,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
           dateRange = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
         }
 
-        await supabase
+        const { error: insertError } = await supabase
           .from("generated_reports")
           .insert([
             {
@@ -560,14 +560,18 @@ Format as professional homeschool compliance documentation. Include mentions of 
             },
           ]);
 
-        // Refetch generated reports
-        const { data: updatedGeneratedReports } = await supabase
-          .from("generated_reports")
-          .select("*")
-          .eq("user_id", user?.id)
-          .eq("kid_id", kidId)
-          .order("date_generated", { ascending: false });
-        setGeneratedReports((updatedGeneratedReports as GeneratedReport[]) || []);
+        if (insertError) {
+          console.error("Error inserting to generated_reports:", insertError);
+        } else {
+          // Refetch generated reports only if insert was successful
+          const { data: updatedGeneratedReports } = await supabase
+            .from("generated_reports")
+            .select("*")
+            .eq("user_id", user?.id)
+            .eq("kid_id", kidId)
+            .order("date_generated", { ascending: false });
+          setGeneratedReports((updatedGeneratedReports as GeneratedReport[]) || []);
+        }
       } catch (err) {
         console.error("Failed to save report to DB:", err);
       }
