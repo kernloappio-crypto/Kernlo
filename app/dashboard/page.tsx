@@ -834,31 +834,38 @@ Format as professional homeschool compliance documentation.`;
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Save report to Supabase
-      try {
-        const { data: insertData, error: insertError } = await supabase
-          .from("reports")
-          .insert([
-            {
-              user_id: user?.id,
-              child_name: reportKid.name,
-              report_type: "comprehensive",
-              generated_date: new Date().toISOString(),
-              subjects: selectedSubjects.length > 0 ? selectedSubjects.join(",") : "Multiple",
-              report_content: data.narrative,
-              start_date: reportStartDate,
-              end_date: reportEndDate,
-              notes: `Report includes: ${selectedActivityTypes.join(", ")}`,
-            },
-          ]);
-
-        if (insertError) console.error("Error saving report:", insertError);
-      } catch (err) {
-        console.error("Failed to save report to DB:", err);
-      }
-
-      // Download PDF
+      // Download PDF first
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
+
+      // Log report to generated_reports table
+      const startDate = new Date(reportStartDate);
+      const endDate = new Date(reportEndDate);
+      const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}-${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${endDate.getFullYear()}`;
+      
+      try {
+        const { error } = await supabase
+          .from('generated_reports')
+          .insert({
+            user_id: user?.id,
+            kid_id: reportKid.id,
+            child_name: reportKid.name,
+            report_type: 'comprehensive',
+            date_range: dateRange,
+            date_generated: new Date().toISOString(),
+            start_date: reportStartDate,
+            end_date: reportEndDate,
+            selected_subjects: selectedSubjects,
+            selected_activity_types: selectedActivityTypes,
+          });
+        
+        if (error) {
+          console.error('Error logging report:', error);
+        } else {
+          console.log('Report logged successfully');
+        }
+      } catch (err) {
+        console.error('Failed to log report:', err);
+      }
 
       setShowReportGen(false);
     } catch (err) {
