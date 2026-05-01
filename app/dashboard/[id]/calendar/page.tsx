@@ -109,7 +109,7 @@ export default function CalendarPage() {
 
         if (kidData) {
           setKid(kidData as Kid);
-          await loadEvents(user.id);
+          await loadEvents(user.id, (kidData as Kid).name);
         }
 
         setLoading(false);
@@ -122,24 +122,22 @@ export default function CalendarPage() {
     init();
   }, [kidId, router]);
 
-  const loadEvents = async (uid: string) => {
+  const loadEvents = async (uid: string, childName?: string) => {
     try {
-      const activities = await getActivities(uid);
+      const activities = await getActivities(uid, childName);
       const extracurricular = await getExtracurricularActivities(uid, kidId);
       const fieldTrips = await getFieldTrips(uid, kidId);
 
       const calendarEvents: CalendarEvent[] = [];
 
-      // Add school activities
+      // Add school activities (core subjects)
       activities.forEach((a) => {
-        if (a.child_name === kid?.name) {
-          calendarEvents.push({
-            date: a.date,
-            type: "activity",
-            name: a.subject,
-            details: `${a.duration}h - ${a.platform}`,
-          });
-        }
+        calendarEvents.push({
+          date: a.date,
+          type: "activity",
+          name: a.subject,
+          details: `${a.duration}h - ${a.platform}`,
+        });
       });
 
       // Add extracurricular
