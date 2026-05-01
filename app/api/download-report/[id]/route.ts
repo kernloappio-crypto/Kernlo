@@ -11,6 +11,7 @@ export async function GET(
 ) {
   try {
     const { id: reportId } = await params;
+    console.log("🔍 [download-report] Endpoint called with reportId:", reportId);
 
     // Fetch report metadata from generated_reports table
     const { data: reportMetadata, error: metadataError } = await supabase
@@ -19,8 +20,16 @@ export async function GET(
       .eq("id", reportId)
       .single();
 
+    console.log("🔍 [download-report] Generated reports query result:", {
+      found: !!reportMetadata,
+      id: reportMetadata?.id,
+      childName: reportMetadata?.child_name,
+      dateRange: `${reportMetadata?.start_date} to ${reportMetadata?.end_date}`,
+      error: metadataError,
+    });
+
     if (metadataError || !reportMetadata) {
-      console.error("Report metadata not found:", metadataError);
+      console.error("❌ [download-report] Report metadata not found:", metadataError);
       return NextResponse.json(
         { error: "Report not found" },
         { status: 404 }
@@ -63,6 +72,12 @@ export async function GET(
       .eq("kid_id", kid_id)
       .gte("date", start_date)
       .lte("date", end_date);
+
+    console.log("📊 [download-report] Activity counts fetched:", {
+      coreSubjects: activities?.length || 0,
+      extracurricular: extracurricularActivities?.length || 0,
+      fieldTrips: fieldTrips?.length || 0,
+    });
 
     // Build summaries for AI prompt
     let coreSubjectsSummary = "";
@@ -136,6 +151,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
     // Call generate-report API to get the narrative
     let narrative = "";
     try {
+      console.log("🤖 [download-report] Calling generate-report API...");
       const reportResponse = await fetch(
         `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/generate-report`,
         {
@@ -150,21 +166,25 @@ Format as professional homeschool compliance documentation. Include mentions of 
         }
       );
 
+      console.log("🤖 [download-report] generate-report response status:", reportResponse.status);
+
       if (reportResponse.ok) {
         const reportData = await reportResponse.json();
         narrative = reportData.narrative || "";
+        console.log("🤖 [download-report] Narrative generated successfully, length:", narrative.length);
       } else {
-        console.warn("Failed to generate narrative from AI, using fallback");
+        console.warn("⚠️ [download-report] Failed to generate narrative from AI, using fallback");
         narrative =
           "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
       }
     } catch (error) {
-      console.warn("Error calling generate-report API:", error);
+      console.warn("⚠️ [download-report] Error calling generate-report API:", error);
       narrative =
         "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
     }
 
     // Generate PDF
+    console.log("📄 [download-report] Creating PDF document...");
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -207,15 +227,31 @@ Format as professional homeschool compliance documentation. Include mentions of 
 
     // Return PDF
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+    const filename = `${child_name}-report-${start_date}-${end_date}.pdf`;
+    
+    console.log("📄 [download-report] PDF created successfully:", {
+      size: pdfBuffer.length,
+      filename,
+      pages: (doc as any).internal.pages.length,
+    });
+    console.log("📦 [download-report] Response headers:", {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Length": pdfBuffer.length,
+    });
 
     return new NextResponse(pdfBuffer, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${child_name}-report-${start_date}-${end_date}.pdf"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {
-    console.error("Error generating report PDF:", error);
+    console.error("❌ [download-report] CRITICAL ERROR generating report PDF:", {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: "Failed to generate report PDF" },
       { status: 500 }

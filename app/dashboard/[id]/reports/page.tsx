@@ -140,20 +140,23 @@ export default function ReportsPage() {
 
   const handleDownloadReport = async (report: GeneratedReport) => {
     try {
+      console.log("📥 Download button clicked for report:", report.id);
       setDownloadingId(report.id);
       
       // Trigger the download
       const link = document.createElement("a");
       link.href = `/api/download-report/${report.id}`;
       link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
+      console.log("📥 Fetching PDF from:", link.href);
       document.body.appendChild(link);
       link.click();
+      console.log("📥 Download triggered");
       document.body.removeChild(link);
       
       // Keep button disabled for a moment to prevent double-clicks
       await new Promise(resolve => setTimeout(resolve, 1500));
     } catch (err) {
-      console.error("Download error:", err);
+      console.error("❌ Download error:", err);
     } finally {
       setDownloadingId(null);
     }
