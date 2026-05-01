@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportEndDate, setReportEndDate] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>(["Core Subject"]);
   const [reportDownloaded, setReportDownloaded] = useState(false);
 
   // Add kid states
@@ -556,49 +557,144 @@ export default function DashboardPage() {
   }
 
   async function handleGenerateReport() {
-    if (!reportKid || selectedSubjects.length === 0) {
-      alert("Please select a kid and subjects");
+    if (!reportKid || selectedActivityTypes.length === 0) {
+      alert("Please select a kid and at least one activity type");
       return;
     }
 
-
-    const filteredActivities = activities.filter(
-      (a) =>
-        a.child_name === reportKid.name &&
-        new Date(a.date) >= new Date(reportStartDate) &&
-        new Date(a.date) <= new Date(reportEndDate) &&
-        selectedSubjects.includes(a.subject)
-    );
-
-    if (!filteredActivities.length) {
-      alert("No activities found for selected criteria");
+    // For Core Subjects, require subject selection
+    if (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0) {
+      alert("Please select at least one subject for Core Subjects");
       return;
     }
 
-    // Prepare activity summary for AI
-    const activitySummary = filteredActivities
-      .map((a) => `${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}`)
-      .join("\n");
+    try {
+      // Fetch all activity types data
+      let coreSubjectActivities: any[] = [];
+      let extracurricularActivities: any[] = [];
+      let fieldTripActivities: any[] = [];
 
-    const prompt = `Generate a professional, comprehensive homeschool progress report for ${reportKid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
+      // Fetch Core Subject activities
+      if (selectedActivityTypes.includes("Core Subject")) {
+        const filteredCore = activities.filter(
+          (a) =>
+            a.child_name === reportKid.name &&
+            new Date(a.date) >= new Date(reportStartDate) &&
+            new Date(a.date) <= new Date(reportEndDate) &&
+            selectedSubjects.includes(a.subject)
+        );
+        coreSubjectActivities = filteredCore;
+      }
 
-Subjects covered: ${selectedSubjects.join(", ")}
-Total activities logged: ${filteredActivities.length}
-Total hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+      // Get auth token for API calls
+      let accessToken = "";
+      if (typeof window !== "undefined") {
+        const sessionStr = localStorage.getItem("kernlo_session");
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            accessToken = session.access_token;
+          } catch (e) {
+            accessToken = localStorage.getItem("kernlo_access_token") || "";
+          }
+        } else {
+          accessToken = localStorage.getItem("kernlo_access_token") || "";
+        }
+      }
+
+      // Fetch Extracurricular activities from API
+      if (selectedActivityTypes.includes("Extracurricular")) {
+        try {
+          const response = await fetch(`/api/extracurricular?childId=${reportKid.id}&startDate=${reportStartDate}&endDate=${reportEndDate}`, {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            extracurricularActivities = data.activities || [];
+          }
+        } catch (err) {
+          console.log("Could not fetch extracurricular activities");
+        }
+      }
+
+      // Fetch Field Trip activities from API
+      if (selectedActivityTypes.includes("Field Trips")) {
+        try {
+          const response = await fetch(`/api/field-trips?childId=${reportKid.id}&startDate=${reportStartDate}&endDate=${reportEndDate}`, {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            fieldTripActivities = data.activities || [];
+          }
+        } catch (err) {
+          console.log("Could not fetch field trip activities");
+        }
+      }
+
+      // Check if we have any activities
+      const totalActivities = coreSubjectActivities.length + extracurricularActivities.length + fieldTripActivities.length;
+      if (totalActivities === 0) {
+        alert("No activities found for selected criteria");
+        return;
+      }
+
+      // Prepare activity summary for AI
+      let activitySummary = "";
+      let activityDetails = "";
+
+      if (coreSubjectActivities.length > 0) {
+        activitySummary += `CORE SUBJECTS (${coreSubjectActivities.length} activities, ${coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)} hours):\n`;
+        activityDetails += "Core Subjects:\n";
+        coreSubjectActivities.forEach((a) => {
+          activitySummary += `- ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}\n`;
+          activityDetails += `- ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})\n`;
+        });
+        activitySummary += "\n";
+      }
+
+      if (extracurricularActivities.length > 0) {
+        activitySummary += `EXTRACURRICULAR (${extracurricularActivities.length} activities):\n`;
+        activityDetails += "\nExtracurricular Activities:\n";
+        extracurricularActivities.forEach((a) => {
+          activitySummary += `- ${a.date}: ${a.activity_name}${a.notes ? ` - ${a.notes}` : ""}\n`;
+          activityDetails += `- ${a.date}: ${a.activity_name}\n`;
+        });
+        activitySummary += "\n";
+      }
+
+      if (fieldTripActivities.length > 0) {
+        activitySummary += `FIELD TRIPS & ENRICHMENT (${fieldTripActivities.length} activities):\n`;
+        activityDetails += "\nField Trips & Enrichment:\n";
+        fieldTripActivities.forEach((a) => {
+          activitySummary += `- ${a.date}: ${a.trip_name} (${a.destination})${a.notes ? ` - ${a.notes}` : ""}\n`;
+          activityDetails += `- ${a.date}: ${a.trip_name} at ${a.destination}\n`;
+        });
+        activitySummary += "\n";
+      }
+
+      const prompt = `Generate a professional, comprehensive homeschool progress report for ${reportKid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
+
+Activity Types Included: ${selectedActivityTypes.join(", ")}
+${selectedActivityTypes.includes("Core Subject") ? `Subjects: ${selectedSubjects.join(", ")}` : ""}
+Total activities logged: ${totalActivities}
 
 Activity log:
 ${activitySummary}
 
 Create a narrative-style report that:
-1. Opens with a summary of learning progress
-2. Details accomplishments in each subject
-3. Highlights engagement and effort
-4. Notes any challenges or areas for growth
-5. Concludes with recommendations for continued learning
+1. Opens with a summary of learning progress and engagement
+2. Details accomplishments in each category (Core Subjects, Extracurricular, Field Trips)
+3. Highlights academic achievement and skill development
+4. Notes participation in enrichment and extracurricular activities
+5. Concludes with recommendations for continued learning and growth
 
 Format as professional homeschool compliance documentation.`;
 
-    try {
       const response = await fetch("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -653,7 +749,7 @@ Format as professional homeschool compliance documentation.`;
 
       yPosition += 8;
 
-      // Activity Summary
+      // Activity Summary by Type
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       if (yPosition > pageHeight - 40) {
@@ -665,16 +761,80 @@ Format as professional homeschool compliance documentation.`;
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`Subjects: ${selectedSubjects.join(", ")}`, marginLeft, yPosition);
+
+      if (coreSubjectActivities.length > 0) {
+        doc.text(`Core Subjects: ${coreSubjectActivities.length} activities, ${coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)} hours`, marginLeft, yPosition);
+        yPosition += 6;
+      }
+
+      if (extracurricularActivities.length > 0) {
+        doc.text(`Extracurricular: ${extracurricularActivities.length} activities`, marginLeft, yPosition);
+        yPosition += 6;
+      }
+
+      if (fieldTripActivities.length > 0) {
+        doc.text(`Field Trips & Enrichment: ${fieldTripActivities.length} activities`, marginLeft, yPosition);
+        yPosition += 6;
+      }
+
       yPosition += 6;
-      doc.text(`Total Activities: ${filteredActivities.length}`, marginLeft, yPosition);
-      yPosition += 6;
-      doc.text(`Total Hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}`, marginLeft, yPosition);
+
+      // Activity Details Section
+      if (yPosition > pageHeight - 60) {
+        doc.addPage();
+        yPosition = marginTop;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.text("DETAILED ACTIVITY LOG", marginLeft, yPosition);
+      yPosition += 8;
+      doc.setFont("helvetica", "normal");
+
+      if (coreSubjectActivities.length > 0) {
+        doc.text("Core Subjects:", marginLeft, yPosition);
+        yPosition += 6;
+        coreSubjectActivities.forEach((a) => {
+          if (yPosition > pageHeight - 20) {
+            doc.addPage();
+            yPosition = marginTop;
+          }
+          doc.text(`  • ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})`, marginLeft + 5, yPosition);
+          yPosition += 5;
+        });
+        yPosition += 2;
+      }
+
+      if (extracurricularActivities.length > 0) {
+        doc.text("Extracurricular Activities:", marginLeft, yPosition);
+        yPosition += 6;
+        extracurricularActivities.forEach((a) => {
+          if (yPosition > pageHeight - 20) {
+            doc.addPage();
+            yPosition = marginTop;
+          }
+          doc.text(`  • ${a.date}: ${a.activity_name}`, marginLeft + 5, yPosition);
+          yPosition += 5;
+        });
+        yPosition += 2;
+      }
+
+      if (fieldTripActivities.length > 0) {
+        doc.text("Field Trips & Enrichment:", marginLeft, yPosition);
+        yPosition += 6;
+        fieldTripActivities.forEach((a) => {
+          if (yPosition > pageHeight - 20) {
+            doc.addPage();
+            yPosition = marginTop;
+          }
+          doc.text(`  • ${a.date}: ${a.trip_name} (${a.destination})`, marginLeft + 5, yPosition);
+          yPosition += 5;
+        });
+      }
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Save report to Supabase (without PDF data for now - just text content)
+      // Save report to Supabase
       try {
         const { data: insertData, error: insertError } = await supabase
           .from("reports")
@@ -684,11 +844,11 @@ Format as professional homeschool compliance documentation.`;
               child_name: reportKid.name,
               report_type: "comprehensive",
               generated_date: new Date().toISOString(),
-              subjects: selectedSubjects.join(","),
+              subjects: selectedSubjects.length > 0 ? selectedSubjects.join(",") : "Multiple",
               report_content: data.narrative,
               start_date: reportStartDate,
               end_date: reportEndDate,
-              notes: `Report for ${reportStartDate} to ${reportEndDate}`,
+              notes: `Report includes: ${selectedActivityTypes.join(", ")}`,
             },
           ]);
 
@@ -1268,6 +1428,66 @@ Format as professional homeschool compliance documentation.`;
 
               <div>
                 <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
+                  Activity Types
+                </label>
+                <div className="space-y-2 border border-gray-200 rounded-lg p-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedActivityTypes.includes("Core Subject")}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedActivityTypes([...selectedActivityTypes, "Core Subject"]);
+                        } else {
+                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Core Subject"));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                      ☑ Core Subjects
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedActivityTypes.includes("Extracurricular")}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedActivityTypes([...selectedActivityTypes, "Extracurricular"]);
+                        } else {
+                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Extracurricular"));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                      ☐ Extracurricular
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedActivityTypes.includes("Field Trips")}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedActivityTypes([...selectedActivityTypes, "Field Trips"]);
+                        } else {
+                          setSelectedActivityTypes(selectedActivityTypes.filter((t) => t !== "Field Trips"));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span style={{ color: "#1a1a2e" }} className="text-sm font-medium">
+                      ☐ Field Trips
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {selectedActivityTypes.includes("Core Subject") && (
+              <div>
+                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
                   Subjects
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
@@ -1298,6 +1518,7 @@ Format as professional homeschool compliance documentation.`;
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             <p style={{ color: "#ff6b6b" }} className="text-xs mb-4 p-3 bg-red-50 rounded border border-red-200">
@@ -1307,9 +1528,9 @@ Format as professional homeschool compliance documentation.`;
             <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
               <button
                 onClick={handleGenerateReport}
-                disabled={selectedSubjects.length === 0}
+                disabled={selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0)}
                 style={{
-                  backgroundColor: selectedSubjects.length === 0 ? "#ccc" : COLORS.primary,
+                  backgroundColor: selectedActivityTypes.length === 0 || (selectedActivityTypes.includes("Core Subject") && selectedSubjects.length === 0) ? "#ccc" : COLORS.primary,
                   minHeight: "44px"
                 }}
                 className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center"
