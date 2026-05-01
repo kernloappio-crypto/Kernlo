@@ -186,7 +186,12 @@ export default function SubjectProgressPage() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // TIMEZONE FIX: Parse string directly without UTC conversion
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -194,7 +199,12 @@ export default function SubjectProgressPage() {
   };
 
   const formatFullDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // TIMEZONE FIX: Parse string directly without UTC conversion
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",

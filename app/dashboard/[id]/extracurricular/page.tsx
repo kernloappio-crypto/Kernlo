@@ -301,11 +301,19 @@ export default function ExtracurricularPage() {
                           {activity.activity_name}
                         </h3>
                         <span style={{ backgroundColor: "#f0f7ff", color: COLORS.primary }} className="px-2 py-1 rounded text-xs font-medium">
-                          {new Date(activity.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {(() => {
+                            // TIMEZONE FIX: Parse string directly without UTC conversion
+                            const parts = activity.date.split('-');
+                            const year = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10);
+                            const day = parseInt(parts[2], 10);
+                            const d = new Date(year, month - 1, day);
+                            return d.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            });
+                          })()}
                         </span>
                       </div>
                       {activity.notes && (
