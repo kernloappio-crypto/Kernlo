@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import jsPDF from 'jspdf';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function GET(
   request: NextRequest,
@@ -11,249 +12,149 @@ export async function GET(
 ) {
   try {
     const { id: reportId } = await params;
-    console.log("🔍 [download-report] Endpoint called with reportId:", reportId);
+    console.log(`🔍 Download endpoint called for report: ${reportId}`);
 
-    // Fetch report metadata from generated_reports table
-    const { data: reportMetadata, error: metadataError } = await supabase
-      .from("generated_reports")
-      .select("*")
-      .eq("id", reportId)
+    // Fetch report metadata
+    const { data: report, error: reportError } = await supabase
+      .from('generated_reports')
+      .select('*')
+      .eq('id', reportId)
       .single();
 
-    console.log("🔍 [download-report] Generated reports query result:", {
-      found: !!reportMetadata,
-      id: reportMetadata?.id,
-      childName: reportMetadata?.child_name,
-      dateRange: `${reportMetadata?.start_date} to ${reportMetadata?.end_date}`,
-      error: metadataError,
-    });
-
-    if (metadataError || !reportMetadata) {
-      console.error("❌ [download-report] Report metadata not found:", metadataError);
-      return NextResponse.json(
-        { error: "Report not found" },
-        { status: 404 }
-      );
+    if (reportError || !report) {
+      console.error('❌ Report not found:', reportError);
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    const {
-      user_id,
-      kid_id,
-      child_name,
-      start_date,
-      end_date,
-      selected_subjects = [],
-      selected_activity_types = ["Core Subject", "Extracurricular", "Field Trip / Enrichment"],
-    } = reportMetadata;
+    console.log(`📊 Report found:`, {
+      id: report.id,
+      childName: report.child_name,
+      dateRange: report.date_range,
+    });
 
-    // Fetch activities for the kid within the date range
-    const { data: activities = [] } = await supabase
-      .from("activities")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("child_name", child_name)
-      .gte("date", start_date)
-      .lte("date", end_date);
+    // Fetch activities for the kid within date range
+    const startDate = report.start_date;
+    const endDate = report.end_date;
 
-    // Fetch extracurricular activities
-    const { data: extracurricularActivities = [] } = await supabase
-      .from("extracurricular_activities")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("kid_id", kid_id)
-      .gte("date", start_date)
-      .lte("date", end_date);
+    let activities: any[] = [];
+    let extracurricular: any[] = [];
+    let fieldTrips: any[] = [];
+
+    // Fetch core subject activities
+    if (report.selected_activity_types?.includes('Core Subject')) {
+      const { data } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('kid_id', report.kid_id)
+        .gte('date', startDate)
+        .lte('date', endDate);
+      activities = data || [];
+    }
+
+    // Fetch extracurricular
+    if (report.selected_activity_types?.includes('Extracurricular')) {
+      const { data } = await supabase
+        .from('extracurricular_activities')
+        .select('*')
+        .eq('kid_id', report.kid_id)
+        .gte('date', startDate)
+        .lte('date', endDate);
+      extracurricular = data || [];
+    }
 
     // Fetch field trips
-    const { data: fieldTrips = [] } = await supabase
-      .from("field_trips")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("kid_id", kid_id)
-      .gte("date", start_date)
-      .lte("date", end_date);
+    if (report.selected_activity_types?.includes('Field Trips')) {
+      const { data } = await supabase
+        .from('field_trips')
+        .select('*')
+        .eq('kid_id', report.kid_id)
+        .gte('date', startDate)
+        .lte('date', endDate);
+      fieldTrips = data || [];
+    }
 
-    console.log("📊 [download-report] Activity counts fetched:", {
-      coreSubjects: activities?.length || 0,
-      extracurricular: extracurricularActivities?.length || 0,
-      fieldTrips: fieldTrips?.length || 0,
+    console.log(`📊 Activities fetched:`, {
+      coreSubjects: activities.length,
+      extracurricular: extracurricular.length,
+      fieldTrips: fieldTrips.length,
     });
 
-    // Build summaries for AI prompt
-    let coreSubjectsSummary = "";
-    if (activities && activities.length > 0) {
-      const subjectMap: { [key: string]: any[] } = {};
-      activities.forEach((activity: any) => {
-        const subject = activity.subject || "Other";
-        if (!subjectMap[subject]) {
-          subjectMap[subject] = [];
-        }
-        subjectMap[subject].push(activity);
+    // Create simple narrative
+    let narrative = `Progress Report for ${report.child_name}\n\n`;
+    narrative += `Period: ${report.date_range}\n\n`;
+    narrative += `Activities Completed:\n\n`;
+
+    if (activities.length > 0) {
+      narrative += `Core Subjects (${activities.length}):\n`;
+      activities.forEach((a: any) => {
+        narrative += `- ${a.date}: ${a.subject} (${a.duration}h)\n`;
       });
-
-      coreSubjectsSummary = Object.entries(subjectMap)
-        .map(([subject, acts]) => {
-          const totalHours = (acts as any[]).reduce((sum, a) => sum + (a.duration || 0), 0);
-          const platformSet = new Set((acts as any[]).map((a) => a.platform));
-          const platforms = Array.from(platformSet).join(", ");
-          return `${subject}: ${totalHours} hours (${acts.length} sessions) via ${platforms || "various platforms"}`;
-        })
-        .join("\n");
+      narrative += '\n';
     }
 
-    let extracurricularSummary = "";
-    if (extracurricularActivities && extracurricularActivities.length > 0) {
-      extracurricularSummary = extracurricularActivities
-        .map((activity: any) => `${activity.activity_name}: ${activity.notes || ""}`)
-        .join("\n");
+    if (extracurricular.length > 0) {
+      narrative += `Extracurricular (${extracurricular.length}):\n`;
+      extracurricular.forEach((a: any) => {
+        narrative += `- ${a.date}: ${a.activity_name}\n`;
+      });
+      narrative += '\n';
     }
 
-    let fieldTripsSummary = "";
-    if (fieldTrips && fieldTrips.length > 0) {
-      fieldTripsSummary = fieldTrips
-        .map((trip: any) => `${trip.location}: ${trip.date} - ${trip.notes || ""}`)
-        .join("\n");
+    if (fieldTrips.length > 0) {
+      narrative += `Field Trips (${fieldTrips.length}):\n`;
+      fieldTrips.forEach((a: any) => {
+        narrative += `- ${a.date}: ${a.trip_name}\n`;
+      });
+      narrative += '\n';
     }
 
-    // Build AI prompt
-    const prompt = `
-Student: ${child_name}
-Period: ${start_date} to ${end_date}
-
-Core Subject Activities:
-${coreSubjectsSummary || "No core subject activities recorded"}
-
-${
-  extracurricularSummary
-    ? `Extracurricular Activities:
-${extracurricularSummary}`
-    : ""
-}
-
-${
-  fieldTripsSummary
-    ? `Field Trips & Enrichment:
-${fieldTripsSummary}`
-    : ""
-}
-
-Create a narrative-style report that:
-1. Opens with a summary of learning progress
-2. Details accomplishments in each subject
-3. Mentions extracurricular activities and their educational value
-4. References field trips and enrichment experiences
-5. Highlights engagement and effort across all areas
-6. Notes any challenges or areas for growth
-7. Concludes with recommendations for continued learning
-
-Format as professional homeschool compliance documentation. Include mentions of extracurricular and field trip experiences in the narrative, demonstrating well-rounded education.`;
-
-    // Call generate-report API to get the narrative
-    let narrative = "";
-    try {
-      console.log("🤖 [download-report] Calling generate-report API...");
-      const reportResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/generate-report`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            studentName: child_name,
-            startDate: start_date,
-            endDate: end_date,
-          }),
-        }
-      );
-
-      console.log("🤖 [download-report] generate-report response status:", reportResponse.status);
-
-      if (reportResponse.ok) {
-        const reportData = await reportResponse.json();
-        narrative = reportData.narrative || "";
-        console.log("🤖 [download-report] Narrative generated successfully, length:", narrative.length);
-      } else {
-        console.warn("⚠️ [download-report] Failed to generate narrative from AI, using fallback");
-        narrative =
-          "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
-      }
-    } catch (error) {
-      console.warn("⚠️ [download-report] Error calling generate-report API:", error);
-      narrative =
-        "A comprehensive report of the student's progress during the specified period. The student engaged in various learning activities across multiple subjects and participated in enrichment experiences.";
-    }
-
-    // Generate PDF
-    console.log("📄 [download-report] Creating PDF document...");
-    const { jsPDF } = await import("jspdf");
+    // Create PDF
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const marginLeft = 15;
-    const marginRight = 15;
-    const marginTop = 15;
-    let yPosition = marginTop;
+    let yPosition = 20;
 
-    // Title
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("COMPREHENSIVE PROGRESS REPORT", marginLeft, yPosition);
+    doc.setFontSize(16);
+    doc.text('COMPREHENSIVE PROGRESS REPORT', 20, yPosition);
     yPosition += 10;
 
-    // Student info
     doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Student: ${child_name}`, marginLeft, yPosition);
-    yPosition += 6;
-    doc.text(`Period: ${start_date} to ${end_date}`, marginLeft, yPosition);
-    yPosition += 6;
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, marginLeft, yPosition);
-    yPosition += 12;
+    doc.text(`Student: ${report.child_name}`, 20, yPosition);
+    yPosition += 7;
+    doc.text(`Period: ${report.date_range}`, 20, yPosition);
+    yPosition += 7;
+    doc.text(`Generated: ${new Date(report.date_generated).toLocaleDateString()}`, 20, yPosition);
+    yPosition += 15;
 
-    // Narrative
-    doc.setFontSize(10);
-    const narrativeLines = (doc.splitTextToSize(
-      narrative,
-      pageWidth - marginLeft - marginRight
-    )) as string[];
-    narrativeLines.forEach((line) => {
+    // Add narrative with word wrapping
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxWidth = 170;
+    const lines = doc.splitTextToSize(narrative, maxWidth);
+
+    lines.forEach((line: string) => {
       if (yPosition > pageHeight - 20) {
         doc.addPage();
-        yPosition = marginTop;
+        yPosition = 20;
       }
-      doc.text(line, marginLeft, yPosition);
+      doc.text(line, 20, yPosition);
       yPosition += 5;
     });
 
-    // Return PDF
-    const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
-    const filename = `${child_name}-report-${start_date}-${end_date}.pdf`;
-    
-    console.log("📄 [download-report] PDF created successfully:", {
-      size: pdfBuffer.length,
-      filename,
-      pages: (doc as any).internal.pages.length,
-    });
-    console.log("📦 [download-report] Response headers:", {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Content-Length": pdfBuffer.length,
-    });
+    // Convert to bytes
+    const pdfBytes = Buffer.from(doc.output('arraybuffer'));
 
-    return new NextResponse(pdfBuffer, {
+    console.log(`📄 PDF created, size: ${pdfBytes.length} bytes`);
+
+    return new NextResponse(pdfBytes, {
+      status: 200,
       headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${report.child_name}-report-${report.start_date}-${report.end_date}.pdf"`,
+        'Content-Length': pdfBytes.length.toString(),
       },
     });
-  } catch (error) {
-    console.error("❌ [download-report] CRITICAL ERROR generating report PDF:", {
-      error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+  } catch (err) {
+    console.error('❌ Download endpoint error:', err);
     return NextResponse.json(
-      { error: "Failed to generate report PDF" },
+      { error: 'Failed to generate report' },
       { status: 500 }
     );
   }
