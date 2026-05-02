@@ -140,11 +140,7 @@ export default function KidDetailPage() {
   const [logNotes, setLogNotes] = useState("");
   const [logCurriculum, setLogCurriculum] = useState("");
   const [logActivityType, setLogActivityType] = useState("Core Subject");
-  const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
-  const [reportStartDate, setReportStartDate] = useState("");
-  const [reportEndDate, setReportEndDate] = useState("");
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
   const [goals, setGoals] = useState<any[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
   const [attendanceDaysYear, setAttendanceDaysYear] = useState(0);
@@ -282,12 +278,6 @@ export default function KidDetailPage() {
             setAttendanceDaysMonth(0);
           }
         }
-
-        // Initialize date range (last 30 days)
-        const today = new Date();
-        const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-        setReportEndDate(today.toISOString().split("T")[0]);
-        setReportStartDate(thirtyDaysAgo.toISOString().split("T")[0]);
 
         setLoading(false);
       } catch (err) {
@@ -431,196 +421,7 @@ export default function KidDetailPage() {
     }
   }
 
-  const handleGenerateComprehensiveReport = async () => {
-    if (!kid || selectedSubjects.length === 0 || !activities.length) {
-      alert("Need activities and selected subjects to generate report");
-      return;
-    }
 
-    setIsGeneratingReport(true);
-
-    const filteredActivities = activities.filter(
-      (a) =>
-        new Date(a.date) >= new Date(reportStartDate) &&
-        new Date(a.date) <= new Date(reportEndDate) &&
-        selectedSubjects.includes(a.subject)
-    );
-
-    if (!filteredActivities.length) {
-      alert("No activities found for selected criteria");
-      return;
-    }
-
-    // Load extracurricular and field trips for this kid
-    let extracurricularList = [];
-    let fieldTripsList = [];
-    try {
-      extracurricularList = await getExtracurricularActivities(userId, kidId);
-      fieldTripsList = await getFieldTrips(userId, kidId);
-    } catch (err) {
-      console.error("Error loading extracurricular/field trips:", err);
-    }
-
-    // Prepare activity summary for AI
-    const activitySummary = filteredActivities
-      .map((a) => `${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}`)
-      .join("\n");
-
-    // Prepare extracurricular summary
-    const extracurricularSummary = extracurricularList
-      .filter((e: any) => {
-        const eDate = new Date(e.date);
-        return eDate >= new Date(reportStartDate) && eDate <= new Date(reportEndDate);
-      })
-      .map((e: any) => `${e.date}: ${e.activity_name}${e.notes ? ` - ${e.notes}` : ""}`)
-      .join("\n");
-
-    // Prepare field trips summary
-    const fieldTripsSummary = fieldTripsList
-      .filter((f: any) => {
-        const fDate = new Date(f.date);
-        return fDate >= new Date(reportStartDate) && fDate <= new Date(reportEndDate);
-      })
-      .map((f: any) => `${f.date}: ${f.trip_name} to ${f.destination}${f.notes ? ` - ${f.notes}` : ""}`)
-      .join("\n");
-
-    const prompt = `Generate a professional, comprehensive homeschool progress report for ${kid.name} covering the period from ${reportStartDate} to ${reportEndDate}.
-
-Subjects covered: ${selectedSubjects.join(", ")}
-Total core activities logged: ${filteredActivities.length}
-Total core hours: ${filteredActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
-
-Core Subject Activity log:
-${activitySummary}
-
-${extracurricularSummary ? `Extracurricular Activities:
-${extracurricularSummary}
-
-` : ""}${fieldTripsSummary ? `Field Trips & Educational Enrichment:
-${fieldTripsSummary}
-
-` : ""}Create a narrative-style report that:
-1. Opens with a summary of learning progress
-2. Details accomplishments in each subject
-3. Mentions extracurricular activities and their educational value
-4. References field trips and enrichment experiences
-5. Highlights engagement and effort across all areas
-6. Notes any challenges or areas for growth
-7. Concludes with recommendations for continued learning
-
-Format as professional homeschool compliance documentation. Include mentions of extracurricular and field trip experiences in the narrative, demonstrating well-rounded education.`;
-
-    try {
-      const response = await fetch("/api/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          studentName: kid.name,
-          startDate: reportStartDate,
-          endDate: reportEndDate,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Report generation failed");
-      const data = await response.json();
-
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // Save to generated_reports table
-      try {
-        const startMonth = new Date(reportStartDate).toLocaleDateString("en-US", { month: "short" });
-        const endMonth = new Date(reportEndDate).toLocaleDateString("en-US", { month: "short" });
-        const startDay = new Date(reportStartDate).getDate();
-        const endDay = new Date(reportEndDate).getDate();
-        const year = new Date(reportEndDate).getFullYear();
-        
-        let dateRange = "";
-        if (startMonth === endMonth) {
-          dateRange = `${startMonth} ${startDay}-${endDay}, ${year}`;
-        } else {
-          dateRange = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
-        }
-
-        const { error: insertError } = await supabase
-          .from("generated_reports")
-          .insert([
-            {
-              user_id: user?.id,
-              kid_id: kidId,
-              child_name: kid.name,
-              report_type: "comprehensive",
-              date_range: dateRange,
-              date_generated: new Date().toISOString(),
-              start_date: reportStartDate,
-              end_date: reportEndDate,
-              selected_subjects: selectedSubjects,
-              selected_activity_types: ["Core Subject", "Extracurricular", "Field Trip / Enrichment"],
-            },
-          ]);
-
-        if (insertError) {
-          console.error("Error inserting to generated_reports:", insertError);
-        } else {
-          // Refetch generated reports only if insert was successful
-          const { data: updatedGeneratedReports } = await supabase
-            .from("generated_reports")
-            .select("*")
-            .eq("user_id", user?.id)
-            .eq("kid_id", kidId)
-            .order("date_generated", { ascending: false });
-          setGeneratedReports((updatedGeneratedReports as GeneratedReport[]) || []);
-        }
-      } catch (err) {
-        console.error("Failed to save report to DB:", err);
-      }
-
-      // Generate PDF for download
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const marginLeft = 15;
-      const marginRight = 15;
-      const marginTop = 15;
-      let yPosition = marginTop;
-
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("COMPREHENSIVE PROGRESS REPORT", marginLeft, yPosition);
-      yPosition += 10;
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Student: ${kid.name}`, marginLeft, yPosition);
-      yPosition += 6;
-      doc.text(`Period: ${reportStartDate} to ${reportEndDate}`, marginLeft, yPosition);
-      yPosition += 6;
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, marginLeft, yPosition);
-      yPosition += 12;
-
-      doc.setFontSize(10);
-      const narrativeLines = (doc.splitTextToSize(data.narrative, pageWidth - marginLeft - marginRight)) as string[];
-      narrativeLines.forEach((line) => {
-        if (yPosition > pageHeight - 20) {
-          doc.addPage();
-          yPosition = marginTop;
-        }
-        doc.text(line, marginLeft, yPosition);
-        yPosition += 5;
-      });
-
-      doc.save(`${kid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
-
-      setShowComprehensiveReport(false);
-    } catch (err) {
-      console.error("Error generating report:", err);
-      alert("Failed to generate report. Please try again.");
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
 
   return (
     <>
@@ -668,13 +469,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
             >
               📅 Calendar
             </Link>
-            <button
-              onClick={() => setShowComprehensiveReport(!showComprehensiveReport)}
-              style={{ backgroundColor: COLORS.secondary }}
-              className="px-4 sm:px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 text-xs sm:text-sm flex-1 sm:flex-initial min-h-11"
-            >
-              {showComprehensiveReport ? "Cancel" : "📄 Report"}
-            </button>
+
           </div>
         </div>
       </div>
@@ -1128,101 +923,7 @@ Format as professional homeschool compliance documentation. Include mentions of 
 
       </div>
 
-      {/* Comprehensive Report Modal */}
-      {showComprehensiveReport && kid ? (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 max-h-[90vh] overflow-y-auto">
-            <h2 style={{ color: COLORS.dark }} className="text-2xl font-bold mb-6">
-              📄 Comprehensive Report
-            </h2>
 
-            <div className="space-y-4 mb-6">
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={reportStartDate}
-                  onChange={(e) => setReportStartDate(e.target.value)}
-                  style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-
-              <div>
-                <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={reportEndDate}
-                  onChange={(e) => setReportEndDate(e.target.value)}
-                  style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
-                />
-              </div>
-
-              <div>
-                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-3">
-                  Subjects
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                  {Array.from(new Set(activities.map((a) => a.subject))).length === 0 ? (
-                    <p style={{ color: "#555" }} className="text-sm">
-                      No subjects found. Log activities first.
-                    </p>
-                  ) : (
-                    Array.from(new Set(activities.map((a) => a.subject))).map((subject) => (
-                      <label key={subject} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedSubjects.includes(subject)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedSubjects([...selectedSubjects, subject]);
-                            } else {
-                              setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
-                            }
-                          }}
-                          className="w-4 h-4"
-                        />
-                        <span style={{ color: "#1a1a2e" }} className="text-sm">
-                          {subject}
-                        </span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <p style={{ color: "#ff6b6b" }} className="text-xs mb-4 p-3 bg-red-50 rounded border border-red-200">
-              ⚠️ Report generation takes ~30 seconds. Please click once and wait.
-            </p>
-
-            <div className="flex gap-3 flex-col">
-              <button
-                onClick={handleGenerateComprehensiveReport}
-                disabled={selectedSubjects.length === 0 || isGeneratingReport}
-                style={{
-                  backgroundColor: selectedSubjects.length === 0 || isGeneratingReport ? "#ccc" : COLORS.primary,
-                }}
-                className="w-full px-4 py-3 text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:cursor-not-allowed min-h-12"
-              >
-                {isGeneratingReport ? "Generating & Downloading..." : "Download Report"}
-              </button>
-              <button
-                onClick={() => setShowComprehensiveReport(false)}
-                style={{ color: "#1a1a2e", borderColor: "#333" }}
-                className="w-full px-4 py-3 border text-sm font-medium rounded-lg hover:bg-gray-50 min-h-12"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {/* Edit Kid Modal */}
       {showEditKid && kid && (
