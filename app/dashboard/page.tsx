@@ -881,8 +881,23 @@ Format as professional homeschool compliance documentation.`;
       });
 
       // Upload PDF to Supabase Storage
+      // Before upload attempt
+      console.log('📦 Storage upload starting...', {
+        userId: currentUserId,
+        kidId: reportKid?.id,
+        reportId: reportId,
+        dateRange: dateRange,
+        bucketName: 'reports',
+      });
+
       try {
-        console.log('📤 Uploading PDF to Storage...');
+        // Extract PDF bytes
+        console.log('📦 PDF created, size:', pdfBytes.byteLength, 'bytes');
+
+        console.log('📦 Storage path:', fileName);
+
+        // Upload to storage
+        console.log('📦 Uploading to Supabase Storage...');
         const { data: uploadData, error: uploadError } = await supabase
           .storage
           .from('reports')
@@ -892,29 +907,50 @@ Format as professional homeschool compliance documentation.`;
           });
 
         if (uploadError) {
-          console.error('❌ Upload failed:', uploadError);
+          console.error('❌ STORAGE UPLOAD ERROR:', {
+            message: uploadError.message,
+            name: uploadError.name,
+            fullError: uploadError,
+          });
         } else {
           console.log('✅ PDF uploaded successfully');
-          
+
           // Get signed URL (valid for 1 year: 365 * 24 * 60 * 60 seconds)
+          console.log('📦 Generating signed URL (365 days)...');
           const { data: signedData, error: signedError } = await supabase
             .storage
             .from('reports')
             .createSignedUrl(fileName, 365 * 24 * 60 * 60);
 
           if (signedError) {
-            console.error('❌ Failed to create signed URL:', signedError);
+            console.error('❌ SIGNED URL ERROR:', {
+              message: signedError.message,
+              fullError: signedError,
+            });
+          } else if (signedData?.signedUrl) {
+            console.log('✅ Signed URL created:', signedData.signedUrl.substring(0, 50) + '...');
+            signedUrl = signedData.signedUrl;
           } else {
-            signedUrl = signedData?.signedUrl || null;
-            console.log('✅ Signed URL created');
+            console.error('❌ No signed URL returned:', signedData);
           }
         }
       } catch (err) {
-        console.error('❌ Storage error:', err);
+        console.error('❌ STORAGE EXCEPTION:', {
+          message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : null,
+          fullError: err,
+        });
         // Don't break the main flow - continue with database insert
       }
 
+      // Save to database
       try {
+        console.log('📦 Saving report to database...', {
+          user_id: currentUserId,
+          kid_id: reportKid.id,
+          file_url: signedUrl ? signedUrl.substring(0, 50) + '...' : null,
+        });
+
         const { data, error } = await supabase
           .from('generated_reports')
           .insert({
@@ -932,7 +968,7 @@ Format as professional homeschool compliance documentation.`;
           });
         
         if (error) {
-          console.error('❌ REPORT LOG ERROR:', {
+          console.error('❌ DATABASE INSERT ERROR:', {
             message: error.message,
             code: error.code,
             details: error.details,
@@ -940,12 +976,14 @@ Format as professional homeschool compliance documentation.`;
             fullError: error,
           });
         } else {
-          console.log('✅ Report logged successfully with file_url:', signedUrl);
+          console.log('✅ Report logged successfully with file_url:', signedUrl ? signedUrl.substring(0, 50) + '...' : 'NULL');
+          console.log('📊 Full report record:', data);
         }
       } catch (err) {
-        console.error('❌ REPORT LOG EXCEPTION:', {
-          error: err,
+        console.error('❌ DATABASE INSERT EXCEPTION:', {
           message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : null,
+          fullError: err,
         });
       }
 
