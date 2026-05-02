@@ -831,6 +831,9 @@ Format as professional homeschool compliance documentation.`;
         });
       }
 
+      // Get PDF bytes for storage upload
+      const pdfBytes = doc.output('arraybuffer');
+      
       // Download PDF first
       doc.save(`${reportKid.name}-report-${reportStartDate}-${reportEndDate}.pdf`);
 
@@ -865,12 +868,51 @@ Format as professional homeschool compliance documentation.`;
       const endDate = new Date(reportEndDate);
       const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}-${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${endDate.getFullYear()}`;
       
+      // Generate unique report ID and upload PDF to Supabase Storage
+      const reportId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const fileName = `${currentUserId}/${reportKid.id}/${reportId}-${reportStartDate}-${reportEndDate}.pdf`;
+      let signedUrl: string | null = null;
+
       console.log('📝 Attempting to log report:', {
         userId: currentUserId,
         kidId: reportKid?.id,
         childName: reportKid?.name,
         dateRange: dateRange,
       });
+
+      // Upload PDF to Supabase Storage
+      try {
+        console.log('📤 Uploading PDF to Storage...');
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('reports')
+          .upload(fileName, new Blob([pdfBytes], { type: 'application/pdf' }), {
+            contentType: 'application/pdf',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error('❌ Upload failed:', uploadError);
+        } else {
+          console.log('✅ PDF uploaded successfully');
+          
+          // Get signed URL (valid for 1 year: 365 * 24 * 60 * 60 seconds)
+          const { data: signedData, error: signedError } = await supabase
+            .storage
+            .from('reports')
+            .createSignedUrl(fileName, 365 * 24 * 60 * 60);
+
+          if (signedError) {
+            console.error('❌ Failed to create signed URL:', signedError);
+          } else {
+            signedUrl = signedData?.signedUrl || null;
+            console.log('✅ Signed URL created');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Storage error:', err);
+        // Don't break the main flow - continue with database insert
+      }
 
       try {
         const { data, error } = await supabase
@@ -886,6 +928,7 @@ Format as professional homeschool compliance documentation.`;
             end_date: reportEndDate,
             selected_subjects: selectedSubjects,
             selected_activity_types: selectedActivityTypes,
+            file_url: signedUrl,
           });
         
         if (error) {
@@ -897,7 +940,7 @@ Format as professional homeschool compliance documentation.`;
             fullError: error,
           });
         } else {
-          console.log('✅ Report logged successfully:', data);
+          console.log('✅ Report logged successfully with file_url:', signedUrl);
         }
       } catch (err) {
         console.error('❌ REPORT LOG EXCEPTION:', {

@@ -18,6 +18,7 @@ interface GeneratedReport {
   end_date: string;
   selected_subjects?: string[];
   selected_activity_types?: string[];
+  file_url?: string;
 }
 
 interface Kid {
@@ -143,15 +144,27 @@ export default function ReportsPage() {
       console.log("📥 Download button clicked for report:", report.id);
       setDownloadingId(report.id);
       
-      // Trigger the download
-      const link = document.createElement("a");
-      link.href = `/api/download-report/${report.id}`;
-      link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
-      console.log("📥 Fetching PDF from:", link.href);
-      document.body.appendChild(link);
-      link.click();
-      console.log("📥 Download triggered");
-      document.body.removeChild(link);
+      if (report.file_url) {
+        // Direct download from Storage URL
+        console.log("📥 Downloading from Storage URL");
+        const link = document.createElement("a");
+        link.href = report.file_url;
+        link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // Fallback to API regeneration
+        console.log("⚠️ No file_url found, falling back to API regeneration");
+        const link = document.createElement("a");
+        link.href = `/api/download-report/${report.id}`;
+        link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
+        console.log("📥 Fetching PDF from:", link.href);
+        document.body.appendChild(link);
+        link.click();
+        console.log("📥 Download triggered");
+        document.body.removeChild(link);
+      }
       
       // Keep button disabled for a moment to prevent double-clicks
       await new Promise(resolve => setTimeout(resolve, 1500));
