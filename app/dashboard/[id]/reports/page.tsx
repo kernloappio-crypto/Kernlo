@@ -115,10 +115,7 @@ export default function ReportsPage() {
 
 
 
-  const formatReportDetails = (report: GeneratedReport) => {
-    const parts: string[] = [];
-
-    // Date range
+  const formatDateRange = (report: GeneratedReport) => {
     const startDate = new Date(report.start_date);
     const endDate = new Date(report.end_date);
     const startMonth = startDate.toLocaleDateString("en-US", { month: "short" });
@@ -127,13 +124,12 @@ export default function ReportsPage() {
     const endDay = endDate.getDate();
     const year = endDate.getFullYear();
 
-    const dateRange =
-      startMonth === endMonth
-        ? `${startMonth} ${startDay}-${endDay}, ${year}`
-        : `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
-    parts.push(dateRange);
+    return startMonth === endMonth
+      ? `${startMonth} ${startDay}-${endDay}, ${year}`
+      : `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+  };
 
-    // Generated date/time
+  const formatGeneratedTime = (report: GeneratedReport) => {
     const genDate = new Date(report.date_generated);
     const genMonth = genDate.toLocaleDateString("en-US", { month: "short" });
     const genDay = genDate.getDate();
@@ -142,9 +138,16 @@ export default function ReportsPage() {
       minute: "2-digit",
       hour12: true,
     });
-    parts.push(`Generated: ${genMonth} ${genDay} @ ${genTime}`);
+    return `Generated: ${genMonth} ${genDay} @ ${genTime}`;
+  };
 
-    // Subjects
+  const formatLine1 = (report: GeneratedReport) => {
+    return `${formatDateRange(report)} | ${formatGeneratedTime(report)}`;
+  };
+
+  const formatLine2 = (report: GeneratedReport) => {
+    const parts: string[] = [];
+
     if (
       report.selected_subjects &&
       Array.isArray(report.selected_subjects) &&
@@ -153,7 +156,6 @@ export default function ReportsPage() {
       parts.push(`Subjects: ${report.selected_subjects.join(", ")}`);
     }
 
-    // Activity types
     if (
       report.selected_activity_types &&
       Array.isArray(report.selected_activity_types) &&
@@ -222,27 +224,32 @@ export default function ReportsPage() {
               </p>
             </div>
           ) : (
-            <div style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "auto" }}>
-              {/* Reports List - Single Line Format */}
-              <div className="divide-y divide-gray-200">
-                {reports.map((report, index) => (
-                  <div
-                    key={report.id}
-                    style={{
-                      backgroundColor: index % 2 === 0 ? "white" : "#fafafa",
-                      paddingLeft: "1.5rem",
-                      paddingRight: "1.5rem",
-                      paddingTop: "1rem",
-                      paddingBottom: "1rem",
-                    }}
-                    className="hover:bg-gray-50 transition-colors overflow-x-auto"
-                  >
-                    <p style={{ color: "#333", fontSize: "0.95rem", whiteSpace: "nowrap" }}>
-                      {formatReportDetails(report)}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-3">
+              {reports.map((report) => (
+                <div
+                  key={report.id}
+                  style={{
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    border: "1px solid #e5e7eb",
+                    paddingLeft: "1.5rem",
+                    paddingRight: "1.5rem",
+                    paddingTop: "1rem",
+                    paddingBottom: "1rem",
+                  }}
+                  className="hover:shadow-sm transition-shadow"
+                >
+                  {/* Line 1: Date Range | Generated Date/Time */}
+                  <p style={{ color: "#333", fontSize: "0.95rem", fontWeight: "500", lineHeight: "1.4" }}>
+                    {formatLine1(report)}
+                  </p>
+                  
+                  {/* Line 2: Subjects | Types */}
+                  <p style={{ color: "#666", fontSize: "0.875rem", lineHeight: "1.4", marginTop: "0.25rem" }}>
+                    {formatLine2(report)}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </div>
