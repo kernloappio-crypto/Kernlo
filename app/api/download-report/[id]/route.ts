@@ -11,6 +11,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('✅ Download endpoint initialized');
+    console.log(`Environment vars check:`, {
+      supabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
     const { id: reportId } = await params;
     console.log(`🔍 Download endpoint called for report: ${reportId}`);
 
