@@ -870,7 +870,13 @@ Format as professional homeschool compliance documentation.`;
       
       // Generate unique report ID and upload PDF to Supabase Storage
       const reportId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const fileName = `${currentUserId}/${reportKid.id}/${reportId}-${reportStartDate}-${reportEndDate}.pdf`;
+      
+      // Sanitize dateRange: replace spaces with underscores, remove special characters
+      const sanitizedDateRange = dateRange
+        .replace(/\s+/g, '_')           // spaces → underscores
+        .replace(/[^a-zA-Z0-9_-]/g, ''); // remove non-alphanumeric (except _ and -)
+      
+      const fileName = `${currentUserId}/${reportKid.id}/${reportId}-${sanitizedDateRange}.pdf`;
       let signedUrl: string | null = null;
 
       console.log('📝 Attempting to log report:', {
@@ -887,6 +893,8 @@ Format as professional homeschool compliance documentation.`;
         kidId: reportKid?.id,
         reportId: reportId,
         dateRange: dateRange,
+        sanitizedDateRange: sanitizedDateRange,
+        fileName: fileName,
         bucketName: 'reports',
       });
 
