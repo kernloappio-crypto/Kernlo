@@ -134,12 +134,19 @@ export default function KidDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showQuickLog, setShowQuickLog] = useState(false);
   const [logDate, setLogDate] = useState(new Date().toISOString().split("T")[0]);
+  const [logActivityType, setLogActivityType] = useState("Core Subject");
+  // Core Subject fields
   const [logSubject, setLogSubject] = useState("");
   const [logDuration, setLogDuration] = useState("");
   const [logPlatform, setLogPlatform] = useState("");
-  const [logNotes, setLogNotes] = useState("");
   const [logCurriculum, setLogCurriculum] = useState("");
-  const [logActivityType, setLogActivityType] = useState("Core Subject");
+  // Extracurricular fields
+  const [logActivityName, setLogActivityName] = useState("");
+  // Field Trip fields
+  const [logTripName, setLogTripName] = useState("");
+  const [logDestination, setLogDestination] = useState("");
+  // Common field
+  const [logNotes, setLogNotes] = useState("");
 
   const [goals, setGoals] = useState<any[]>([]);
   const [complianceState, setComplianceState] = useState("CA");
@@ -327,30 +334,82 @@ export default function KidDetailPage() {
   }, [kidId, userId, kid?.name]);
 
   async function handleQuickLog() {
-    if (!logSubject || !logDuration || !logPlatform) {
-      alert("Subject, duration, and platform are required");
-      return;
+    // Validate based on activity type
+    if (logActivityType === "Core Subject") {
+      if (!logSubject || !logDuration || !logCurriculum) {
+        alert("Please fill in all required fields (Date, Activity Type, Subject, Duration, Curriculum)");
+        return;
+      }
+    } else if (logActivityType === "Extracurricular") {
+      if (!logActivityName) {
+        alert("Please fill in all required fields (Date, Activity Type, Activity Name)");
+        return;
+      }
+    } else if (logActivityType === "Field Trip / Enrichment") {
+      if (!logTripName || !logDestination) {
+        alert("Please fill in all required fields (Date, Activity Type, Trip Name, Destination)");
+        return;
+      }
     }
 
     try {
-      const { data, error } = await supabase
-        .from("activities")
-        .insert({
-          user_id: userId,
-          child_name: kid!.name,
-          subject: logSubject,
-          duration: parseFloat(logDuration),
-          platform: logPlatform,
-          curriculum: logCurriculum || null,
-          activity_type: logActivityType,
-          date: logDate,
-          notes: logNotes || null,
-        })
-        .select();
+      // Route to correct table based on activity type
+      if (logActivityType === "Core Subject") {
+        // Core Subject → activities table
+        const { error } = await supabase
+          .from("activities")
+          .insert({
+            user_id: userId,
+            child_name: kid!.name,
+            subject: logSubject,
+            duration: parseFloat(logDuration),
+            platform: logPlatform || null,
+            curriculum: logCurriculum || null,
+            activity_type: logActivityType,
+            date: logDate,
+            notes: logNotes || null,
+          })
+          .select();
 
-      if (error) {
-        alert("Error: " + error.message);
-        return;
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
+      } else if (logActivityType === "Extracurricular") {
+        // Extracurricular → extracurricular_activities table
+        const { error } = await supabase
+          .from("extracurricular_activities")
+          .insert({
+            user_id: userId,
+            kid_id: kid!.id,
+            activity_name: logActivityName,
+            date: logDate,
+            notes: logNotes || null,
+          })
+          .select();
+
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
+      } else if (logActivityType === "Field Trip / Enrichment") {
+        // Field Trip → field_trips table
+        const { error } = await supabase
+          .from("field_trips")
+          .insert({
+            user_id: userId,
+            kid_id: kid!.id,
+            trip_name: logTripName,
+            destination: logDestination,
+            date: logDate,
+            notes: logNotes || null,
+          })
+          .select();
+
+        if (error) {
+          alert("Error: " + error.message);
+          return;
+        }
       }
 
       // Reload activities
@@ -358,14 +417,24 @@ export default function KidDetailPage() {
       const kidActivities = activitiesData.filter((a: any) => a.child_name === kid!.name);
       setActivities(kidActivities as Activity[]);
 
+      // Reload extracurricular and field trips
+      const extracurricularData = await getExtracurricularActivities(userId, kid!.id);
+      setExtracurricularActivities(extracurricularData || []);
+
+      const fieldTripsData = await getFieldTrips(userId, kid!.id);
+      setFieldTrips(fieldTripsData || []);
+
       // Reset form
       setLogDate(new Date().toISOString().split("T")[0]);
+      setLogActivityType("Core Subject");
       setLogSubject("");
       setLogDuration("");
       setLogPlatform("");
-      setLogNotes("");
       setLogCurriculum("");
-      setLogActivityType("Core Subject");
+      setLogActivityName("");
+      setLogTripName("");
+      setLogDestination("");
+      setLogNotes("");
       setShowQuickLog(false);
     } catch (err) {
       console.error("Error logging activity:", err);
@@ -782,7 +851,7 @@ export default function KidDetailPage() {
           );
         })()}
 
-        {/* Quick Log Modal */}
+        {/* Quick Log Modal - Mirrors parent dashboard behavior */}
         {showQuickLog && kid && (
           <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-6 sm:p-8 max-w-md w-full my-8">
@@ -791,91 +860,34 @@ export default function KidDetailPage() {
               </h2>
 
               <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {/* Date field */}
                 <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                  <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                     Date
                   </label>
                   <input
                     type="date"
                     value={logDate}
                     onChange={(e) => setLogDate(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ color: "#1a1a2e", borderColor: "#333" }}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
                   />
                 </div>
 
+                {/* Activity Type field - MOVED HERE, right after Date */}
                 <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                    Subject
-                  </label>
-                  <select
-                    value={logSubject}
-                    onChange={(e) => setLogSubject(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select subject...</option>
-                    {SUBJECTS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                    Duration (hours)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    placeholder="1.5"
-                    value={logDuration}
-                    onChange={(e) => setLogDuration(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                    Platform
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Khan Academy, IXL, Outschool..."
-                    value={logPlatform}
-                    onChange={(e) => setLogPlatform(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                    Curriculum/Resource (optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Math Mammoth, Khan Academy, IXL, Textbook"
-                    value={logCurriculum}
-                    onChange={(e) => setLogCurriculum(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
+                  <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
                     Activity Type
                   </label>
                   <select
                     value={logActivityType}
-                    onChange={(e) => setLogActivityType(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      setLogActivityType(e.target.value);
+                      // Clear duration when activity type changes
+                      setLogDuration("");
+                    }}
+                    style={{ color: "#1a1a2e", borderColor: "#333" }}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
                   >
                     <option value="Core Subject">Core Subject</option>
                     <option value="Extracurricular">Extracurricular (Music, Sports, Clubs)</option>
@@ -883,16 +895,133 @@ export default function KidDetailPage() {
                   </select>
                 </div>
 
+                {/* Core Subject Fields */}
+                {logActivityType === "Core Subject" && (
+                  <>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Subject
+                      </label>
+                      <select
+                        value={logSubject}
+                        onChange={(e) => setLogSubject(e.target.value)}
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      >
+                        <option value="">Select subject</option>
+                        {SUBJECTS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Duration (hours) *
+                      </label>
+                      <input
+                        type="number"
+                        value={logDuration}
+                        onChange={(e) => setLogDuration(e.target.value)}
+                        placeholder="Hours (e.g., 2.5)"
+                        step="0.5"
+                        min="0"
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Platform
+                      </label>
+                      <input
+                        type="text"
+                        value={logPlatform}
+                        onChange={(e) => setLogPlatform(e.target.value)}
+                        placeholder="Khan Academy, IXL, Outschool..."
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Curriculum/Resource
+                      </label>
+                      <input
+                        type="text"
+                        value={logCurriculum}
+                        onChange={(e) => setLogCurriculum(e.target.value)}
+                        placeholder="e.g., Math Mammoth, Khan Academy, Outschool, IXL, Textbook"
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Extracurricular Fields */}
+                {logActivityType === "Extracurricular" && (
+                  <>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Activity Name
+                      </label>
+                      <input
+                        type="text"
+                        value={logActivityName}
+                        onChange={(e) => setLogActivityName(e.target.value)}
+                        placeholder="e.g., Piano Lesson, Basketball Practice"
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Field Trip Fields */}
+                {logActivityType === "Field Trip / Enrichment" && (
+                  <>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Trip Name
+                      </label>
+                      <input
+                        type="text"
+                        value={logTripName}
+                        onChange={(e) => setLogTripName(e.target.value)}
+                        placeholder="e.g., Science Museum Visit"
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Destination
+                      </label>
+                      <input
+                        type="text"
+                        value={logDestination}
+                        onChange={(e) => setLogDestination(e.target.value)}
+                        placeholder="e.g., Science Museum"
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Notes (for all types) */}
                 <div>
-                  <label style={{ color: "#333" }} className="text-sm font-medium block mb-2">
-                    Notes (optional)
+                  <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                    Notes
                   </label>
                   <textarea
-                    placeholder="What did they learn?"
                     value={logNotes}
                     onChange={(e) => setLogNotes(e.target.value)}
-                    style={{ color: "#1a1a2e" }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Lesson details..."
+                    style={{ color: "#1a1a2e", borderColor: "#333" }}
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
                     rows={3}
                   />
                 </div>
@@ -901,15 +1030,15 @@ export default function KidDetailPage() {
               <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
                 <button
                   onClick={handleQuickLog}
-                  style={{ backgroundColor: COLORS.primary }}
-                  className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base"
+                  style={{ backgroundColor: COLORS.primary, minHeight: "44px" }}
+                  className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 text-sm sm:text-base flex items-center justify-center"
                 >
                   Save Activity
                 </button>
                 <button
                   onClick={() => setShowQuickLog(false)}
-                  style={{ color: "#1a1a2e", borderColor: "#333" }}
-                  className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+                  style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
+                  className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center"
                 >
                   Cancel
                 </button>
@@ -917,9 +1046,6 @@ export default function KidDetailPage() {
             </div>
           </div>
         )}
-
-
-
 
       </div>
 
