@@ -908,7 +908,7 @@ Format as professional homeschool compliance documentation.`;
         console.log('📦 Uploading to Supabase Storage...');
         const { data: uploadData, error: uploadError } = await supabase
           .storage
-          .from('reports')
+          .from('Reports')
           .upload(fileName, new Blob([pdfBytes], { type: 'application/pdf' }), {
             contentType: 'application/pdf',
             upsert: true,
@@ -927,7 +927,7 @@ Format as professional homeschool compliance documentation.`;
           console.log('📦 Generating signed URL (365 days)...');
           const { data: signedData, error: signedError } = await supabase
             .storage
-            .from('reports')
+            .from('Reports')
             .createSignedUrl(fileName, 365 * 24 * 60 * 60);
 
           if (signedError) {
