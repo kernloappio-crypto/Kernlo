@@ -95,6 +95,7 @@ export default function DashboardPage() {
   const [logDuration, setLogDuration] = useState("");
   const [logNotes, setLogNotes] = useState("");
   const [logCurriculum, setLogCurriculum] = useState("");
+  const [logTopic, setLogTopic] = useState("");
   const [logActivityType, setLogActivityType] = useState("Core Subject");
   const [logActivityName, setLogActivityName] = useState("");
   const [logTripName, setLogTripName] = useState("");
@@ -472,6 +473,7 @@ export default function DashboardPage() {
             curriculum: logCurriculum || null,
             subject: logSubject,
             duration: parseFloat(logDuration),
+            topic: logTopic || null,
           };
 
           const { error } = await supabase
@@ -541,6 +543,7 @@ export default function DashboardPage() {
       setLogDuration("");
       setLogNotes("");
       setLogCurriculum("");
+      setLogTopic("");
       setLogActivityType("Core Subject");
       setLogActivityName("");
       setLogTripName("");
@@ -1404,6 +1407,18 @@ Format as professional homeschool compliance documentation.`;
                       step="0.5"
                       min="0"
                       style={{ color: "#1a1a2e", borderColor: "#333" }}
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                      Lesson Topic
+                    </label>
+                    <input
+                      type="text"
+                      value={logTopic}
+                      onChange={(e) => setLogTopic(e.target.value)}
+                      placeholder="e.g., Fractions and Decimals, Photosynthesis"
                       className="w-full px-3 py-2 border rounded-lg text-sm"
                     />
                   </div>

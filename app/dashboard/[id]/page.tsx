@@ -140,6 +140,7 @@ export default function KidDetailPage() {
   const [logDuration, setLogDuration] = useState("");
   const [logPlatform, setLogPlatform] = useState("");
   const [logCurriculum, setLogCurriculum] = useState("");
+  const [logTopic, setLogTopic] = useState("");
   // Extracurricular fields
   const [logActivityName, setLogActivityName] = useState("");
   // Field Trip fields
@@ -365,6 +366,7 @@ export default function KidDetailPage() {
             duration: parseFloat(logDuration),
             platform: logPlatform || null,
             curriculum: logCurriculum || null,
+            topic: logTopic || null,
             activity_type: logActivityType,
             date: logDate,
             notes: logNotes || null,
@@ -431,6 +433,7 @@ export default function KidDetailPage() {
       setLogDuration("");
       setLogPlatform("");
       setLogCurriculum("");
+      setLogTopic("");
       setLogActivityName("");
       setLogTripName("");
       setLogDestination("");
@@ -940,6 +943,19 @@ export default function KidDetailPage() {
                         value={logPlatform}
                         onChange={(e) => setLogPlatform(e.target.value)}
                         placeholder="Khan Academy, IXL, Outschool..."
+                        style={{ color: "#1a1a2e", borderColor: "#333" }}
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
+                        Lesson Topic
+                      </label>
+                      <input
+                        type="text"
+                        value={logTopic}
+                        onChange={(e) => setLogTopic(e.target.value)}
+                        placeholder="e.g., Colonial America, Cell Division"
                         style={{ color: "#1a1a2e", borderColor: "#333" }}
                         className="w-full px-3 py-2 border rounded-lg text-sm"
                       />

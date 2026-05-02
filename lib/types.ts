@@ -36,6 +36,22 @@ export interface Workspace {
   created_at: string;
 }
 
+export interface Activity {
+  id: string;
+  user_id: string;
+  child_name: string;
+  subject: string;
+  duration: number;
+  platform: string;
+  date: string;
+  notes?: string;
+  curriculum?: string;
+  activity_type?: string;
+  topic?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ActivityTemplate {
   id: string;
   workspace_id: string;

@@ -19,6 +19,7 @@ interface Activity {
   notes?: string;
   curriculum?: string;
   activity_type?: string;
+  topic?: string;
 }
 
 interface Kid {
@@ -151,6 +152,10 @@ export default function SubjectProgressPage() {
 
   const getLastTopic = (activity: Activity | undefined): string => {
     if (!activity) return "";
+    // Use topic field first, then fallback to notes or curriculum
+    if (activity.topic) {
+      return activity.topic.substring(0, 50);
+    }
     // Extract topic from notes or curriculum
     const notes = activity.notes?.trim() || "";
     const curriculum = activity.curriculum?.trim() || "";
@@ -161,6 +166,79 @@ export default function SubjectProgressPage() {
       return match ? match[1].substring(0, 50) : notes.substring(0, 50);
     }
     return curriculum ? curriculum.substring(0, 50) : "";
+  };
+
+  const getRecentTopics = (acts: Activity[], limit: number = 5): string[] => {
+    // Get unique topics from recent activities, max 5-7
+    const topics: string[] = [];
+    const seenTopics = new Set<string>();
+    
+    acts.forEach((activity) => {
+      const topic = getLastTopic(activity);
+      if (topic && !seenTopics.has(topic) && topics.length < limit) {
+        topics.push(topic);
+        seenTopics.add(topic);
+      }
+    });
+    
+    return topics;
+  };
+
+  const get4WeekTrend = (acts: Activity[]): number[] => {
+    // Group activities by week (4 weeks back) and sum hours
+    const now = new Date();
+    const weeks: { [key: number]: number } = {};
+    
+    // Initialize 4 weeks with 0
+    for (let i = 0; i < 4; i++) {
+      weeks[i] = 0;
+    }
+    
+    acts.forEach((activity) => {
+      const actDate = new Date(activity.date);
+      const diffTime = now.getTime() - actDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const weekIndex = Math.floor(diffDays / 7);
+      
+      if (weekIndex < 4) {
+        weeks[weekIndex] += activity.duration;
+      }
+    });
+    
+    // Return in chronological order (oldest week first)
+    return [weeks[3], weeks[2], weeks[1], weeks[0]];
+  };
+
+  const TrendSparkline = ({ data, height = 40 }: { data: number[]; height?: number }) => {
+    const maxValue = Math.max(...data, 1); // Ensure at least 1 for scale
+    const width = 100 / data.length;
+    
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: "2px",
+          height: `${height}px`,
+          marginTop: "4px",
+        }}
+      >
+        {data.map((value, idx) => (
+          <div
+            key={idx}
+            style={{
+              flex: 1,
+              backgroundColor: COLORS.secondary,
+              height: `${(value / maxValue) * 100}%`,
+              borderRadius: "2px",
+              minHeight: value > 0 ? "2px" : "1px",
+              opacity: 0.7 + (idx / data.length) * 0.3, // Gradient opacity
+            }}
+            title={`Week ${idx + 1}: ${value.toFixed(1)}h`}
+          />
+        ))}
+      </div>
+    );
   };
 
   const getPast6MonthsActivities = (acts: Activity[]): Activity[] => {
@@ -345,6 +423,8 @@ export default function SubjectProgressPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {subjectGroups.map((group) => {
                   const lastTopic = getLastTopic(group.lastActivity);
+                  const recentTopics = getRecentTopics(group.activities);
+                  const trendData = get4WeekTrend(group.activities);
                   return (
                     <button
                       key={group.subject}
@@ -386,24 +466,51 @@ export default function SubjectProgressPage() {
                               {group.totalActivities} • {group.totalHours.toFixed(1)}h
                             </p>
                           </div>
-                          {lastTopic && (
-                            <div className="text-center w-full">
-                              <p style={{ color: "#666" }} className="text-xs font-medium mt-1">
-                                Last: <span style={{ color: COLORS.primary }}>{lastTopic}</span>
-                              </p>
-                            </div>
-                          )}
-                          {group.lastActivity && (
-                            <div className="text-center w-full">
-                              <p style={{ color: "#555" }} className="text-xs mt-0.5">
-                                {formatDate(group.lastActivity.date)}
-                              </p>
-                            </div>
-                          )}
                         </div>
 
+                        {/* 4-Week Trend Sparkline */}
+                        <div className="w-full mb-2">
+                          <p style={{ color: "#666" }} className="text-xs font-medium mb-1">
+                            4-Week Trend
+                          </p>
+                          <TrendSparkline data={trendData} height={32} />
+                        </div>
+
+                        {/* Recent Topics */}
+                        {recentTopics.length > 0 && (
+                          <div className="w-full mb-2">
+                            <p style={{ color: "#666" }} className="text-xs font-medium mb-1">
+                              Recent:
+                            </p>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                              {recentTopics.slice(0, 2).map((topic, idx) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    backgroundColor: COLORS.primary,
+                                    color: "white",
+                                    fontSize: "10px",
+                                    padding: "2px 6px",
+                                    borderRadius: "3px",
+                                  }}
+                                >
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {group.lastActivity && (
+                          <div className="text-center w-full">
+                            <p style={{ color: "#555" }} className="text-xs mt-0.5">
+                              {formatDate(group.lastActivity.date)}
+                            </p>
+                          </div>
+                        )}
+
                         {/* Progress Bar */}
-                        <div className="w-full">
+                        <div className="w-full mt-2">
                           <div
                             style={{
                               backgroundColor: "#e5e7eb",
