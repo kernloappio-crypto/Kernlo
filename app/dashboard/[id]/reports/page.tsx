@@ -45,7 +45,6 @@ export default function ReportsPage() {
   const [kid, setKid] = useState<Kid | null>(null);
   const [reports, setReports] = useState<GeneratedReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -114,65 +113,56 @@ export default function ReportsPage() {
     initializeUser();
   }, [kidId, router]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
-  const getReportTitle = (report: GeneratedReport) => {
+
+  const formatReportDetails = (report: GeneratedReport) => {
+    const parts: string[] = [];
+
+    // Date range
     const startDate = new Date(report.start_date);
     const endDate = new Date(report.end_date);
-
     const startMonth = startDate.toLocaleDateString("en-US", { month: "short" });
     const endMonth = endDate.toLocaleDateString("en-US", { month: "short" });
     const startDay = startDate.getDate();
     const endDay = endDate.getDate();
     const year = endDate.getFullYear();
 
-    if (startMonth === endMonth) {
-      return `${startMonth} ${startDay}-${endDay}, ${year} Comprehensive Report`;
-    } else {
-      return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year} Comprehensive Report`;
-    }
-  };
+    const dateRange =
+      startMonth === endMonth
+        ? `${startMonth} ${startDay}-${endDay}, ${year}`
+        : `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+    parts.push(dateRange);
 
-  const handleDownloadReport = async (report: GeneratedReport) => {
-    try {
-      console.log("📥 Download button clicked for report:", report.id);
-      setDownloadingId(report.id);
-      
-      if (report.file_url) {
-        // Direct download from Storage URL
-        console.log("📥 Downloading from Storage URL");
-        const link = document.createElement("a");
-        link.href = report.file_url;
-        link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        // Fallback to API regeneration
-        console.log("⚠️ No file_url found, falling back to API regeneration");
-        const link = document.createElement("a");
-        link.href = `/api/download-report/${report.id}`;
-        link.download = `${report.child_name}-report-${report.start_date}-${report.end_date}.pdf`;
-        console.log("📥 Fetching PDF from:", link.href);
-        document.body.appendChild(link);
-        link.click();
-        console.log("📥 Download triggered");
-        document.body.removeChild(link);
-      }
-      
-      // Keep button disabled for a moment to prevent double-clicks
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    } catch (err) {
-      console.error("❌ Download error:", err);
-    } finally {
-      setDownloadingId(null);
+    // Generated date/time
+    const genDate = new Date(report.date_generated);
+    const genMonth = genDate.toLocaleDateString("en-US", { month: "short" });
+    const genDay = genDate.getDate();
+    const genTime = genDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    parts.push(`Generated: ${genMonth} ${genDay} @ ${genTime}`);
+
+    // Subjects
+    if (
+      report.selected_subjects &&
+      Array.isArray(report.selected_subjects) &&
+      report.selected_subjects.length > 0
+    ) {
+      parts.push(`Subjects: ${report.selected_subjects.join(", ")}`);
     }
+
+    // Activity types
+    if (
+      report.selected_activity_types &&
+      Array.isArray(report.selected_activity_types) &&
+      report.selected_activity_types.length > 0
+    ) {
+      parts.push(`Types: ${report.selected_activity_types.join(", ")}`);
+    }
+
+    return parts.join(" | ");
   };
 
   if (loading) {
@@ -232,44 +222,24 @@ export default function ReportsPage() {
               </p>
             </div>
           ) : (
-            <div style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
-              {/* Reports List */}
+            <div style={{ backgroundColor: "white", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "auto" }}>
+              {/* Reports List - Single Line Format */}
               <div className="divide-y divide-gray-200">
                 {reports.map((report, index) => (
                   <div
                     key={report.id}
                     style={{
                       backgroundColor: index % 2 === 0 ? "white" : "#fafafa",
+                      paddingLeft: "1.5rem",
+                      paddingRight: "1.5rem",
+                      paddingTop: "1rem",
+                      paddingBottom: "1rem",
                     }}
-                    className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-50 transition-colors overflow-x-auto"
                   >
-                    <div className="flex-1 min-w-0">
-                      <h3 style={{ color: COLORS.dark }} className="font-semibold text-base sm:text-lg mb-2">
-                        {getReportTitle(report)}
-                      </h3>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                        <span style={{ color: "#666" }} className="text-xs sm:text-sm">
-                          Generated: {formatDate(report.date_generated)}
-                        </span>
-                        {report.selected_subjects && Array.isArray(report.selected_subjects) && report.selected_subjects.length > 0 && (
-                          <span style={{ color: "#999" }} className="text-xs">
-                            {report.selected_subjects.length} subject{report.selected_subjects.length !== 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleDownloadReport(report)}
-                      disabled={downloadingId === report.id}
-                      style={{
-                        backgroundColor: downloadingId === report.id ? "#999" : COLORS.primary,
-                        opacity: downloadingId === report.id ? 0.7 : 1,
-                      }}
-                      className="px-4 py-2 text-white text-sm font-medium rounded-lg hover:opacity-90 flex-shrink-0 text-center min-w-32 disabled:cursor-not-allowed disabled:hover:opacity-70"
-                    >
-                      {downloadingId === report.id ? "📥 Downloading..." : "📥 Download Report"}
-                    </button>
+                    <p style={{ color: "#333", fontSize: "0.95rem", whiteSpace: "nowrap" }}>
+                      {formatReportDetails(report)}
+                    </p>
                   </div>
                 ))}
               </div>
