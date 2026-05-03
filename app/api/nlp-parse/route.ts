@@ -89,7 +89,7 @@ Rules:
 - If subject is not in available subjects, use "Extracurricular"
 - confidence should be 0.0-1.0 based on how clear the input is`;
 
-    const message = await openai.messages.create({
+    const message = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 500,
       messages: [
@@ -100,7 +100,7 @@ Rules:
       ],
     });
 
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    const responseText = message.choices[0].message.content || '';
 
     // Parse JSON from response (handle code block wrapping)
     let jsonStr = responseText.trim();

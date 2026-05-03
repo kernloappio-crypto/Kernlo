@@ -44,7 +44,7 @@ They sound stressed/discouraged. Give a SHORT (1-2 sentences), grounded, encoura
 Remind them progress isn't linear and homeschooling is a marathon, not a sprint.
 Do not try to log data. Be warm, not corporate.`;
 
-    const message = await openai.messages.create({
+    const message = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 150,
       messages: [
@@ -55,7 +55,7 @@ Do not try to log data. Be warm, not corporate.`;
       ],
     });
 
-    const support_message = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
+    const support_message = (message.choices[0].message.content || '').trim();
 
     return NextResponse.json({
       needs_support: true,
