@@ -1091,7 +1091,7 @@ Format as professional homeschool compliance documentation.`;
         <div className="w-full overflow-y-auto">
           {/* Command Bar at top */}
           <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
-            <CommandBar kids={kids} onActivityLogged={() => {
+            <CommandBar userId={userId} onActivityLogged={() => {
               // Refresh activities after logging
               setLoading(true);
               loadActivities();
