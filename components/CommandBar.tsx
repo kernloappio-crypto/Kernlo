@@ -64,8 +64,11 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     onActivityLogged?.();
   };
 
-  // Show confirm card if parsing succeeded
-  if (parsedData) {
+  // Auto-confirm if all required fields are filled
+  const hasAllFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes && parsedData.platform;
+
+  // Show confirm card only if parsing succeeded AND any field is missing
+  if (parsedData && !hasAllFields) {
     return (
       <ConfirmCard
         data={parsedData}
@@ -74,6 +77,41 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
         onConfirm={handleActivityLogged}
       />
     );
+  }
+
+  // Auto-save if all fields are present
+  if (hasAllFields && parsedData) {
+    // Don't show modal, auto-submit
+    const submitActivity = async () => {
+      try {
+        const response = await fetch('/api/activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            child_name: parsedData.student,
+            subject: parsedData.subject,
+            duration: parsedData.minutes,
+            platform: parsedData.platform,
+            date: new Date().toISOString().split('T')[0],
+            notes: parsedData.note || null,
+          }),
+        });
+
+        if (response.ok) {
+          handleActivityLogged();
+        } else {
+          setError('Failed to save activity');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Error saving activity');
+      }
+    };
+
+    // Execute auto-submit in a useEffect to avoid infinite loops
+    React.useEffect(() => {
+      submitActivity();
+    }, [parsedData]);
   }
 
   return (
