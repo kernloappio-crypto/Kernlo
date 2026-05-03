@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import type { ParsedActivityData, NLPParseRequest } from '@/lib/types';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,9 +65,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Call Gemini 1.5 Flash
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
+    // Call OpenAI GPT-4o mini
     const prompt = `You are a homeschool activity parser. Extract structured data from the parent's input.
 
 Available students: ${available_students.join(', ')}
@@ -89,8 +89,18 @@ Rules:
 - If subject is not in available subjects, use "Extracurricular"
 - confidence should be 0.0-1.0 based on how clear the input is`;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const message = await openai.messages.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 500,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
 
     // Parse JSON from response (handle code block wrapping)
     let jsonStr = responseText.trim();

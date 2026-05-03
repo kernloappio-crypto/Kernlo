@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import type { SentimentCheckRequest, SentimentCheckResponse } from '@/lib/types';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || '',
+});
 
 const STRESS_KEYWORDS = ['stress', 'fail', 'struggling', 'hard', 'overwhelm', "can't", "won't", 'give up', 'behind', 'frustrated', 'tired', 'exhausted', 'impossible'];
 
@@ -35,19 +37,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Generate supportive message from Gemini
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
+    // Generate supportive message from OpenAI
     const prompt = `You are a veteran homeschool mentor. The parent just said: "${text}"
 
 They sound stressed/discouraged. Give a SHORT (1-2 sentences), grounded, encouraging response.
 Remind them progress isn't linear and homeschooling is a marathon, not a sprint.
-Do not try to log data. Be warm, not corporate.
+Do not try to log data. Be warm, not corporate.`;
 
-Response:`;
+    const message = await openai.messages.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 150,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
 
-    const result = await model.generateContent(prompt);
-    const support_message = result.response.text().trim();
+    const support_message = message.content[0].type === 'text' ? message.content[0].text.trim() : '';
 
     return NextResponse.json({
       needs_support: true,
