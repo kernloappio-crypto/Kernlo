@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { signOut } from "@/lib/supabase-auth";
 import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
 import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
+import CommandBar from "@/components/CommandBar";
 
 export const dynamic = "force-dynamic";
 
@@ -1088,6 +1089,14 @@ Format as professional homeschool compliance documentation.`;
 
         {/* Right Content - Kid Cards */}
         <div className="w-full overflow-y-auto">
+          {/* Command Bar at top */}
+          <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
+            <CommandBar kids={kids} onActivityLogged={() => {
+              // Refresh activities after logging
+              setLoading(true);
+              loadActivities();
+            }} />
+          </div>
           <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
