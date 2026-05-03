@@ -1,41 +1,64 @@
-export interface Subject {
-  id: string;
-  date: string;
+/**
+ * Type definitions for Kernlo intelligent logging system
+ */
+
+// NLP Parsing
+export interface ParsedActivityData {
+  student: string | null;
   subject: string;
-  platform: string;
-  topics: string;
-  duration: string;
+  minutes: number;
+  note: string;
+  platform: string | null;
+  confidence: number;
 }
 
-export interface Report {
-  id: string;
-  workspace_id: string;
-  kid_id: string;
-  child_name: string;
-  report_type: "daily" | "weekly";
-  generated_date: string;
-  subjects: Subject[];
-  report_content: string;
-  notes?: string;
-  created_at: string;
-  created_by: string;
+export interface NLPParseRequest {
+  text: string;
+  user_id: string;
+  available_students: string[];
 }
 
-export interface Kid {
-  id: string;
-  workspace_id: string;
-  name: string;
-  created_at: string;
+export interface NLPParseResponse {
+  success: boolean;
+  data?: ParsedActivityData;
+  error?: string;
 }
 
-export interface Workspace {
+// Sentiment Detection
+export interface SentimentCheckRequest {
+  text: string;
+  user_id: string;
+}
+
+export interface SentimentCheckResponse {
+  needs_support: boolean;
+  support_message?: string;
+  error?: string;
+}
+
+// Pending Confirmations
+export interface PendingNLPConfirmation {
   id: string;
   user_id: string;
-  name: string;
-  state?: string;
+  message_id: string;
+  parsed_data: ParsedActivityData;
+  confirmation_step: 'awaiting_platform' | 'awaiting_confirmation';
   created_at: string;
 }
 
+// SMS Gateway
+export interface SMSReceivePayload {
+  From: string; // Twilio From number
+  MessageBody: string;
+  MessageSid: string;
+}
+
+export interface SMSResponsePayload {
+  message: string;
+  status: 'success' | 'error' | 'needs_clarification' | 'needs_confirmation';
+}
+
+// Activity (existing, for reference)
 export interface Activity {
   id: string;
   user_id: string;
@@ -44,38 +67,16 @@ export interface Activity {
   duration: number;
   platform: string;
   date: string;
-  notes?: string;
-  curriculum?: string;
-  activity_type?: string;
-  topic?: string;
-  created_at?: string;
-  updated_at?: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface ActivityTemplate {
-  id: string;
-  workspace_id: string;
-  name: string;
+export interface ActivityCreatePayload {
+  child_name: string;
   subject: string;
+  duration: number;
   platform: string;
-  created_at: string;
-}
-
-export interface Goal {
-  id: string;
-  workspace_id: string;
-  kid_id: string;
-  subject: string;
-  monthly_hours: number;
-  created_at: string;
-}
-
-export interface ComplianceSetting {
-  id: string;
-  workspace_id: string;
-  state: string;
-  requirements: {
-    [subject: string]: number;
-  };
-  created_at: string;
+  date: string;
+  notes?: string;
 }
