@@ -66,9 +66,12 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
   // Auto-confirm if all required fields are filled
   const hasAllFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes && parsedData.platform;
+  
+  // Auto-confirm if confidence >= 90%
+  const isHighConfidence = parsedData && parsedData.confidence >= 0.9;
 
-  // Show confirm card only if parsing succeeded AND any field is missing
-  if (parsedData && !hasAllFields) {
+  // Show confirm card only if parsing succeeded AND fields missing AND low confidence
+  if (parsedData && !hasAllFields && !isHighConfidence) {
     return (
       <ConfirmCard
         data={parsedData}
@@ -79,8 +82,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     );
   }
 
-  // Auto-save if all fields are present
-  if (hasAllFields && parsedData) {
+  // Auto-save if all fields are present OR high confidence (90%+)
+  if ((hasAllFields || isHighConfidence) && parsedData) {
     // Don't show modal, auto-submit
     const submitActivity = async () => {
       try {
