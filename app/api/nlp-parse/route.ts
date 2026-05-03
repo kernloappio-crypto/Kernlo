@@ -86,7 +86,13 @@ Return ONLY valid JSON (no markdown, no code blocks):
 Rules:
 - Extract student name (e.g., "Ella", "Jett", "Tripp")
 - Extract subject (match to available subjects list)
-- Extract MINUTES: look for numbers followed by "m", "min", "minutes", or just a number like "20" or "30"
+- Extract MINUTES: Convert ANY time format to minutes (integer):
+  * "20m" or "20 m" → 20
+  * "30 mins" or "30 min" → 30
+  * "1h" or "1 hour" → 60
+  * "1.5 hours" or "1.5h" → 90
+  * "2h 30m" → 150
+  * Just a number "45" → assume minutes
 - Extract platform if mentioned (e.g., "Khan", "IXL", "YouTube")
 - Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
 - If student name is not in available_students, set confidence to 0.5 and return the best guess
