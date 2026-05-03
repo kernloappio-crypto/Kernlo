@@ -49,6 +49,7 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          user_id: userId,
           child_name: student,
           subject,
           duration: parseInt(minutes, 10),
