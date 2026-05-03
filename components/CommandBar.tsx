@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ConfirmCard from './ConfirmCard';
 import type { ParsedActivityData } from '@/lib/types';
 
@@ -83,39 +83,37 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   }
 
   // Auto-save if all fields are present OR high confidence (90%+)
-  if ((hasAllFields || isHighConfidence) && parsedData) {
-    // Don't show modal, auto-submit
-    const submitActivity = async () => {
-      try {
-        const response = await fetch('/api/activities', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            child_name: parsedData.student,
-            subject: parsedData.subject,
-            duration: parsedData.minutes,
-            platform: parsedData.platform,
-            date: new Date().toISOString().split('T')[0],
-            notes: parsedData.note || null,
-          }),
-        });
+  useEffect(() => {
+    if ((hasAllFields || isHighConfidence) && parsedData) {
+      const submitActivity = async () => {
+        try {
+          const response = await fetch('/api/activities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: userId,
+              child_name: parsedData.student,
+              subject: parsedData.subject,
+              duration: parsedData.minutes,
+              platform: parsedData.platform,
+              date: new Date().toISOString().split('T')[0],
+              notes: parsedData.note || null,
+            }),
+          });
 
-        if (response.ok) {
-          handleActivityLogged();
-        } else {
-          setError('Failed to save activity');
+          if (response.ok) {
+            handleActivityLogged();
+          } else {
+            setError('Failed to save activity');
+          }
+        } catch (err: any) {
+          setError(err.message || 'Error saving activity');
         }
-      } catch (err: any) {
-        setError(err.message || 'Error saving activity');
-      }
-    };
+      };
 
-    // Execute auto-submit in a useEffect to avoid infinite loops
-    React.useEffect(() => {
       submitActivity();
-    }, [parsedData]);
-  }
+    }
+  }, [hasAllFields, isHighConfidence, parsedData, userId]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">
