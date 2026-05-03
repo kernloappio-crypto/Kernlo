@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ConfirmCard } from './ConfirmCard';
+import ConfirmCard from './ConfirmCard';
 import type { ParsedActivityData } from '@/lib/types';
 
 interface CommandBarProps {
@@ -9,7 +9,7 @@ interface CommandBarProps {
   onActivityLogged?: () => void;
 }
 
-export const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => {
+const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => {
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
@@ -109,3 +109,5 @@ export const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged
     </div>
   );
 };
+
+export default CommandBar;

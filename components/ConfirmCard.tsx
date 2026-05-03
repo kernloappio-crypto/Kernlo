@@ -26,7 +26,7 @@ interface ConfirmCardProps {
   onConfirm: () => void;
 }
 
-export const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
+const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
   const [student, setStudent] = useState(data.student || '');
   const [subject, setSubject] = useState(data.subject);
   const [minutes, setMinutes] = useState(data.minutes.toString());
@@ -164,3 +164,5 @@ export const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel
     </div>
   );
 };
+
+export default ConfirmCard;
