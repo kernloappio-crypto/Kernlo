@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ConfirmCard from './ConfirmCard';
+import { supabase } from '@/lib/supabase-client';
 import type { ParsedActivityData } from '@/lib/types';
 
 interface CommandBarProps {
@@ -87,11 +88,22 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     if ((hasAllFields || isHighConfidence) && parsedData) {
       const submitActivity = async () => {
         try {
+          // Get auth token from Supabase session
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+
+          if (!token) {
+            setError('Not authenticated');
+            return;
+          }
+
           const response = await fetch('/api/activities', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
             body: JSON.stringify({
-              user_id: userId,
               child_name: parsedData.student,
               subject: parsedData.subject,
               duration: parsedData.minutes,
@@ -104,7 +116,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
           if (response.ok) {
             handleActivityLogged();
           } else {
-            setError('Failed to save activity');
+            const errorData = await response.json();
+            setError(errorData.error || 'Failed to save activity');
           }
         } catch (err: any) {
           setError(err.message || 'Error saving activity');
@@ -113,7 +126,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
       submitActivity();
     }
-  }, [hasAllFields, isHighConfidence, parsedData, userId]);
+  }, [hasAllFields, isHighConfidence, parsedData]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">
