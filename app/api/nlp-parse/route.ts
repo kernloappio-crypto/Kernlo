@@ -84,9 +84,15 @@ Return ONLY valid JSON (no markdown, no code blocks):
 }
 
 Rules:
+- Extract student name (e.g., "Ella", "Jett", "Tripp")
+- Extract subject (match to available subjects list)
+- Extract MINUTES: look for numbers followed by "m", "min", "minutes", or just a number like "20" or "30"
+- Extract platform if mentioned (e.g., "Khan", "IXL", "YouTube")
+- Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
 - If student name is not in available_students, set confidence to 0.5 and return the best guess
 - If minutes are missing, default to 30 and add "[estimated]" to note
 - If subject is not in available subjects, use "Extracurricular"
+- If platform is missing, set to null (user will be asked)
 - confidence should be 0.0-1.0 based on how clear the input is`;
 
     const message = await openai.chat.completions.create({
