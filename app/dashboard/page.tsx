@@ -1092,9 +1092,7 @@ Format as professional homeschool compliance documentation.`;
           {/* Command Bar at top */}
           <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
             <CommandBar userId={userId} onActivityLogged={() => {
-              // Refresh activities after logging
-              setLoading(true);
-              loadActivities();
+              // Activity logged - will auto-refresh on next component mount
             }} />
           </div>
           <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col">
