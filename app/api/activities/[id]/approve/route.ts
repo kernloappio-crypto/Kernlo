@@ -74,7 +74,7 @@ export async function POST(
     
     const { data, error } = await supabase
       .from('activities')
-      .update({ status: 'confirmed' })
+      .update({ status: 'confirmed', is_completed: true })
       .eq('id', activityId)
       .eq('user_id', userData.user.id)  // Explicit filter for safety, RLS enforces this
       .select();

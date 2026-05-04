@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Update all activities to 'confirmed' (RLS will ensure they belong to user)
     const { data, error } = await supabase
       .from('activities')
-      .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+      .update({ status: 'confirmed', is_completed: true })
       .in('id', ids)
       .eq('user_id', userData.user.id)
       .select();
