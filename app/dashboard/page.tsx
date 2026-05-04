@@ -1133,14 +1133,14 @@ Format as professional homeschool compliance documentation.`;
         {/* Right Content - Kid Cards */}
         <div className="w-full overflow-y-auto">
           {/* Command Bar at top */}
-          <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-2 bg-white border-b border-gray-200">
+          <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-2 border-b border-gray-200">
             <CommandBar userId={userId} onActivityLogged={() => {
               // Trigger refresh of review queue to show new pending item
               setRefreshCounter(c => c + 1);
             }} />
           </div>
           {/* Review Queue - Pending Approvals */}
-          <div className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 bg-white border-b border-gray-200">
+          <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 border-b border-gray-200">
             <ReviewQueue userId={userId} onActivityApproved={() => {
               // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
               setRefreshCounter(c => c + 1);
