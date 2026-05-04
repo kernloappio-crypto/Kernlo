@@ -93,7 +93,17 @@ Rules:
   * "1.5 hours" or "1.5h" → 90
   * "2h 30m" → 150
   * Just a number "45" → assume minutes
-- Extract platform if mentioned (e.g., "Khan", "IXL", "YouTube")
+- Extract PLATFORM - look for these keywords (case-insensitive):
+  * "khan" or "khan academy" → "Khan Academy"
+  * "ixl" → "IXL"
+  * "youtube" → "YouTube"
+  * "epic" → "Epic!"
+  * "duolingo" → "Duolingo"
+  * "quizlet" → "Quizlet"
+  * "outschool" → "Outschool"
+  * "twinkl" → "Twinkl"
+  * "acellus" → "Acellus"
+  * Or extract the last word/name as platform if no keyword matches
 - Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
 - If student name is not in available_students, set confidence to 0.5 and return the best guess
 - If minutes are missing, default to 30 and add "[estimated]" to note
