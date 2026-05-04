@@ -71,11 +71,12 @@ export async function GET(
 
     console.log(`📅 Week range: ${weekStart} to ${weekEnd}`);
 
-    // Query confirmed activities for this child in the current week
+    // Query confirmed activities for this specific child in the current week
     const { data, error } = await supabase
       .from('activities')
       .select('date, id')
       .eq('user_id', userData.user.id)
+      .eq('child_id', childId)
       .eq('status', 'confirmed')
       .gte('date', weekStart)
       .lte('date', weekEnd);
