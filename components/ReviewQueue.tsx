@@ -27,13 +27,13 @@ interface ReviewQueueProps {
 
 const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivityApproved }) => {
   const [pending, setPending] = useState<PendingActivity[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [kids, setKids] = useState<Kid[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
   const [approving, setApproving] = useState<Set<string>>(new Set());
   const [approvingBulk, setApprovingBulk] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Edit modal state
   const [editForm, setEditForm] = useState({
@@ -61,9 +61,32 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
     light: '#f0f7ff',
   };
 
+  // Generate consistent color for child based on name hash
+  const getChildColor = (childName: string): string => {
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e'];
+    let hash = 0;
+    for (let i = 0; i < childName.length; i++) {
+      hash = ((hash << 5) - hash) + childName.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // Toggle row expansion
+  const toggleRowExpand = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   // Fetch pending activities
   const fetchPending = useCallback(async () => {
-    setLoading(true);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (!token) return;
@@ -78,8 +101,6 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
       }
     } catch (err) {
       console.error('Failed to fetch pending:', err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -263,61 +284,66 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
           alignItems: 'center',
           marginBottom: '1rem',
           paddingBottom: '0.75rem',
-          borderBottom: `2px solid ${COLORS.primary}`,
+          borderBottom: `1px solid #e0e7ff`,
         }}
       >
         <h2
           style={{
             margin: 0,
-            fontSize: '1.25rem',
+            fontSize: '14px',
             fontWeight: 600,
             color: COLORS.primary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          Review Queue{' '}
+          Review Queue
           <span
             style={{
               backgroundColor: COLORS.accent1,
               color: 'white',
-              borderRadius: '20px',
-              padding: '0.25rem 0.75rem',
-              fontSize: '0.875rem',
-              marginLeft: '0.5rem',
+              borderRadius: '12px',
+              padding: '0.2rem 0.5rem',
+              fontSize: '12px',
+              fontWeight: 600,
+              minWidth: '20px',
+              textAlign: 'center',
             }}
           >
-            {pending.length} Pending
+            {pending.length}
           </span>
         </h2>
 
-        <button
-          onClick={handleBulkApprove}
-          disabled={approvingBulk}
-          style={{
-            padding: '0.75rem 1.5rem',
-            backgroundColor: COLORS.accent3,
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            cursor: approvingBulk ? 'not-allowed' : 'pointer',
-            opacity: approvingBulk ? 0.6 : 1,
-            transition: 'all 0.2s',
-          }}
-          onMouseOver={(e) => {
-            if (!approvingBulk) {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                '0 4px 12px rgba(107, 207, 127, 0.3)';
-            }
-          }}
-          onMouseOut={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-          }}
-        >
-          {approvingBulk ? '⏳ Approving...' : '✅ Bulk Approve'}
-        </button>
+        {pending.length > 0 && (
+          <button
+            onClick={handleBulkApprove}
+            disabled={approvingBulk}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: COLORS.accent3,
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: approvingBulk ? 'not-allowed' : 'pointer',
+              opacity: approvingBulk ? 0.6 : 1,
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseOver={(e) => {
+              if (!approvingBulk) {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseOut={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+            }}
+          >
+            {approvingBulk ? '⏳' : '✅'} All
+          </button>
+        )}
       </div>
 
       {/* Success message */}
@@ -326,159 +352,228 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
           style={{
             backgroundColor: '#d4edda',
             color: '#155724',
-            padding: '0.75rem 1rem',
-            borderRadius: '6px',
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
+            padding: '0.5rem 0.75rem',
+            borderRadius: '4px',
+            marginBottom: '0.75rem',
+            fontSize: '12px',
           }}
         >
           {success}
         </div>
       )}
 
-      {/* Pending items */}
-      <div style={{ display: 'grid', gap: '1rem' }}>
-        {pending.map((activity) => (
-          <div
-            key={activity.id}
-            style={{
-              backgroundColor: 'white',
-              border: `1px solid #e0e7ff`,
-              borderRadius: '8px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.2s',
-            }}
-            onMouseOver={(e) => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow =
-                '0 4px 12px rgba(0, 102, 204, 0.1)';
-              (e.currentTarget as HTMLDivElement).style.borderColor = COLORS.primary;
-            }}
-            onMouseOut={(e) => {
-              (e.currentTarget as HTMLDivElement).style.boxShadow =
-                '0 1px 3px rgba(0, 0, 0, 0.05)';
-              (e.currentTarget as HTMLDivElement).style.borderColor = '#e0e7ff';
-            }}
-          >
-            {/* Content */}
-            <div style={{ marginBottom: '1rem' }}>
-              <div
-                style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 600,
-                  color: COLORS.primary,
-                  marginBottom: '0.5rem',
-                }}
-              >
-                {activity.child_name}
-              </div>
+      {/* Compact list */}
+      <div style={{ backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e0e7ff', overflow: 'hidden' }}>
+        {pending.map((activity, index) => {
+          const isExpanded = expandedRows.has(activity.id);
+          const childColor = getChildColor(activity.child_name);
 
+          return (
+            <div key={activity.id}>
+              {/* Row */}
               <div
-                style={{
-                  fontSize: '1rem',
-                  color: '#1a1a2e',
-                  marginBottom: '0.5rem',
+                onClick={(e) => {
+                  // Don't expand if clicking action icons
+                  const target = e.target as HTMLElement;
+                  if (!target.closest('[data-action-icons]')) {
+                    toggleRowExpand(activity.id);
+                  }
                 }}
-              >
-                {activity.duration}m of {activity.subject}
-              </div>
-
-              <div
                 style={{
-                  fontSize: '0.875rem',
-                  color: '#666',
-                  fontStyle: 'italic',
-                  textDecoration: 'underline #ddd',
-                }}
-              >
-                "{activity.raw_input}"
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'center',
-              }}
-            >
-              <button
-                onClick={() => handleApprove(activity.id)}
-                disabled={approving.has(activity.id)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: COLORS.accent3,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  cursor: approving.has(activity.id) ? 'not-allowed' : 'pointer',
-                  opacity: approving.has(activity.id) ? 0.6 : 1,
-                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 0.75rem',
+                  minHeight: '48px',
+                  borderBottom: index < pending.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  cursor: 'pointer',
+                  backgroundColor: isExpanded ? '#f9fafb' : 'white',
+                  transition: 'background-color 0.15s',
                 }}
                 onMouseOver={(e) => {
-                  if (!approving.has(activity.id)) {
-                    (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                  if (!isExpanded) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = '#f9fafb';
                   }
                 }}
                 onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                  if (!isExpanded) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = 'white';
+                  }
                 }}
               >
-                {approving.has(activity.id) ? '⏳' : '✅'} Approve
-              </button>
+                {/* Expand toggle arrow */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '24px',
+                    minWidth: '24px',
+                    color: '#999',
+                    fontSize: '12px',
+                    transition: 'transform 0.2s',
+                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                  }}
+                >
+                  ›
+                </div>
 
-              <button
-                onClick={() => handleEdit(activity)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: COLORS.secondary,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-                }}
-                onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                }}
-              >
-                ✏️ Edit
-              </button>
+                {/* Column 1: Child badge */}
+                <div
+                  style={{
+                    backgroundColor: childColor,
+                    color: 'white',
+                    borderRadius: '4px',
+                    padding: '0.25rem 0.5rem',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    minWidth: '50px',
+                    textAlign: 'center',
+                    marginRight: '0.75rem',
+                    flexShrink: 0,
+                  }}
+                >
+                  {activity.child_name.substring(0, 8)}
+                </div>
 
-              <button
-                onClick={() => handleDelete(activity.id)}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  backgroundColor: '#f0f0f0',
-                  color: '#666',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ffebee';
-                  (e.currentTarget as HTMLButtonElement).style.color = COLORS.accent1;
-                }}
-                onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f0f0f0';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#666';
-                }}
-              >
-                ✕ Delete
-              </button>
+                {/* Column 2: Subject and duration */}
+                <div
+                  style={{
+                    flex: 1,
+                    fontSize: '13px',
+                    color: '#1a1a2e',
+                    fontWeight: 500,
+                    minWidth: 0,
+                  }}
+                >
+                  {activity.duration}m of {activity.subject}
+                </div>
+
+                {/* Column 3: Action icons */}
+                <div
+                  data-action-icons="true"
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    marginLeft: '0.75rem',
+                    flexShrink: 0,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Approve */}
+                  <button
+                    onClick={() => handleApprove(activity.id)}
+                    disabled={approving.has(activity.id)}
+                    title="Approve"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      padding: 0,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '16px',
+                      cursor: approving.has(activity.id) ? 'not-allowed' : 'pointer',
+                      opacity: approving.has(activity.id) ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '4px',
+                      color: '#6bcf7f',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseOver={(e) => {
+                      if (!approving.has(activity.id)) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(107, 207, 127, 0.1)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {approving.has(activity.id) ? '⏳' : '✅'}
+                  </button>
+
+                  {/* Edit */}
+                  <button
+                    onClick={() => handleEdit(activity)}
+                    title="Edit"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      padding: 0,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '4px',
+                      color: '#00d4ff',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(0, 212, 255, 0.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    ✏️
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => handleDelete(activity.id)}
+                    title="Delete"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      padding: 0,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '4px',
+                      color: '#ff6b6b',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(255, 107, 107, 0.1)';
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              {/* Expandable raw input */}
+              {isExpanded && (
+                <div
+                  style={{
+                    padding: '0.5rem 0.75rem 0.5rem 3rem',
+                    backgroundColor: '#f9fafb',
+                    borderTop: '1px solid #f0f0f0',
+                    fontSize: '12px',
+                    color: '#666',
+                    fontStyle: 'italic',
+                    lineHeight: '1.4',
+                    maxHeight: '60px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  &quot;{activity.raw_input}&quot;
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Edit Modal */}
