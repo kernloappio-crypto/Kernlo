@@ -12,7 +12,10 @@ import {
   getAttendanceDaysYearly,
   getAttendanceDaysMonthly,
   getLastAttendanceDates,
-  logAttendance
+  logAttendance,
+  getUniqueActivityDates,
+  getUniqueActivityDatesMonthly,
+  getSubjectHoursByYear
 } from "@/lib/supabase-data";
 
 export const dynamic = "force-dynamic";
@@ -119,6 +122,7 @@ export default function CompliancePage() {
   const [lastAttendanceDates, setLastAttendanceDates] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [subjectHours, setSubjectHours] = useState<{ [key: string]: number }>({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -200,11 +204,16 @@ export default function CompliancePage() {
         const currentMonth = now.getMonth() + 1;
 
         if (kidData?.name) {
-          const yearlyDays = await getAttendanceDaysYearly(user.id, kidData.name, currentYear);
-          setAttendanceDaysYear(yearlyDays);
+          // Use ACTIVITY-BASED attendance (counts unique dates with ANY confirmed activity)
+          const yearlyActivityDays = await getUniqueActivityDates(user.id, kidData.name, currentYear);
+          setAttendanceDaysYear(yearlyActivityDays);
 
-          const monthlyDays = await getAttendanceDaysMonthly(user.id, kidData.name, currentYear, currentMonth);
-          setAttendanceDaysMonth(monthlyDays);
+          const monthlyActivityDays = await getUniqueActivityDatesMonthly(user.id, kidData.name, currentYear, currentMonth);
+          setAttendanceDaysMonth(monthlyActivityDays);
+
+          // Get subject hours from all activity types
+          const subjectHoursData = await getSubjectHoursByYear(user.id, kidData.name, currentYear);
+          setSubjectHours(subjectHoursData);
 
           const lastDates = await getLastAttendanceDates(user.id, kidData.name, 10);
           setLastAttendanceDates(lastDates);
@@ -225,22 +234,27 @@ export default function CompliancePage() {
     if (!kid?.name || !userId) return;
 
     const refreshAttendance = async () => {
-      console.log("🔄 Navigated to compliance page - refreshing attendance...");
+      console.log("🔄 Navigated to compliance page - refreshing attendance from activities...");
       try {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
 
-        const yearlyDays = await getAttendanceDaysYearly(userId, kid.name, currentYear);
-        setAttendanceDaysYear(yearlyDays);
+        // Use ACTIVITY-BASED attendance (unique dates with ANY confirmed activity)
+        const yearlyActivityDays = await getUniqueActivityDates(userId, kid.name, currentYear);
+        setAttendanceDaysYear(yearlyActivityDays);
 
-        const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
-        setAttendanceDaysMonth(monthlyDays);
+        const monthlyActivityDays = await getUniqueActivityDatesMonthly(userId, kid.name, currentYear, currentMonth);
+        setAttendanceDaysMonth(monthlyActivityDays);
+
+        // Get subject hours from all activity types
+        const subjectHoursData = await getSubjectHoursByYear(userId, kid.name, currentYear);
+        setSubjectHours(subjectHoursData);
 
         const lastDates = await getLastAttendanceDates(userId, kid.name, 10);
         setLastAttendanceDates(lastDates);
 
-        // Reload all attendance records
+        // Reload all attendance records (for historical logging, not compliance)
         const { data: attendanceData } = await supabase
           .from("attendance")
           .select("*")
@@ -266,7 +280,24 @@ export default function CompliancePage() {
         const activitiesData = await getActivities(userId);
         const kidActivities = activitiesData.filter((a: any) => a.child_name === kid.name);
         setActivities(kidActivities as Activity[]);
+
+        // Also reload attendance and subject hours
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        const yearlyActivityDays = await getUniqueActivityDates(userId, kid.name, currentYear);
+        setAttendanceDaysYear(yearlyActivityDays);
+
+        const monthlyActivityDays = await getUniqueActivityDatesMonthly(userId, kid.name, currentYear, currentMonth);
+        setAttendanceDaysMonth(monthlyActivityDays);
+
+        const subjectHoursData = await getSubjectHoursByYear(userId, kid.name, currentYear);
+        setSubjectHours(subjectHoursData);
+
         console.log('✅ Compliance: Activities reloaded, count:', kidActivities.length);
+        console.log('✅ Compliance: Attendance updated - yearly:', yearlyActivityDays, 'monthly:', monthlyActivityDays);
+        console.log('✅ Compliance: Subject hours updated:', subjectHoursData);
       } catch (err) {
         console.error('❌ Error reloading activities on compliance page:', err);
       }
@@ -281,13 +312,30 @@ export default function CompliancePage() {
 
     console.log('📡 Compliance: Setting up real-time activity subscription...');
 
-    // Helper to reload activities
+    // Helper to reload activities AND attendance/subject hours
     const reloadActivitiesOnChange = async () => {
       try {
         const activitiesData = await getActivities(userId);
         const kidActivities = activitiesData.filter((a: any) => a.child_name === kid.name);
         setActivities(kidActivities as Activity[]);
+
+        // Also reload attendance and subject hours when activity is approved
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        const yearlyActivityDays = await getUniqueActivityDates(userId, kid.name, currentYear);
+        setAttendanceDaysYear(yearlyActivityDays);
+
+        const monthlyActivityDays = await getUniqueActivityDatesMonthly(userId, kid.name, currentYear, currentMonth);
+        setAttendanceDaysMonth(monthlyActivityDays);
+
+        const subjectHoursData = await getSubjectHoursByYear(userId, kid.name, currentYear);
+        setSubjectHours(subjectHoursData);
+
         console.log('✅ Compliance: Activities reloaded via real-time event');
+        console.log('✅ Compliance: Attendance updated - yearly:', yearlyActivityDays, 'monthly:', monthlyActivityDays);
+        console.log('✅ Compliance: Subject hours updated:', subjectHoursData);
       } catch (err) {
         console.error('❌ Error reloading activities on real-time event:', err);
       }
@@ -308,7 +356,7 @@ export default function CompliancePage() {
           if (payload.new?.child_name === kid.name) {
             // Reload if status changed to 'confirmed' (activity approved)
             if (payload.new?.status === 'confirmed' && payload.old?.status === 'pending') {
-              console.log('📡 Compliance: Activity approved (status changed to confirmed)');
+              console.log('📡 Compliance: Activity approved (status changed to confirmed) - reloading attendance and subject hours');
               reloadActivitiesOnChange();
             }
           }
@@ -390,9 +438,8 @@ export default function CompliancePage() {
     const compliance: { [key: string]: { hours: number; required: number; met: boolean } } = {};
 
     Object.keys(subjects).forEach((subject) => {
-      const subjectActivities = activities.filter((a) => a.subject === subject);
-      // Convert minutes to hours: divide by 60
-      const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
+      // Use pre-aggregated subject hours from ALL activity types (from subjectHours state)
+      const hours = subjectHours[subject] || 0;
       const required = subjects[subject] || 0;
       compliance[subject] = {
         hours,

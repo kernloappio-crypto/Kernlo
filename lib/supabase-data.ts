@@ -572,6 +572,84 @@ export async function getAttendanceCalendar(userId: string, childName: string, y
   return dateMap;
 }
 
+/**
+ * Get unique activity dates (days with ANY approved activity) for compliance tracking
+ * Counts attendance from ALL activity types (core, extracurricular, field trips)
+ */
+export async function getUniqueActivityDates(userId: string, childName: string, year: number) {
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const { data, error } = await supabase
+    .from('activities')
+    .select('date')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .eq('status', 'confirmed')  // Only count approved activities
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  if (error) throw error;
+
+  // Get unique dates
+  const uniqueDates = new Set((data || []).map(a => a.date));
+  return uniqueDates.size;
+}
+
+/**
+ * Get unique activity dates for current month (days with ANY approved activity)
+ */
+export async function getUniqueActivityDatesMonthly(userId: string, childName: string, year: number, month: number) {
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+  const { data, error } = await supabase
+    .from('activities')
+    .select('date')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .eq('status', 'confirmed')  // Only count approved activities
+    .gte('date', startDate)
+    .lt('date', endDate);
+
+  if (error) throw error;
+
+  // Get unique dates
+  const uniqueDates = new Set((data || []).map(a => a.date));
+  return uniqueDates.size;
+}
+
+/**
+ * Get subject hour totals from ALL activity types (aggregates across core subjects, extracurricular, field trips)
+ * Used for compliance tracking to show total hours per subject regardless of activity type
+ */
+export async function getSubjectHoursByYear(userId: string, childName: string, year: number) {
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+
+  const { data, error } = await supabase
+    .from('activities')
+    .select('subject, duration')
+    .eq('user_id', userId)
+    .eq('child_name', childName)
+    .eq('status', 'confirmed')  // Only count approved activities
+    .gte('date', startDate)
+    .lte('date', endDate);
+
+  if (error) throw error;
+
+  // Aggregate hours by subject (convert minutes to hours)
+  const subjectHours: { [key: string]: number } = {};
+  (data || []).forEach(({ subject, duration }) => {
+    const hours = duration / 60;
+    subjectHours[subject] = (subjectHours[subject] || 0) + hours;
+  });
+
+  return subjectHours;
+}
+
 // ============ EXTRACURRICULAR ACTIVITIES ============
 
 export async function addExtracurricularActivity(
