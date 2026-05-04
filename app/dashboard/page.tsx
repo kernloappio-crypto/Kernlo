@@ -11,6 +11,7 @@ import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
 import CommandBar from "@/components/CommandBar";
 import ReviewQueue from "@/components/ReviewQueue";
 import MomentumGrid from "@/components/MomentumGrid";
+import ConsistencyRing from "@/components/ConsistencyRing";
 
 export const dynamic = "force-dynamic";
 
@@ -1190,10 +1191,10 @@ Format as professional homeschool compliance documentation.`;
               }} />
             </div>
           )}
-          {/* Momentum Grid - Activity Heatmap */}
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
+          {/* Momentum Grid - Activity Heatmap (HIDDEN - Replaced with ConsistencyRing) */}
+          {/* <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
             <MomentumGrid userId={userId} refreshCounter={refreshCounter} />
-          </div>
+          </div> */}
           <div className="px-4 sm:px-6 lg:px-8 pt-0 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -1219,8 +1220,8 @@ Format as professional homeschool compliance documentation.`;
                   return (
                     <div key={kid.id} style={{ backgroundColor: "white", borderLeft: `4px solid ${COLORS.primary}` }} className="p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
                       {/* Kid Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="flex-1">
                           <h3 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl font-bold">
                             {kid.name}
                           </h3>
@@ -1230,6 +1231,12 @@ Format as professional homeschool compliance documentation.`;
                             </p>
                           )}
                         </div>
+                        <ConsistencyRing 
+                          childId={kid.id} 
+                          childName={kid.name} 
+                          userId={userId}
+                          refreshCounter={refreshCounter}
+                        />
                       </div>
 
                       {/* Subjects Breakdown */}
