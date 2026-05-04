@@ -46,9 +46,10 @@ const ACTIVITY_COLORS = {
 interface ParentDashboardCalendarProps {
   userId: string;
   kids: Kid[];
+  refreshCounter?: number;
 }
 
-export default function ParentDashboardCalendar({ userId, kids }: ParentDashboardCalendarProps) {
+export default function ParentDashboardCalendar({ userId, kids, refreshCounter = 0 }: ParentDashboardCalendarProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -141,6 +142,114 @@ export default function ParentDashboardCalendar({ userId, kids }: ParentDashboar
     };
 
     loadActivities();
+  }, [userId, kids, refreshCounter]);
+
+  // Subscribe to real-time activity changes
+  useEffect(() => {
+    if (!userId || !kids.length) return;
+
+    console.log('📡 ParentCalendar: Setting up real-time activity subscription...');
+
+    const reloadActivities = async () => {
+      try {
+        if (!userId || !kids.length) {
+          return;
+        }
+
+        const allActivities: Activity[] = [];
+
+        // Load school activities
+        try {
+          const schoolActivities = await getActivities(userId);
+          schoolActivities.forEach((a: any) => {
+            const kid = kids.find((k) => k.name === a.child_name);
+            allActivities.push({
+              id: a.id,
+              date: a.date,
+              type: "activity",
+              childName: a.child_name,
+              childId: kid?.id,
+              name: a.subject,
+              subject: a.subject,
+              duration: a.duration,
+              platform: a.platform,
+              details: `${(a.duration / 60).toFixed(1)}h via ${a.platform}`,
+            });
+          });
+        } catch (err) {
+          console.error("Error loading school activities:", err);
+        }
+
+        // Load extracurricular for each kid
+        for (const kid of kids) {
+          try {
+            const extraActivities = await getExtracurricularActivities(userId, kid.id);
+            extraActivities.forEach((a: any) => {
+              allActivities.push({
+                id: a.id,
+                date: a.date,
+                type: "extracurricular",
+                childName: kid.name,
+                childId: kid.id,
+                name: a.activity_name,
+                details: a.notes,
+              });
+            });
+          } catch (err) {
+            console.error(`Error loading extracurricular for ${kid.name}:`, err);
+          }
+        }
+
+        // Load field trips for each kid
+        for (const kid of kids) {
+          try {
+            const trips = await getFieldTrips(userId, kid.id);
+            trips.forEach((t: any) => {
+              allActivities.push({
+                id: t.id,
+                date: t.date,
+                type: "field-trip",
+                childName: kid.name,
+                childId: kid.id,
+                name: t.trip_name,
+                details: t.destination,
+              });
+            });
+          } catch (err) {
+            console.error(`Error loading field trips for ${kid.name}:`, err);
+          }
+        }
+
+        setActivities(allActivities);
+        console.log('✅ ParentCalendar: Activities reloaded via real-time event');
+      } catch (err) {
+        console.error("Error reloading activities on real-time event:", err);
+      }
+    };
+
+    // Subscribe to updates on activities table using Supabase channels
+    const channel = supabase.channel(`activities-${userId}`)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activities',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          // Check if status changed to 'confirmed' (activity approved)
+          if (payload.new?.status === 'confirmed' && payload.old?.status === 'pending') {
+            console.log('📡 ParentCalendar: Activity approved (status changed to confirmed)');
+            reloadActivities();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [userId, kids]);
 
   // Get 30 days starting from today

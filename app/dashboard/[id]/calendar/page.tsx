@@ -122,6 +122,49 @@ export default function CalendarPage() {
     init();
   }, [kidId, router]);
 
+  // Subscribe to real-time activity changes
+  useEffect(() => {
+    if (!userId || !kid?.name) return;
+
+    console.log('📡 Calendar: Setting up real-time activity subscription...');
+
+    const reloadEvents = async () => {
+      try {
+        await loadEvents(userId, kid.name);
+        console.log('✅ Calendar: Events reloaded via real-time event');
+      } catch (err) {
+        console.error('❌ Error reloading events on real-time event:', err);
+      }
+    };
+
+    // Subscribe to updates on activities table using Supabase channels
+    const channel = supabase.channel(`activities-${userId}`)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activities',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          // Check if this activity belongs to current child
+          if (payload.new?.child_name === kid.name) {
+            // Reload if status changed to 'confirmed' (activity approved)
+            if (payload.new?.status === 'confirmed' && payload.old?.status === 'pending') {
+              console.log('📡 Calendar: Activity approved (status changed to confirmed)');
+              reloadEvents();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [userId, kid?.name]);
+
   const loadEvents = async (uid: string, childName?: string) => {
     try {
       const activities = await getActivities(uid, childName);

@@ -275,6 +275,52 @@ export default function CompliancePage() {
     reloadActivities();
   }, [refreshCounter, kid?.name, userId]);
 
+  // Subscribe to real-time activity changes (for auto-refresh when approved)
+  useEffect(() => {
+    if (!userId || !kid?.name) return;
+
+    console.log('📡 Compliance: Setting up real-time activity subscription...');
+
+    // Helper to reload activities
+    const reloadActivitiesOnChange = async () => {
+      try {
+        const activitiesData = await getActivities(userId);
+        const kidActivities = activitiesData.filter((a: any) => a.child_name === kid.name);
+        setActivities(kidActivities as Activity[]);
+        console.log('✅ Compliance: Activities reloaded via real-time event');
+      } catch (err) {
+        console.error('❌ Error reloading activities on real-time event:', err);
+      }
+    };
+
+    // Subscribe to updates on activities table using Supabase channels
+    const channel = supabase.channel(`activities-${userId}`)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activities',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          // Check if this activity belongs to current child
+          if (payload.new?.child_name === kid.name) {
+            // Reload if status changed to 'confirmed' (activity approved)
+            if (payload.new?.status === 'confirmed' && payload.old?.status === 'pending') {
+              console.log('📡 Compliance: Activity approved (status changed to confirmed)');
+              reloadActivitiesOnChange();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [userId, kid?.name]);
+
   async function handleStateChange(state: string) {
     setSelectedState(state);
     try {
