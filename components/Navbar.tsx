@@ -21,6 +21,7 @@ export default function Navbar({}: NavbarProps) {
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentKidId, setCurrentKidId] = useState("");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -41,6 +42,12 @@ export default function Navbar({}: NavbarProps) {
       } catch (e) {
         console.log("Could not decode token");
       }
+    }
+
+    // Extract kid ID from URL if in dashboard
+    const match = pathname.match(/\/dashboard\/([a-f0-9\-]+)/);
+    if (match) {
+      setCurrentKidId(match[1]);
     }
   }, [pathname]);
 
@@ -132,6 +139,18 @@ export default function Navbar({}: NavbarProps) {
                     >
                       👤 Profile
                     </button>
+
+                    {/* Settings Button */}
+                    {currentKidId && (
+                      <Link
+                        href={`/dashboard/${currentKidId}/settings`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        style={{ color: COLORS.dark }}
+                        className="block px-4 py-3 text-left hover:bg-gray-50 transition font-medium text-sm border-b border-gray-200"
+                      >
+                        ⚙️ Settings
+                      </Link>
+                    )}
 
                     {/* Logout Button */}
                     <button
