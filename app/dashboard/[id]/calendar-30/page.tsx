@@ -503,7 +503,7 @@ export default function Kid30DayCalendarPage() {
                                   {activity.displayName || activity.subject}
                                 </p>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1 text-xs text-gray-600">
-                                  {activity.duration > 0 && <span>⏱️ {activity.duration}h</span>}
+                                  {activity.duration > 0 && <span>⏱️ {activity.duration}m</span>}
                                   {activity.platform && <span>💻 {activity.platform}</span>}
                                   {activity.curriculum && <span>📚 {activity.curriculum}</span>}
                                   {activity.destination && <span>📍 {activity.destination}</span>}

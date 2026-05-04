@@ -380,7 +380,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
                   marginBottom: '0.5rem',
                 }}
               >
-                {activity.duration}h of {activity.subject}
+                {activity.duration}m of {activity.subject}
               </div>
 
               <div
