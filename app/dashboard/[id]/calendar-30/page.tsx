@@ -700,7 +700,7 @@ export default function Kid30DayCalendarPage() {
                 </label>
                 <input
                   type="text"
-                  value={`${selectedActivity.duration}h`}
+                  value={`${(selectedActivity.duration / 60).toFixed(1)}h (${selectedActivity.duration}m)`}
                   disabled
                   className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100"
                 />

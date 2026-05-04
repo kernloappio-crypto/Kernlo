@@ -731,7 +731,7 @@ export default function MonthCalendar({ userId, kids, onOpenQuickLog }: MonthCal
                           </p>
                           <p style={{ color: "#555" }}>
                             {latestActivity.type === "activity"
-                              ? `${latestActivity.subject} (${latestActivity.duration}h)`
+                              ? `${latestActivity.subject} (${latestActivity.duration ? (latestActivity.duration / 60).toFixed(1) : "0"}h)`
                               : latestActivity.name}
                           </p>
                         </div>

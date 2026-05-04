@@ -93,7 +93,7 @@ export async function GET(
     if (activities.length > 0) {
       narrative += `Core Subjects (${activities.length}):\n`;
       activities.forEach((a: any) => {
-        narrative += `- ${a.date}: ${a.subject} (${a.duration}h)\n`;
+        narrative += `- ${a.date}: ${a.subject} (${(a.duration / 60).toFixed(1)}h)\n`;
       });
       narrative += '\n';
     }

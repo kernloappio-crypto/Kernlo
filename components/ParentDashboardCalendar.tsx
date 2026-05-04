@@ -85,7 +85,7 @@ export default function ParentDashboardCalendar({ userId, kids }: ParentDashboar
               subject: a.subject,
               duration: a.duration,
               platform: a.platform,
-              details: `${a.duration}h via ${a.platform}`,
+              details: `${(a.duration / 60).toFixed(1)}h via ${a.platform}`,
             });
           });
         } catch (err) {
@@ -198,7 +198,7 @@ export default function ParentDashboardCalendar({ userId, kids }: ParentDashboar
 
   const getActivityDisplayName = (activity: Activity) => {
     if (activity.type === "activity") {
-      return `${activity.subject} (${activity.duration}h)`;
+      return `${activity.subject} (${activity.duration ? (activity.duration / 60).toFixed(1) : "0"}h)`;
     }
     return activity.name;
   };

@@ -136,7 +136,7 @@ export default function CalendarPage() {
           date: a.date,
           type: "activity",
           name: a.subject,
-          details: `${a.duration}h - ${a.platform}`,
+          details: `${(a.duration / 60).toFixed(1)}h - ${a.platform}`,
         });
       });
 

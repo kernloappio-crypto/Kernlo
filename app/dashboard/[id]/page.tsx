@@ -593,7 +593,8 @@ export default function KidDetailPage() {
                     <div className="space-y-2">
                       {subjects.map((subject) => {
                         const subjectActivities = activities.filter((a) => a.subject === subject);
-                        const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+                        // Convert minutes to hours: divide by 60
+                        const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
                         const required = stateReqs.subjects[subject] || 0;
                         const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
                         const met = hours >= required;

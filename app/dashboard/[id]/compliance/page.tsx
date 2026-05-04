@@ -118,6 +118,7 @@ export default function CompliancePage() {
   const [attendanceDaysMonth, setAttendanceDaysMonth] = useState(0);
   const [lastAttendanceDates, setLastAttendanceDates] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -255,6 +256,25 @@ export default function CompliancePage() {
     refreshAttendance();
   }, [kidId, userId, kid?.name]);
 
+  // Real-time refresh: Reload activities when approval happens (refreshCounter updated from parent)
+  useEffect(() => {
+    if (!kid?.name || !userId || refreshCounter === 0) return;
+
+    const reloadActivities = async () => {
+      try {
+        console.log('🔄 Compliance: Real-time refresh triggered (activities changed)...');
+        const activitiesData = await getActivities(userId);
+        const kidActivities = activitiesData.filter((a: any) => a.child_name === kid.name);
+        setActivities(kidActivities as Activity[]);
+        console.log('✅ Compliance: Activities reloaded, count:', kidActivities.length);
+      } catch (err) {
+        console.error('❌ Error reloading activities on compliance page:', err);
+      }
+    };
+
+    reloadActivities();
+  }, [refreshCounter, kid?.name, userId]);
+
   async function handleStateChange(state: string) {
     setSelectedState(state);
     try {
@@ -325,7 +345,8 @@ export default function CompliancePage() {
 
     Object.keys(subjects).forEach((subject) => {
       const subjectActivities = activities.filter((a) => a.subject === subject);
-      const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0);
+      // Convert minutes to hours: divide by 60
+      const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
       const required = subjects[subject] || 0;
       compliance[subject] = {
         hours,

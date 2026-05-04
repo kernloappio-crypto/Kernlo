@@ -1278,7 +1278,7 @@ Format as professional homeschool compliance documentation.`;
                                       {subject}
                                     </span>
                                     <span style={{ color: COLORS.primary }} className="font-semibold">
-                                      {hours.toFixed(1)}h
+                                      {(hours / 60).toFixed(1)}h
                                     </span>
                                   </div>
                                 ));
