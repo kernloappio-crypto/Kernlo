@@ -568,7 +568,7 @@ export default function SubjectProgressPage() {
                                   style={{ color: COLORS.primary }}
                                   className="font-semibold flex-shrink-0"
                                 >
-                                  {activity.duration}h
+                                  {activity.duration}m
                                 </span>
                                 <span
                                   style={{ color: "#555" }}
@@ -766,7 +766,7 @@ export default function SubjectProgressPage() {
                                             {formatFullDate(activity.date)}
                                           </p>
                                           <p style={{ color: "#555" }} className="text-xs mt-1">
-                                            <span className="font-semibold">{activity.duration}h</span>
+                                            <span className="font-semibold">{activity.duration}m</span>
                                           </p>
                                         </div>
                                       </div>

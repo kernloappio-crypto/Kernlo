@@ -652,11 +652,11 @@ export default function DashboardPage() {
       let activityDetails = "";
 
       if (coreSubjectActivities.length > 0) {
-        activitySummary += `CORE SUBJECTS (${coreSubjectActivities.length} activities, ${coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)} hours):\n`;
+        activitySummary += `CORE SUBJECTS (${coreSubjectActivities.length} activities, ${(coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60).toFixed(1)} hours):\n`;
         activityDetails += "Core Subjects:\n";
         coreSubjectActivities.forEach((a) => {
-          activitySummary += `- ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}\n`;
-          activityDetails += `- ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})\n`;
+          activitySummary += `- ${a.date}: ${a.subject} (${a.duration}m via ${a.platform})${a.notes ? ` - ${a.notes}` : ""}\n`;
+          activityDetails += `- ${a.date}: ${a.subject} (${a.duration}m via ${a.platform})\n`;
         });
         activitySummary += "\n";
       }
@@ -767,7 +767,7 @@ Format as professional homeschool compliance documentation.`;
       doc.setFont("helvetica", "normal");
 
       if (coreSubjectActivities.length > 0) {
-        doc.text(`Core Subjects: ${coreSubjectActivities.length} activities, ${coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0).toFixed(1)} hours`, marginLeft, yPosition);
+        doc.text(`Core Subjects: ${coreSubjectActivities.length} activities, ${(coreSubjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60).toFixed(1)} hours`, marginLeft, yPosition);
         yPosition += 6;
       }
 
@@ -802,7 +802,7 @@ Format as professional homeschool compliance documentation.`;
             doc.addPage();
             yPosition = marginTop;
           }
-          doc.text(`  • ${a.date}: ${a.subject} (${a.duration}h via ${a.platform})`, marginLeft + 5, yPosition);
+          doc.text(`  • ${a.date}: ${a.subject} (${a.duration}m via ${a.platform})`, marginLeft + 5, yPosition);
           yPosition += 5;
         });
         yPosition += 2;
@@ -1195,7 +1195,7 @@ Format as professional homeschool compliance documentation.`;
                                   />
                                 </div>
                                 <p style={{ color: "#555" }} className="text-xs mt-1">
-                                  {loggedHours.toFixed(1)}h / {totalGoalHours}h
+                                  {(loggedHours / 60).toFixed(1)}h / {totalGoalHours}h
                                 </p>
                               </div>
                             )}
