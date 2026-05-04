@@ -137,7 +137,7 @@ export default function SubjectProgressPage() {
         return {
           subject,
           activities: sorted,
-          totalHours: sorted.reduce((sum, a) => sum + a.duration, 0),
+          totalHours: sorted.reduce((sum, a) => sum + a.duration, 0) / 60, // Convert minutes to hours
           totalActivities: sorted.length,
           lastActivity: sorted[0],
         };
