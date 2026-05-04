@@ -294,7 +294,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
   }
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
+    <div style={{ marginBottom: '2rem' }} className="max-w-2xl mx-auto w-full px-4 sm:px-0">
       {/* Header with bulk action */}
       <div
         style={{
