@@ -23,9 +23,10 @@ interface ReviewQueueProps {
   userId: string;
   onRefresh?: () => void;
   onActivityApproved?: () => void;
+  onPendingCountChange?: (count: number) => void;
 }
 
-const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivityApproved }) => {
+const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivityApproved, onPendingCountChange }) => {
   const [pending, setPending] = useState<PendingActivity[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,6 +36,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
   const [approvingBulk, setApprovingBulk] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [animatingRows, setAnimatingRows] = useState<Set<string>>(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Edit modal state
   const [editForm, setEditForm] = useState({
@@ -89,6 +91,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
   // Fetch pending activities
   const fetchPending = useCallback(async () => {
     try {
+      setIsRefreshing(true);
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (!token) return;
 
@@ -98,12 +101,18 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
       if (response.ok) {
         const data = await response.json();
-        setPending(data.activities || []);
+        const activities = data.activities || [];
+        setPending(activities);
+        // Notify parent of count change
+        onPendingCountChange?.(activities.length);
+        console.log(`📋 ReviewQueue: Fetched ${activities.length} pending activities`);
       }
     } catch (err) {
       console.error('Failed to fetch pending:', err);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [onPendingCountChange]);
 
   // Fetch kids for dropdown
   const fetchKids = useCallback(async () => {
@@ -189,7 +198,15 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      if (!token) return;
+      if (!token) {
+        setSuccess('Error: No auth token ❌');
+        setAnimatingRows((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        return;
+      }
 
       const response = await fetch(`/api/activities/${id}/approve`, {
         method: 'POST',
@@ -201,9 +218,20 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
         // Wait for animation to complete before fetching
         setTimeout(() => {
           fetchPending();
-          onRefresh?.();
           onActivityApproved?.();
+          onRefresh?.();
         }, 300);
+      } else {
+        // Handle non-ok response
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`Failed to approve activity ${id}:`, response.status, errorData);
+        setSuccess(`Error: ${errorData.error || 'Failed to approve'} ❌`);
+        // Remove animation if failed
+        setAnimatingRows((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
       }
     } catch (err) {
       console.error('Failed to approve:', err);
@@ -233,7 +261,11 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      if (!token) return;
+      if (!token) {
+        setSuccess('Error: No auth token ❌');
+        setAnimatingRows(new Set());
+        return;
+      }
 
       const ids = pending.map((a) => a.id);
       const response = await fetch('/api/activities/bulk-approve', {
@@ -250,9 +282,17 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
         // Wait for animation to complete before fetching
         setTimeout(() => {
           setPending([]);
-          onRefresh?.();
+          onPendingCountChange?.(0);
           onActivityApproved?.();
+          onRefresh?.();
         }, 300);
+      } else {
+        // Handle non-ok response
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`Bulk approve failed:`, response.status, errorData);
+        setSuccess(`Error: ${errorData.error || 'Failed to approve'} ❌`);
+        // Clear animation if failed
+        setAnimatingRows(new Set());
       }
     } catch (err) {
       console.error('Failed bulk approve:', err);
@@ -295,7 +335,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
   return (
     <div style={{ marginBottom: '2rem' }} className="max-w-2xl mx-auto w-full px-4 sm:px-0">
-      {/* Header with bulk action */}
+      {/* Header with bulk action and refresh button */}
       <div
         style={{
           display: 'flex',
@@ -334,35 +374,70 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
           </span>
         </h2>
 
-        {pending.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Refresh button */}
           <button
-            onClick={handleBulkApprove}
-            disabled={approvingBulk}
+            onClick={fetchPending}
+            disabled={isRefreshing}
+            title="Hard refresh pending list"
             style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: COLORS.accent3,
-              color: 'white',
-              border: 'none',
+              padding: '0.5rem 0.75rem',
+              backgroundColor: 'transparent',
+              color: COLORS.secondary,
+              border: `1px solid ${COLORS.secondary}`,
               borderRadius: '4px',
               fontSize: '12px',
               fontWeight: 600,
-              cursor: approvingBulk ? 'not-allowed' : 'pointer',
-              opacity: approvingBulk ? 0.6 : 1,
+              cursor: isRefreshing ? 'not-allowed' : 'pointer',
+              opacity: isRefreshing ? 0.6 : 1,
               transition: 'all 0.2s',
               whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
             }}
             onMouseOver={(e) => {
-              if (!approvingBulk) {
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+              if (!isRefreshing) {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgba(0, 212, 255, 0.1)';
               }
             }}
             onMouseOut={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
             }}
           >
-            {approvingBulk ? '⏳' : '✅'} All
+            {isRefreshing ? '⏳' : '🔄'}
           </button>
-        )}
+
+          {pending.length > 0 && (
+            <button
+              onClick={handleBulkApprove}
+              disabled={approvingBulk}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: COLORS.accent3,
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: approvingBulk ? 'not-allowed' : 'pointer',
+                opacity: approvingBulk ? 0.6 : 1,
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseOver={(e) => {
+                if (!approvingBulk) {
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseOut={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+              }}
+            >
+              {approvingBulk ? '⏳' : '✅'} All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Success message */}

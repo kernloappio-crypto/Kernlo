@@ -46,6 +46,7 @@ export async function POST(
 
     const { id } = await params;
     const activityId = id;
+    console.log(`📌 Approving activity ${activityId} for user ${userData.user.id}`);
 
     // Verify activity belongs to user and is pending
     const { data: activity, error: fetchError } = await supabase
@@ -56,26 +57,37 @@ export async function POST(
       .single();
 
     if (fetchError || !activity) {
+      console.error(`🔴 Activity not found or unauthorized. Fetch error:`, fetchError);
       return NextResponse.json({ error: 'Activity not found or unauthorized' }, { status: 404 });
     }
 
+    console.log(`📋 Found activity: id=${activity.id}, status=${activity.status}, user=${activity.user_id}`);
+
     if (activity.status !== 'pending') {
+      console.warn(`⚠️ Activity status is '${activity.status}', not 'pending'`);
       return NextResponse.json({ error: 'Activity is not pending' }, { status: 400 });
     }
 
     // Update status to 'confirmed'
+    console.log(`🔄 Updating activity ${activityId} to status='confirmed'...`);
     const { data, error } = await supabase
       .from('activities')
       .update({ status: 'confirmed', updated_at: new Date().toISOString() })
       .eq('id', activityId)
+      .eq('user_id', userData.user.id)
       .select();
 
     if (error) {
-      console.error('🔴 Approval error:', error);
+      console.error(`🔴 Approval update failed:`, error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    console.log('✅ Activity approved:', activityId);
+    if (!data || data.length === 0) {
+      console.error(`🔴 Update returned no rows. RLS may be blocking the update.`);
+      return NextResponse.json({ error: 'Failed to update activity (RLS issue?)' }, { status: 400 });
+    }
+
+    console.log(`✅ Activity approved: id=${activityId}, new_status=${data[0].status}`);
 
     return NextResponse.json({ success: true, activity: data?.[0] });
   } catch (error: any) {

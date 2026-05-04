@@ -465,15 +465,26 @@ export default function DashboardPage() {
 
         if (response.ok) {
           const data = await response.json();
-          setPendingCount(data.activities?.length || 0);
-          console.log(`📋 Pending count: ${data.activities?.length || 0}`);
+          const count = data.activities?.length || 0;
+          setPendingCount(count);
+          console.log(`📋 Dashboard: Pending count fetched = ${count}`);
         }
       } catch (e) {
         console.log(`⚠️ Error fetching pending count: ${e}`);
       }
     };
 
+    // Fetch immediately
     fetchPendingCount();
+
+    // For refreshCounter changes, add a small delay to ensure API is updated
+    if (refreshCounter > 0) {
+      console.log(`📊 Dashboard: refreshCounter updated, re-fetching pending count...`);
+      const timer = setTimeout(() => {
+        fetchPendingCount();
+      }, 200); // Small delay for DB consistency
+      return () => clearTimeout(timer);
+    }
   }, [userId, refreshCounter]);
 
 
@@ -1185,10 +1196,18 @@ Format as professional homeschool compliance documentation.`;
           {/* Review Queue - Pending Approvals (only render if there are pending items) */}
           {pendingCount > 0 && (
             <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
-              <ReviewQueue userId={userId} onActivityApproved={() => {
-                // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
-                setRefreshCounter(c => c + 1);
-              }} />
+              <ReviewQueue 
+                userId={userId} 
+                onActivityApproved={() => {
+                  // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
+                  setRefreshCounter(c => c + 1);
+                }}
+                onPendingCountChange={(count) => {
+                  // Sync dashboard pending count with ReviewQueue's actual pending count
+                  console.log(`📊 Dashboard: Pending count updated to ${count}`);
+                  setPendingCount(count);
+                }}
+              />
             </div>
           )}
           {/* Momentum Grid - Activity Heatmap (HIDDEN - Replaced with ConsistencyRing) */}
