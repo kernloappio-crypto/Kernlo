@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body: ActivityCreatePayload = await req.json();
-    const { child_name, subject, duration, platform, date, notes } = body;
+    const { child_name, subject, duration, platform, date, notes, status, raw_input } = body;
 
     if (!child_name || !subject || !duration || !platform || !date) {
       return NextResponse.json(
@@ -93,7 +93,11 @@ export async function POST(req: NextRequest) {
 
     const user_id = userData.user.id;
 
-    // Insert activity
+    // Default status to 'confirmed' if not provided (manual Quick Log)
+    // If status is provided from CommandBar, use 'pending'
+    const activityStatus = status || 'confirmed';
+
+    // Insert activity with status and raw_input
     const { data, error } = await supabase.from('activities').insert({
       user_id,
       child_name,
@@ -102,6 +106,8 @@ export async function POST(req: NextRequest) {
       platform,
       date,
       notes: notes || null,
+      status: activityStatus,
+      raw_input: raw_input || null,
     });
 
     if (error) {
@@ -112,7 +118,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('✅ Activity logged:', { child_name, subject, duration, platform });
+    console.log('✅ Activity logged:', { child_name, subject, duration, platform, status: activityStatus });
 
     return NextResponse.json({ success: true, activity: data }, { status: 201 });
   } catch (error: any) {

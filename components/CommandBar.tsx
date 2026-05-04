@@ -126,9 +126,12 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
             platform: parsedData.platform,
             date: new Date().toISOString().split('T')[0],
             notes: parsedData.note || null,
+            // Auto-submitted via NLP gets 'pending' status + raw input for audit trail
+            status: 'pending' as const,
+            raw_input: text.trim(),
           };
 
-          console.log('📤 Submitting activity:', payload);
+          console.log('📤 Submitting activity (AI-logged, status=pending):', payload);
 
           const response = await fetch('/api/activities', {
             method: 'POST',
@@ -154,7 +157,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
       submitActivity();
     }
-  }, [hasAllFields, isHighConfidence, parsedData]);
+  }, [hasAllFields, isHighConfidence, parsedData, text]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">

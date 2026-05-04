@@ -68,6 +68,8 @@ export interface Activity {
   platform: string;
   date: string;
   notes: string | null;
+  status?: 'pending' | 'confirmed'; // pending for AI-logged, confirmed for manual
+  raw_input?: string | null; // original text input from parent
   created_at: string;
   updated_at: string;
 }
@@ -79,4 +81,6 @@ export interface ActivityCreatePayload {
   platform: string;
   date: string;
   notes?: string;
+  status?: 'pending' | 'confirmed'; // optional: defaults to 'confirmed' if not provided
+  raw_input?: string; // optional: original input text for audit trail
 }
