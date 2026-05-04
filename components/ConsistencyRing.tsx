@@ -26,6 +26,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   useEffect(() => {
     const fetchConsistency = async () => {
       try {
+        console.log(`🔄 ConsistencyRing refetching for ${childName} (childId: ${childId}, refreshCounter: ${refreshCounter})`);
         setLoading(true);
         setError(null);
 
@@ -62,6 +63,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
         }
 
         const data = await response.json();
+        console.log(`✅ ConsistencyRing data: ${childName} has ${data.daysLogged} days logged this week`);
         setDaysLogged(data.daysLogged || 0);
       } catch (err: any) {
         console.error('Error fetching consistency:', err);
