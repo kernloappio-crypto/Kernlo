@@ -9,6 +9,7 @@ import { signOut } from "@/lib/supabase-auth";
 import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
 import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
 import CommandBar from "@/components/CommandBar";
+import ReviewQueue from "@/components/ReviewQueue";
 
 export const dynamic = "force-dynamic";
 
@@ -1093,6 +1094,12 @@ Format as professional homeschool compliance documentation.`;
           <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
             <CommandBar userId={userId} onActivityLogged={() => {
               // Activity logged - will auto-refresh on next component mount
+            }} />
+          </div>
+          {/* Review Queue - Pending Approvals */}
+          <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
+            <ReviewQueue userId={userId} onRefresh={() => {
+              // Refresh dashboard after approval
             }} />
           </div>
           <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col">
