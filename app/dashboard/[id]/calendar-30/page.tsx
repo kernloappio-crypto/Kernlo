@@ -251,7 +251,8 @@ export default function Kid30DayCalendarPage() {
           user_id: userId,
           child_name: kid.name,
           subject: logSubject,
-          duration: parseFloat(logDuration),
+          // Convert hours to minutes for storage
+          duration: parseFloat(logDuration) * 60,
           platform: logPlatform || "Other",
           curriculum: logCurriculum || null,
           activity_type: logActivityType,

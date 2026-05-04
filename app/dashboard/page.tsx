@@ -570,7 +570,8 @@ export default function DashboardPage() {
             notes: logNotes,
             curriculum: logCurriculum || null,
             subject: logSubject,
-            duration: parseFloat(logDuration),
+            // Convert hours to minutes for storage
+            duration: parseFloat(logDuration) * 60,
             topic: logTopic || null,
           };
 
