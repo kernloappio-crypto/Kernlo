@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node apply-migration.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
