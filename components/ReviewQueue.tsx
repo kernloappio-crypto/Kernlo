@@ -22,9 +22,10 @@ interface Kid {
 interface ReviewQueueProps {
   userId: string;
   onRefresh?: () => void;
+  onActivityApproved?: () => void;
 }
 
-const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh }) => {
+const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivityApproved }) => {
   const [pending, setPending] = useState<PendingActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -175,6 +176,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh }) => {
         setSuccess('Activity approved ✅');
         await fetchPending();
         onRefresh?.();
+        onActivityApproved?.();
       }
     } catch (err) {
       console.error('Failed to approve:', err);
@@ -212,6 +214,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh }) => {
         setSuccess(`${ids.length} activities approved ✅`);
         setPending([]);
         onRefresh?.();
+        onActivityApproved?.();
       }
     } catch (err) {
       console.error('Failed bulk approve:', err);
