@@ -10,6 +10,7 @@ import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
 import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
 import CommandBar from "@/components/CommandBar";
 import ReviewQueue from "@/components/ReviewQueue";
+import MomentumGrid from "@/components/MomentumGrid";
 
 export const dynamic = "force-dynamic";
 
@@ -1189,7 +1190,11 @@ Format as professional homeschool compliance documentation.`;
               }} />
             </div>
           )}
-          <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 w-full flex flex-col">
+          {/* Momentum Grid - Activity Heatmap */}
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
+            <MomentumGrid userId={userId} refreshCounter={refreshCounter} />
+          </div>
+          <div className="px-4 sm:px-6 lg:px-8 pt-0 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <p style={{ color: "#555" }} className="text-sm mb-4">No kids added yet. Add a kid to get started!</p>
