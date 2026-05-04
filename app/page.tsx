@@ -175,7 +175,7 @@ export default function LandingPage() {
               { icon: "📋", title: "State Compliance", desc: "Track hours against your state's requirements. Know you're on track." },
               { icon: "🤖", title: "AI-Powered Reports", desc: "When you need reports, generate professional narratives in moments" },
               { icon: "📄", title: "PDF Export", desc: "Download and submit to co-ops, colleges, or state authorities" },
-              { icon: "💬", title: "SMS Notifications (Optional)", desc: "Get instant text confirmations when activities are logged. Opt-in, stay informed." },
+              { icon: "💬", title: "SMS Logging & Confirmations", desc: "Log activities via text (\"Jett 30m Math Khan\") and get instant confirmations. Opt-in, stay connected." },
             ].map((feature, i) => (
               <div key={i} style={{ backgroundColor: COLORS.light }} className="p-4 sm:p-6 rounded-lg">
                 <p className="text-3xl sm:text-4xl mb-2">{feature.icon}</p>
