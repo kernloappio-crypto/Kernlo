@@ -85,6 +85,7 @@ export default function DashboardPage() {
   const [attendanceMonthlyByKid, setAttendanceMonthlyByKid] = useState<{ [kidName: string]: number }>({});
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -432,6 +433,46 @@ export default function DashboardPage() {
 
     reloadActivities();
   }, [refreshCounter, userId, kids.length]);
+
+  // Fetch pending activities count
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchPendingCount = async () => {
+      try {
+        const sessionStr = localStorage.getItem('kernlo_session');
+        let accessToken = '';
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            accessToken = session.access_token;
+          } catch (e) {
+            accessToken = localStorage.getItem('kernlo_access_token') || '';
+          }
+        } else {
+          accessToken = localStorage.getItem('kernlo_access_token') || '';
+        }
+
+        if (!accessToken) return;
+
+        const response = await fetch('/api/activities/pending', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setPendingCount(data.activities?.length || 0);
+          console.log(`📋 Pending count: ${data.activities?.length || 0}`);
+        }
+      } catch (e) {
+        console.log(`⚠️ Error fetching pending count: ${e}`);
+      }
+    };
+
+    fetchPendingCount();
+  }, [userId, refreshCounter]);
 
 
   async function handleAddKid() {
@@ -1139,13 +1180,15 @@ Format as professional homeschool compliance documentation.`;
               setRefreshCounter(c => c + 1);
             }} />
           </div>
-          {/* Review Queue - Pending Approvals */}
-          <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
-            <ReviewQueue userId={userId} onActivityApproved={() => {
-              // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
-              setRefreshCounter(c => c + 1);
-            }} />
-          </div>
+          {/* Review Queue - Pending Approvals (only render if there are pending items) */}
+          {pendingCount > 0 && (
+            <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
+              <ReviewQueue userId={userId} onActivityApproved={() => {
+                // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
+                setRefreshCounter(c => c + 1);
+              }} />
+            </div>
+          )}
           <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">

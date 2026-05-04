@@ -37,10 +37,20 @@ export async function GET(req: NextRequest) {
 
     const supabase = getSupabaseClient(token);
 
-    // Query activities - RLS will automatically filter to current user
-    const { data, error } = await supabase
-      .from('activities')
-      .select('*');
+    // Query activities - Filter by status
+    // Default: Only return confirmed (for hour totals)
+    // ?status=all: Return all activities (internal use only)
+    const url = new URL(req.url);
+    const statusParam = url.searchParams.get('status');
+    const onlyConfirmed = statusParam !== 'all';
+
+    let query = supabase.from('activities').select('*');
+
+    if (onlyConfirmed) {
+      query = query.eq('status', 'confirmed');
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('🔴 Activities query error:', error);

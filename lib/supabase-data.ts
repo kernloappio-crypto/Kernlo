@@ -211,11 +211,16 @@ export async function addActivity(
   return data?.[0];
 }
 
-export async function getActivities(userId: string, childName?: string) {
+export async function getActivities(userId: string, childName?: string, includeAll = false) {
   let query = supabase
     .from('activities')
     .select('*')
     .eq('user_id', userId);
+
+  // Filter to confirmed activities by default (only show approved activities to dashboards/reports)
+  if (!includeAll) {
+    query = query.eq('status', 'confirmed');
+  }
 
   if (childName) {
     query = query.eq('child_name', childName);

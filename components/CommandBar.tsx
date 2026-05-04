@@ -143,9 +143,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
           });
 
           if (response.ok) {
-            setSuccessMessage(`✅ Activity Logged: ${parsedData.student} • ${parsedData.minutes}m ${parsedData.subject}`);
+            setSuccessMessage(`✅ Activity logged - waiting for your approval`);
             setTimeout(() => setSuccessMessage(null), 3000); // Hide after 3 seconds
             handleActivityLogged();
+            onActivityLogged?.();
           } else {
             const errorData = await response.json();
             setError(errorData.error || 'Failed to save activity');
