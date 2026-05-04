@@ -48,18 +48,19 @@ export async function GET(
     const childId = params.childId;
 
     // Get current week boundaries (Monday-Sunday)
-    // If today is Monday, week starts today
-    // If today is Sunday, week ends today
     const now = new Date();
     const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
     // Calculate Monday of current week
-    const daysUntilMonday = currentDayOfWeek === 0 ? 1 : currentDayOfWeek === 1 ? 0 : (8 - currentDayOfWeek);
+    // If Sunday (0), go back 6 days to get Monday
+    // If Monday (1), go back 0 days
+    // If Tuesday (2), go back 1 day to get Monday, etc.
+    const daysToSubtract = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
     const monday = new Date(now);
-    monday.setDate(monday.getDate() - currentDayOfWeek + (currentDayOfWeek === 0 ? -6 : 1));
+    monday.setDate(monday.getDate() - daysToSubtract);
     monday.setHours(0, 0, 0, 0);
 
-    // Calculate Sunday (end of week)
+    // Calculate Sunday (end of week = Monday + 6 days)
     const sunday = new Date(monday);
     sunday.setDate(sunday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
