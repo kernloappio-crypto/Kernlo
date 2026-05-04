@@ -37,11 +37,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   }, [userId]);
 
   const handleParse = async () => {
-    if (!text.trim()) {
-      setError('Please enter what they learned');
-      return;
-    }
-
+    // NO pre-validation - send raw text directly to NLP
     setIsLoading(true);
     setError(null);
 
@@ -50,7 +46,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: text.trim(),
+          text: text.trim() || '',
           user_id: userId,
           available_students: availableStudents,
         }),
@@ -87,14 +83,16 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     onActivityLogged?.();
   };
 
-  // Auto-confirm if all required fields are filled
-  const hasAllFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes && parsedData.platform;
+  // Check if we have required fields for auto-save
+  // Required: student, subject, minutes
+  // Platform is optional (user can fill in confirm card)
+  const hasRequiredFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes;
   
   // Auto-confirm if confidence >= 90%
   const isHighConfidence = parsedData && parsedData.confidence >= 0.9;
 
-  // Show confirm card only if parsing succeeded AND fields missing AND low confidence
-  if (parsedData && !hasAllFields && !isHighConfidence) {
+  // Show confirm card only if parsing succeeded AND (missing required fields OR low confidence)
+  if (parsedData && (!hasRequiredFields || !isHighConfidence)) {
     return (
       <ConfirmCard
         data={parsedData}
@@ -105,9 +103,9 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     );
   }
 
-  // Auto-save if all fields are present OR high confidence (90%+)
+  // Auto-save if required fields are present AND high confidence (90%+)
   useEffect(() => {
-    if ((hasAllFields || isHighConfidence) && parsedData) {
+    if (hasRequiredFields && isHighConfidence && parsedData) {
       const submitActivity = async () => {
         try {
           // Get auth token from Supabase session
@@ -123,8 +121,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
             child_name: parsedData.student,
             subject: parsedData.subject,
             duration: parsedData.minutes,
-            platform: parsedData.platform,
-            date: new Date().toISOString().split('T')[0],
+            platform: parsedData.platform || 'Not specified',
+            date: parsedData.date || new Date().toISOString().split('T')[0],
             notes: parsedData.note || null,
             // Auto-submitted via NLP gets 'pending' status + raw input for audit trail
             status: 'pending' as const,
@@ -158,7 +156,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
       submitActivity();
     }
-  }, [hasAllFields, isHighConfidence, parsedData, text]);
+  }, [hasRequiredFields, isHighConfidence, parsedData, text]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">

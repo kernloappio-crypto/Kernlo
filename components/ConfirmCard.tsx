@@ -32,12 +32,13 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
   const [minutes, setMinutes] = useState(data.minutes.toString());
   const [notes, setNotes] = useState(data.note);
   const [platform, setPlatform] = useState(data.platform || '');
+  const [date, setDate] = useState(data.date || new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
-    if (!student || !subject || !minutes || !platform) {
-      setError('Please fill in all fields');
+    if (!student || !subject || !minutes) {
+      setError('Please fill in: Student, Subject, and Minutes');
       return;
     }
 
@@ -53,8 +54,8 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
           child_name: student,
           subject,
           duration: parseInt(minutes, 10),
-          platform,
-          date: new Date().toISOString().split('T')[0],
+          platform: platform || 'Not specified',
+          date: date || new Date().toISOString().split('T')[0],
           notes: notes || null,
         }),
       });
@@ -127,19 +128,30 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
             />
           </div>
 
-          {/* Platform */}
+          {/* Platform / Location */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Platform / Location (optional)</label>
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select platform</option>
+              <option value="">Select or leave blank</option>
               {AVAILABLE_PLATFORMS.map(p => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
         </div>
 

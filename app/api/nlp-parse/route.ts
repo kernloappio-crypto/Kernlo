@@ -43,12 +43,15 @@ export async function POST(req: NextRequest) {
     const body: NLPParseRequest = await req.json();
     let { text, user_id, available_students } = body;
 
-    if (!text || !user_id) {
+    if (!user_id) {
       return NextResponse.json(
-        { error: 'Missing required fields: text, user_id' },
+        { error: 'Missing required field: user_id' },
         { status: 400 }
       );
     }
+
+    // Allow empty/whitespace text - let NLP handle it
+    // This enables the no-validation flow
 
     // Fetch available students if not provided
     if (!available_students || available_students.length === 0) {
@@ -79,13 +82,15 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "subject": "subject or 'Extracurricular' if unrecognized",
   "minutes": 30,
   "note": "lesson topic or details",
-  "platform": null,
+  "platform": "platform or location",
+  "date": "YYYY-MM-DD or null",
   "confidence": 0.95
 }
 
 Rules:
 - Extract student name (e.g., "Ella", "Jett", "Tripp")
 - Extract subject (match to available subjects list)
+  * Special: if "Field Trip" is mentioned, use "Field Trip" as subject
 - Extract MINUTES: Convert ANY time format to minutes (integer):
   * "20m" or "20 m" → 20
   * "30 mins" or "30 min" → 30
@@ -93,23 +98,30 @@ Rules:
   * "1.5 hours" or "1.5h" → 90
   * "2h 30m" → 150
   * Just a number "45" → assume minutes
-- Extract PLATFORM - look for these keywords (case-insensitive):
-  * "khan" or "khan academy" → "Khan Academy"
-  * "ixl" → "IXL"
-  * "youtube" → "YouTube"
-  * "epic" → "Epic!"
-  * "duolingo" → "Duolingo"
-  * "quizlet" → "Quizlet"
-  * "outschool" → "Outschool"
-  * "twinkl" → "Twinkl"
-  * "acellus" → "Acellus"
-  * Or extract the last word/name as platform if no keyword matches
+  * If missing, default to 30 and mark confidence lower
+- Extract PLATFORM/LOCATION:
+  * For field trips: extract location name (e.g., "Bob Bullock Museum")
+  * For online: match these keywords (case-insensitive):
+    - "khan" or "khan academy" → "Khan Academy"
+    - "ixl" → "IXL"
+    - "youtube" → "YouTube"
+    - "epic" → "Epic!"
+    - "duolingo" → "Duolingo"
+    - "quizlet" → "Quizlet"
+    - "outschool" → "Outschool"
+    - "twinkl" → "Twinkl"
+    - "acellus" → "Acellus"
+  * Or extract the last noun/name as platform if no keyword matches
+  * If missing, set to null (user will be asked)
 - Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
+- Extract DATE if mentioned in format like "May 5", "today", "yesterday", etc. Otherwise set to null
 - If student name is not in available_students, set confidence to 0.5 and return the best guess
-- If minutes are missing, default to 30 and add "[estimated]" to note
-- If subject is not in available subjects, use "Extracurricular"
-- If platform is missing, set to null (user will be asked)
-- confidence should be 0.0-1.0 based on how clear the input is`;
+- If subject is not in available subjects, use "Extracurricular" (unless "Field Trip")
+- confidence should be 0.0-1.0 based on how clear the input is
+  * Full clarity (all fields, known student) = 0.95+
+  * Missing platform/duration = 0.6-0.8
+  * Ambiguous = 0.3-0.5
+  * Empty/unclear = 0.1`;
 
     const message = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -134,22 +146,29 @@ Rules:
 
     const parsed: ParsedActivityData = JSON.parse(jsonStr);
 
-    // Validation: confidence check
-    if (parsed.confidence < 0.7) {
+    // Always return the parsed data; confidence is checked by frontend
+    // Frontend will show confirm card if confidence < 0.9 OR required fields missing
+    const isHighConfidence = parsed.confidence >= 0.9;
+    const hasRequiredFields = parsed.student && parsed.subject && parsed.minutes;
+
+    if (isHighConfidence && hasRequiredFields) {
+      return NextResponse.json({
+        success: true,
+        data: parsed,
+      });
+    } else {
+      // Return parsed data for user review (frontend will show confirm card)
       return NextResponse.json(
         {
           success: false,
           data: parsed,
-          error: `Low confidence (${parsed.confidence}). Clarification needed.`,
+          error: `Please review the parsed activity${
+            parsed.confidence < 0.9 ? ' (low confidence)' : ''
+          }${!hasRequiredFields ? ' (missing fields)' : ''}.`,
         },
         { status: 200 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      data: parsed,
-    });
   } catch (error: any) {
     console.error('🔴 NLP parse error:', error);
     return NextResponse.json(

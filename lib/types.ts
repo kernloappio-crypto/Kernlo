@@ -9,6 +9,7 @@ export interface ParsedActivityData {
   minutes: number;
   note: string;
   platform: string | null;
+  date: string | null;
   confidence: number;
 }
 
