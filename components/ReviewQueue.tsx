@@ -34,6 +34,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
   const [approving, setApproving] = useState<Set<string>>(new Set());
   const [approvingBulk, setApprovingBulk] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [animatingRows, setAnimatingRows] = useState<Set<string>>(new Set());
 
   // Edit modal state
   const [editForm, setEditForm] = useState({
@@ -182,6 +183,8 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
   // Approve single activity
   const handleApprove = async (id: string) => {
+    // Start animation immediately
+    setAnimatingRows((prev) => new Set([...prev, id]));
     setApproving((prev) => new Set(prev).add(id));
 
     try {
@@ -195,13 +198,22 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
       if (response.ok) {
         setSuccess('Activity approved ✅');
-        await fetchPending();
-        onRefresh?.();
-        onActivityApproved?.();
+        // Wait for animation to complete before fetching
+        setTimeout(() => {
+          fetchPending();
+          onRefresh?.();
+          onActivityApproved?.();
+        }, 300);
       }
     } catch (err) {
       console.error('Failed to approve:', err);
       setSuccess('Error approving activity ❌');
+      // Remove animation if failed
+      setAnimatingRows((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     } finally {
       setApproving((prev) => {
         const next = new Set(prev);
@@ -216,6 +228,8 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
     if (pending.length === 0) return;
 
     setApprovingBulk(true);
+    // Animate all rows out
+    setAnimatingRows(new Set(pending.map((a) => a.id)));
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -233,13 +247,18 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
 
       if (response.ok) {
         setSuccess(`${ids.length} activities approved ✅`);
-        setPending([]);
-        onRefresh?.();
-        onActivityApproved?.();
+        // Wait for animation to complete before fetching
+        setTimeout(() => {
+          setPending([]);
+          onRefresh?.();
+          onActivityApproved?.();
+        }, 300);
       }
     } catch (err) {
       console.error('Failed bulk approve:', err);
       setSuccess('Error in bulk approval ❌');
+      // Clear animation if failed
+      setAnimatingRows(new Set());
     } finally {
       setApprovingBulk(false);
     }
@@ -362,14 +381,24 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
         </div>
       )}
 
+      {/* Fade/slide animation CSS */}
+      <style>{`
+        .fade-slide-out {
+          opacity: 0 !important;
+          transform: translateX(100%) !important;
+          transition: all 0.3s ease-out !important;
+        }
+      `}</style>
+
       {/* Compact list */}
       <div style={{ backgroundColor: 'white', borderRadius: '4px', border: '1px solid #e0e7ff', overflow: 'hidden' }}>
         {pending.map((activity, index) => {
           const isExpanded = expandedRows.has(activity.id);
           const childColor = getChildColor(activity.child_name);
+          const isAnimating = animatingRows.has(activity.id);
 
           return (
-            <div key={activity.id}>
+            <div key={activity.id} className={isAnimating ? 'fade-slide-out' : ''}>
               {/* Row */}
               <div
                 onClick={(e) => {
@@ -387,15 +416,15 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ userId, onRefresh, onActivity
                   borderBottom: index < pending.length - 1 ? '1px solid #f0f0f0' : 'none',
                   cursor: 'pointer',
                   backgroundColor: isExpanded ? '#f9fafb' : 'white',
-                  transition: 'background-color 0.15s',
+                  transition: isAnimating ? 'none' : 'background-color 0.15s',
                 }}
                 onMouseOver={(e) => {
-                  if (!isExpanded) {
+                  if (!isExpanded && !isAnimating) {
                     (e.currentTarget as HTMLDivElement).style.backgroundColor = '#f9fafb';
                   }
                 }}
                 onMouseOut={(e) => {
-                  if (!isExpanded) {
+                  if (!isExpanded && !isAnimating) {
                     (e.currentTarget as HTMLDivElement).style.backgroundColor = 'white';
                   }
                 }}
