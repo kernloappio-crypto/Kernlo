@@ -1190,10 +1190,10 @@ Format as professional homeschool compliance documentation.`;
               }} />
             </div>
           )}
-          {/* Momentum Grid - Activity Heatmap - TEMP DISABLED */}
-          {/* <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
+          {/* Momentum Grid - Activity Heatmap */}
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
             <MomentumGrid userId={userId} refreshCounter={refreshCounter} />
-          </div> */}
+          </div>
           <div className="px-4 sm:px-6 lg:px-8 pt-0 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
