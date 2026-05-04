@@ -1342,31 +1342,35 @@ Format as professional homeschool compliance documentation.`;
                           </p>
                           <div className="space-y-0.5 text-xs">
                             {(() => {
-                              const coreHours = kidActivities
+                              const coreMinutes = kidActivities
                                 .filter((a) => !a.activity_type || a.activity_type === "Core Subject")
                                 .reduce((sum, a) => sum + a.duration, 0);
-                              const extracurricularHours = kidActivities
+                              const extracurricularMinutes = kidActivities
                                 .filter((a) => a.activity_type === "Extracurricular")
                                 .reduce((sum, a) => sum + a.duration, 0);
-                              const enrichmentHours = kidActivities
+                              const enrichmentMinutes = kidActivities
                                 .filter((a) => a.activity_type === "Field Trip / Enrichment")
                                 .reduce((sum, a) => sum + a.duration, 0);
                               
+                              const coreHours = coreMinutes / 60;
+                              const extracurricularHours = extracurricularMinutes / 60;
+                              const enrichmentHours = enrichmentMinutes / 60;
+                              
                               return (
                                 <>
-                                  {coreHours > 0 && (
+                                  {coreMinutes > 0 && (
                                     <div className="flex justify-between">
                                       <span style={{ color: "#1a1a2e" }}>Core Subjects</span>
                                       <span style={{ color: COLORS.primary }} className="font-semibold">{coreHours.toFixed(1)}h</span>
                                     </div>
                                   )}
-                                  {extracurricularHours > 0 && (
+                                  {extracurricularMinutes > 0 && (
                                     <div className="flex justify-between">
                                       <span style={{ color: "#1a1a2e" }}>Extracurricular</span>
                                       <span style={{ color: "#ff9900" }} className="font-semibold">{extracurricularHours.toFixed(1)}h</span>
                                     </div>
                                   )}
-                                  {enrichmentHours > 0 && (
+                                  {enrichmentMinutes > 0 && (
                                     <div className="flex justify-between">
                                       <span style={{ color: "#1a1a2e" }}>Enrichment</span>
                                       <span style={{ color: "#66bb6a" }} className="font-semibold">{enrichmentHours.toFixed(1)}h</span>
