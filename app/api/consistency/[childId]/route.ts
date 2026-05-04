@@ -47,6 +47,19 @@ export async function GET(
     }
 
     const { childId } = await params;
+    
+    // Get child name from childId
+    const { data: kidData } = await supabase
+      .from('kids')
+      .select('name')
+      .eq('id', childId)
+      .single();
+    
+    if (!kidData) {
+      return NextResponse.json({ error: 'Child not found' }, { status: 404 });
+    }
+    
+    const childName = kidData.name;
 
     // Get current week boundaries (Monday-Sunday)
     const now = new Date();
@@ -76,7 +89,7 @@ export async function GET(
       .from('activities')
       .select('date, id')
       .eq('user_id', userData.user.id)
-      .eq('child_id', childId)
+      .eq('child_name', childName)
       .eq('status', 'confirmed')
       .gte('date', weekStart)
       .lte('date', weekEnd);
