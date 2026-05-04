@@ -27,7 +27,7 @@ function getSupabaseClient(token: string) {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { childId: string } }
+  { params }: { params: Promise<{ childId: string }> }
 ) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -45,7 +45,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const childId = params.childId;
+    const { childId } = await params;
 
     // Get current week boundaries (Monday-Sunday)
     const now = new Date();
