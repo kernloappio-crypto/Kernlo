@@ -27,8 +27,9 @@ function getSupabaseClient(token: string) {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ childId: string }> }
+  context: { params: Promise<{ childId: string }> }
 ) {
+  const { params } = context;
   try {
     const authHeader = req.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '');
