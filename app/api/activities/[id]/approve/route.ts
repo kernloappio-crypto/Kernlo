@@ -70,21 +70,26 @@ export async function POST(
 
     // Update status to 'confirmed'
     console.log(`🔄 Updating activity ${activityId} to status='confirmed'...`);
+    console.log(`🔐 RLS will check: user_id (${activity.user_id}) == auth.uid() (${userData.user.id})`);
+    
     const { data, error } = await supabase
       .from('activities')
       .update({ status: 'confirmed', updated_at: new Date().toISOString() })
       .eq('id', activityId)
-      .eq('user_id', userData.user.id)
+      .eq('user_id', userData.user.id)  // Explicit filter for safety, RLS enforces this
       .select();
 
     if (error) {
       console.error(`🔴 Approval update failed:`, error);
+      console.error(`   Activity user_id: ${activity.user_id}, Authenticated user_id: ${userData.user.id}`);
+      console.error(`   Do they match? ${activity.user_id === userData.user.id}`);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     if (!data || data.length === 0) {
-      console.error(`🔴 Update returned no rows. RLS may be blocking the update.`);
-      return NextResponse.json({ error: 'Failed to update activity (RLS issue?)' }, { status: 400 });
+      console.error(`🔴 Update returned no rows. Possible RLS block or activity mismatch.`);
+      console.error(`   Activity exists with user_id: ${activity.user_id}, Auth user: ${userData.user.id}`);
+      return NextResponse.json({ error: 'Failed to update activity (RLS or auth issue)' }, { status: 400 });
     }
 
     console.log(`✅ Activity approved: id=${activityId}, new_status=${data[0].status}`);
