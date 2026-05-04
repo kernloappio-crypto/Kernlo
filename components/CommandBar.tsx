@@ -16,6 +16,25 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [availableStudents, setAvailableStudents] = useState<string[]>([]);
+
+  // Fetch kids list on mount
+  useEffect(() => {
+    const fetchKids = async () => {
+      try {
+        const { data: kids } = await supabase
+          .from('kids')
+          .select('name')
+          .eq('user_id', userId);
+        if (kids) {
+          setAvailableStudents(kids.map(k => k.name));
+        }
+      } catch (err) {
+        console.error('Failed to fetch kids:', err);
+      }
+    };
+    if (userId) fetchKids();
+  }, [userId]);
 
   const handleParse = async () => {
     if (!text.trim()) {
@@ -33,11 +52,13 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
         body: JSON.stringify({
           text: text.trim(),
           user_id: userId,
-          available_students: [], // Will fetch from context or pass as prop
+          available_students: availableStudents,
         }),
       });
 
       const result = await response.json();
+
+      console.log('📥 NLP response:', result);
 
       if (result.success) {
         setParsedData(result.data);
