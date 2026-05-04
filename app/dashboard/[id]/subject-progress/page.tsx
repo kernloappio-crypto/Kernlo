@@ -392,8 +392,8 @@ export default function SubjectProgressPage() {
                     style={{ color: COLORS.accent3 }}
                     className="text-2xl sm:text-3xl font-bold"
                   >
-                    {activities
-                      .reduce((sum, a) => sum + a.duration, 0)
+                    {(activities
+                      .reduce((sum, a) => sum + a.duration, 0) / 60)
                       .toFixed(1)}
                   </p>
                 </div>
@@ -678,7 +678,7 @@ export default function SubjectProgressPage() {
                                 Total Hours
                               </p>
                               <p style={{ color: COLORS.primary }} className="text-2xl font-bold">
-                                {past6Months.reduce((sum, a) => sum + a.duration, 0).toFixed(1)}
+                                {(past6Months.reduce((sum, a) => sum + a.duration, 0) / 60).toFixed(1)}
                               </p>
                             </div>
 
@@ -697,8 +697,9 @@ export default function SubjectProgressPage() {
                               </p>
                               <p style={{ color: COLORS.accent3 }} className="text-2xl font-bold">
                                 {past6Months.length > 0
-                                  ? (past6Months.reduce((sum, a) => sum + a.duration, 0) / past6Months.length).toFixed(1)
+                                  ? (past6Months.reduce((sum, a) => sum + a.duration, 0) / past6Months.length / 60).toFixed(1)
                                   : "0"}
+                                m
                               </p>
                             </div>
                           </div>
