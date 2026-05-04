@@ -15,6 +15,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleParse = async () => {
     if (!text.trim()) {
@@ -97,23 +98,29 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
             return;
           }
 
+          const payload = {
+            child_name: parsedData.student,
+            subject: parsedData.subject,
+            duration: parsedData.minutes,
+            platform: parsedData.platform,
+            date: new Date().toISOString().split('T')[0],
+            notes: parsedData.note || null,
+          };
+
+          console.log('📤 Submitting activity:', payload);
+
           const response = await fetch('/api/activities', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              child_name: parsedData.student,
-              subject: parsedData.subject,
-              duration: parsedData.minutes,
-              platform: parsedData.platform,
-              date: new Date().toISOString().split('T')[0],
-              notes: parsedData.note || null,
-            }),
+            body: JSON.stringify(payload),
           });
 
           if (response.ok) {
+            setSuccessMessage(`✅ Activity Logged: ${parsedData.student} • ${parsedData.minutes}m ${parsedData.subject}`);
+            setTimeout(() => setSuccessMessage(null), 3000); // Hide after 3 seconds
             handleActivityLogged();
           } else {
             const errorData = await response.json();
@@ -157,6 +164,11 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
           </button>
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {successMessage && (
+          <div className="mt-3 p-3 bg-green-100 border border-green-400 rounded-md text-green-700 text-sm font-medium">
+            {successMessage}
+          </div>
+        )}
       </div>
     </div>
   );
