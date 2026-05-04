@@ -185,7 +185,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
             disabled={isLoading}
             className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
           >
-            {isLoading ? 'Parsing...' : 'Ask AI'}
+            {isLoading ? 'Parsing...' : 'Tell Us'}
           </button>
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
