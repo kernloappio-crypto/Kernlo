@@ -84,6 +84,7 @@ export default function DashboardPage() {
   const [email, setEmail] = useState("");
   const [attendanceMonthlyByKid, setAttendanceMonthlyByKid] = useState<{ [kidName: string]: number }>({});
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -390,6 +391,47 @@ export default function DashboardPage() {
 
     loadAttendance();
   }, [kids, userId]);
+
+  // Real-time refresh: Reload activities when approval/logging happens
+  useEffect(() => {
+    if (!userId || kids.length === 0) return;
+
+    const reloadActivities = async () => {
+      try {
+        console.log("🔄 Refreshing activities (approval/logging triggered)...");
+        const sessionStr = localStorage.getItem('kernlo_session');
+        let accessToken = '';
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            accessToken = session.access_token;
+          } catch (e) {
+            accessToken = localStorage.getItem('kernlo_access_token') || '';
+          }
+        } else {
+          accessToken = localStorage.getItem('kernlo_access_token') || '';
+        }
+
+        if (!accessToken) return;
+
+        const response = await fetch('/api/activities', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const { activities: activitiesData } = await response.json();
+          setActivities(activitiesData || []);
+          console.log(`✅ Activities refreshed: ${activitiesData?.length}`);
+        }
+      } catch (e) {
+        console.log(`⚠️ Error reloading activities: ${e}`);
+      }
+    };
+
+    reloadActivities();
+  }, [refreshCounter, userId, kids.length]);
 
 
   async function handleAddKid() {
@@ -1091,18 +1133,20 @@ Format as professional homeschool compliance documentation.`;
         {/* Right Content - Kid Cards */}
         <div className="w-full overflow-y-auto">
           {/* Command Bar at top */}
-          <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-2 bg-white border-b border-gray-200">
             <CommandBar userId={userId} onActivityLogged={() => {
-              // Activity logged - will auto-refresh on next component mount
+              // Trigger refresh of review queue to show new pending item
+              setRefreshCounter(c => c + 1);
             }} />
           </div>
           {/* Review Queue - Pending Approvals */}
-          <div className="p-4 sm:p-6 lg:p-8 bg-white border-b border-gray-200">
-            <ReviewQueue userId={userId} onRefresh={() => {
-              // Refresh dashboard after approval
+          <div className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4 bg-white border-b border-gray-200">
+            <ReviewQueue userId={userId} onActivityApproved={() => {
+              // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
+              setRefreshCounter(c => c + 1);
             }} />
           </div>
-          <div className="p-4 sm:p-6 lg:p-8 w-full flex flex-col">
+          <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 w-full flex flex-col">
             {kids.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <p style={{ color: "#555" }} className="text-sm mb-4">No kids added yet. Add a kid to get started!</p>
