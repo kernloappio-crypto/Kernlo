@@ -1187,16 +1187,6 @@ Format as professional homeschool compliance documentation.`;
               📅 Calendar
             </Link>
             <button
-              onClick={() => {
-                setQuickLogKid(kids[0] || null);
-                setSelectedKidsForLog(kids.length > 0 ? [kids[0].id] : []);
-                setShowQuickLog(true);
-              }}
-              style={{ backgroundColor: COLORS.primary }}
-              className="px-3 sm:px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap inline-flex items-center justify-center"
-            >
-              + Quick Log
-            </button>
             <button
               onClick={() => {
                 setReportKid(reportKid || kids[0]);
