@@ -1175,7 +1175,16 @@ Format as professional homeschool compliance documentation.`;
             <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
               {parentProfile?.first_name ? `${parentProfile.first_name}'s Dashboard` : "Parent Dashboard"}
             </h1>
-            {userState && (
+            {userState && kids.length > 0 && (
+              <Link
+                href={`/dashboard/${kids[0].id}/compliance`}
+                style={{ color: "#9CA3AF", fontSize: "13px" }}
+                className="inline-block mt-2 hover:text-gray-600 transition-colors hover:underline"
+              >
+                {userState}
+              </Link>
+            )}
+            {userState && kids.length === 0 && (
               <div style={{ color: "#9CA3AF", fontSize: "13px" }} className="inline-block mt-2">
                 {userState}
               </div>
