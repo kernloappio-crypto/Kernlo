@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import ConfirmCard from './ConfirmCard';
+import CompleteActivityReview from './CompleteActivityReview';
+import IncompleteActivityModal from './IncompleteActivityModal';
 import { supabase } from '@/lib/supabase-client';
 import type { ParsedActivityData } from '@/lib/types';
 
@@ -15,7 +16,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
-  const [showConfirmCard, setShowConfirmCard] = useState(false);
+  const [showCompleteReview, setShowCompleteReview] = useState(false);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
@@ -150,7 +152,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       if (!result.data) {
         setError(result.error || 'Could not parse. Try: "Ella did 30m of Math"');
         setParsedData(null);
-        setShowConfirmCard(false);
+        setShowCompleteReview(false);
+        setShowIncompleteModal(false);
         return;
       }
 
@@ -161,7 +164,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
         console.error('❌ Invalid NLP response: confidence is not a number', data);
         setError('Invalid response from parser. Please try again.');
         setParsedData(null);
-        setShowConfirmCard(false);
+        setShowCompleteReview(false);
+        setShowIncompleteModal(false);
         return;
       }
 
@@ -172,28 +176,25 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       const hasMissingFields = !hasRequiredFields(data);
       const lowConfidence = !isHighConfidence(data);
 
-      // If missing fields OR low confidence → show ConfirmCard
+      // If missing fields OR low confidence → show IncompleteActivityModal
       if (hasMissingFields || lowConfidence) {
-        console.log('📋 Showing ConfirmCard (missing fields or low confidence)');
-        setShowConfirmCard(true);
+        console.log('📋 Showing IncompleteActivityModal (missing fields or low confidence)');
+        setShowIncompleteModal(true);
         return;
       }
 
-      // If all fields present AND high confidence → auto-save
+      // If all fields present AND high confidence → show CompleteActivityReview
       if (hasRequiredFields(data) && isHighConfidence(data)) {
-        console.log('✨ Auto-saving (complete + high confidence)');
-        const success = await autoSaveActivity(data);
-        if (success) {
-          handleClearAll();
-          onActivityLogged?.();
-        }
+        console.log('✨ Showing CompleteActivityReview (complete + high confidence)');
+        setShowCompleteReview(true);
         return;
       }
     } catch (err: any) {
       console.error('❌ Parse error:', err);
       setError(err.message || 'Parsing failed');
       setParsedData(null);
-      setShowConfirmCard(false);
+      setShowCompleteReview(false);
+      setShowIncompleteModal(false);
     } finally {
       setIsLoading(false);
     }
@@ -209,10 +210,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   };
 
   /**
-   * User cancelled ConfirmCard
+   * User cancelled CompleteActivityReview or IncompleteActivityModal
    */
   const handleCancel = () => {
-    console.log('❌ User cancelled ConfirmCard');
+    console.log('❌ User cancelled activity review/modal');
     handleClearAll();
   };
 
@@ -222,19 +223,32 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const handleClearAll = () => {
     setText('');
     setParsedData(null);
-    setShowConfirmCard(false);
+    setShowCompleteReview(false);
+    setShowIncompleteModal(false);
     setError(null);
     setSuccessMessage(null);
   };
 
   /**
-   * Render ConfirmCard if needed, otherwise render input
+   * Render CompleteActivityReview or IncompleteActivityModal if needed, otherwise render input
    */
-  if (showConfirmCard && parsedData) {
+  if (showCompleteReview && parsedData) {
     return (
-      <ConfirmCard
+      <CompleteActivityReview
         data={parsedData}
         userId={userId}
+        onCancel={handleCancel}
+        onConfirm={handleConfirmCardSuccess}
+      />
+    );
+  }
+
+  if (showIncompleteModal && parsedData) {
+    return (
+      <IncompleteActivityModal
+        data={parsedData}
+        userId={userId}
+        isOpen={true}
         onCancel={handleCancel}
         onConfirm={handleConfirmCardSuccess}
       />
