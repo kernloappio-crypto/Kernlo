@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase-client";
 import Navbar from "@/components/Navbar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import TranscriptCard from "@/components/TranscriptCard";
+import SubjectProgressBars from "@/components/SubjectProgressBars";
 import { 
   getActivities, 
   addActivity, 
@@ -629,45 +630,29 @@ export default function KidDetailPage() {
             
             {/* State Requirements Section */}
             <div>
-              <p style={{ color: "#555" }} className="text-xs font-medium mb-3">State: {complianceState}</p>
+              <p style={{ color: "#555" }} className="text-xs font-medium mb-4">State: {complianceState}</p>
               {STATE_REQUIREMENTS[complianceState]?.totalHours > 0 ? (
                 (() => {
                   const stateReqs = STATE_REQUIREMENTS[complianceState];
                   const subjects = Object.keys(stateReqs.subjects).slice(0, 3);
                   
+                  const subjectHours = subjects.map((subject) => {
+                    const subjectActivities = activities.filter((a) => a.subject === subject);
+                    // Convert minutes to hours: divide by 60
+                    const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
+                    const required = stateReqs.subjects[subject] || 0;
+                    
+                    return {
+                      subject,
+                      hours,
+                      target: required,
+                    };
+                  });
+                  
                   return (
-                    <div className="space-y-2">
-                      {subjects.map((subject) => {
-                        const subjectActivities = activities.filter((a) => a.subject === subject);
-                        // Convert minutes to hours: divide by 60
-                        const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
-                        const required = stateReqs.subjects[subject] || 0;
-                        const percentage = required > 0 ? Math.min(100, (hours / required) * 100) : 0;
-                        const met = hours >= required;
-
-                        return (
-                          <div key={subject} className="text-xs">
-                            <div className="flex justify-between mb-1">
-                              <span style={{ color: COLORS.dark }}>{subject}</span>
-                              <span style={{ color: met ? COLORS.accent3 : "#999" }} className="font-bold">
-                                {hours}h/{required}h
-                              </span>
-                            </div>
-                            <div style={{ backgroundColor: "#e5e7eb", height: "4px", borderRadius: "2px" }}>
-                              <div
-                                style={{
-                                  backgroundColor: met ? COLORS.accent3 : COLORS.primary,
-                                  height: "100%",
-                                  borderRadius: "2px",
-                                  width: `${percentage}%`,
-                                  transition: "width 0.3s ease",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <SubjectProgressBars 
+                      subjects={subjectHours}
+                    />
                   );
                 })()
               ) : (
@@ -685,7 +670,7 @@ export default function KidDetailPage() {
             className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
           >
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              📚 Subject Progress
+              📚 Subjects by Hours
             </h3>
             
             {activities.length === 0 ? (
@@ -694,69 +679,28 @@ export default function KidDetailPage() {
               </p>
             ) : (
               (() => {
-                const subjectMap = new Map<string, { topic?: string; date: string; platform?: string; }>();
+                // Calculate total hours per subject
+                const subjectHoursMap = new Map<string, number>();
                 
                 activities.forEach((activity) => {
-                  if (!subjectMap.has(activity.subject) || 
-                      activity.date > subjectMap.get(activity.subject)!.date) {
-                    subjectMap.set(activity.subject, {
-                      topic: activity.notes || undefined,
-                      date: activity.date,
-                      platform: activity.platform,
-                    });
-                  }
+                  const current = subjectHoursMap.get(activity.subject) || 0;
+                  // Convert minutes to hours: divide by 60
+                  const hours = activity.duration / 60;
+                  subjectHoursMap.set(activity.subject, current + hours);
                 });
 
-                const subjectsWithDates = Array.from(subjectMap.entries())
-                  .map(([subject, data]) => ({ subject, ...data }))
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .slice(0, 5);
+                const subjectHours = Array.from(subjectHoursMap.entries())
+                  .map(([subject, hours]) => ({
+                    subject,
+                    hours,
+                  }))
+                  .sort((a, b) => b.hours - a.hours)
+                  .slice(0, 4);
 
                 return (
-                  <div className="space-y-3">
-                    {subjectsWithDates.map((item, idx) => {
-                      // TIMEZONE FIX: Parse date string directly without UTC conversion
-                      const parts = item.date.split('-');
-                      const year = parseInt(parts[0], 10);
-                      const month = parseInt(parts[1], 10);
-                      const day = parseInt(parts[2], 10);
-                      const dateStr = new Date(year, month - 1, day).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      });
-                      const topic = item.topic?.substring(0, 35) || "—";
-                      
-                      const subjectIcons: {[key: string]: string} = {
-                        "Math": "🔢",
-                        "English": "📖",
-                        "Science": "🔬",
-                        "History": "📜",
-                        "Social Studies": "🌍",
-                        "Arts": "🎨",
-                        "Physical Education": "⚽",
-                      };
-                      const icon = subjectIcons[item.subject] || "📚";
-                      
-                      return (
-                        <div key={item.subject} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
-                          <span className="text-lg flex-shrink-0">{icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2 flex-wrap">
-                              <span style={{ color: COLORS.dark }} className="font-semibold text-sm">
-                                {item.subject}
-                              </span>
-                              <span style={{ color: "#999" }} className="text-xs">
-                                {dateStr}
-                              </span>
-                            </div>
-                            <p style={{ color: "#666" }} className="text-xs mt-1 truncate">
-                              {topic}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div>
+                    <SubjectProgressBars subjects={subjectHours} />
+                    <div className="mt-4 pt-4 border-t border-gray-100">
                       <a
                         href={`/dashboard/${kid.id}/subject-progress`}
                         style={{ color: COLORS.primary }}
