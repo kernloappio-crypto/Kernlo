@@ -77,28 +77,48 @@ const CompleteActivityReview: React.FC<CompleteActivityReviewProps> = ({
         return;
       }
 
-      const response = await fetch('/api/activities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          child_name: data.student,
-          subject: data.subject,
-          duration: data.minutes,
-          platform: data.platform || 'Not specified',
-          date: data.date || new Date().toISOString().split('T')[0],
-          notes: data.note || null,
-        }),
-      });
+      // Handle multiple kids: create separate activity for each
+      const kidsToLog = (data.students && data.students.length > 0) ? data.students : (data.student ? [data.student] : []);
+      
+      if (kidsToLog.length === 0) {
+        setError('No child selected');
+        setIsLoading(false);
+        return;
+      }
 
-      if (response.ok) {
+      // Create activity for each kid in parallel
+      const activityPromises = kidsToLog.map((childName) =>
+        fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            child_name: childName,
+            subject: data.subject,
+            duration: data.minutes,
+            platform: data.platform || 'Not specified',
+            date: data.date || new Date().toISOString().split('T')[0],
+            notes: data.note || null,
+          }),
+        })
+      );
+
+      const responses = await Promise.all(activityPromises);
+      const allSuccessful = responses.every((r) => r.ok);
+
+      if (allSuccessful) {
         onConfirm();
       } else {
-        const result = await response.json();
-        setError(result.error || 'Failed to log activity');
+        const failedResponse = responses.find((r) => !r.ok);
+        if (failedResponse) {
+          const result = await failedResponse.json();
+          setError(result.error || 'Failed to log activity');
+        } else {
+          setError('Failed to log activity');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Error logging activity');
@@ -164,10 +184,10 @@ const CompleteActivityReview: React.FC<CompleteActivityReviewProps> = ({
           {/* Child Name */}
           <div style={{ marginBottom: '0.75rem' }}>
             <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', fontWeight: 600, color: '#666', textTransform: 'uppercase' }}>
-              Student
+              Student{((data.students && data.students.length > 1) || (data.student && !data.students)) ? 's' : ''}
             </p>
             <p style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#0066cc' }}>
-              {data.student || 'Unknown'}
+              {((data.students && data.students.length > 0) ? data.students.join(', ') : (data.student || 'Unknown'))}
             </p>
           </div>
 
