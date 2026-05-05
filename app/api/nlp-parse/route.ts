@@ -83,13 +83,25 @@ Return ONLY valid JSON (no markdown, no code blocks):
 **CASE 1: Single activity (possibly with multiple kids doing the same thing)**
 {
   "type": "single",
-  "students": ["student1", "student2"],  // Array of student names (can be 1 or more)
+  "students": ["student1", "student2"],  // Array of student names (can be 1, 2, more, or EMPTY [] if no name mentioned)
   "subject": "subject",
   "minutes": 30,
   "note": "lesson topic or details",
   "platform": "platform or location",
   "date": "YYYY-MM-DD or null",
   "confidence": 0.95
+}
+
+**CASE 1b: Single activity with NO student name mentioned**
+{
+  "type": "single",
+  "students": [],  // EMPTY because no student name was in the input
+  "subject": "Biology",
+  "minutes": 30,
+  "note": null,
+  "platform": null,
+  "date": null,
+  "confidence": 0.3
 }
 
 **CASE 2: Multiple separate activities**
@@ -130,7 +142,9 @@ Rules:
   * If "and" or "&" or "," separates names, extract ALL
   * Return in students array
   * CRITICAL: If NO student name is mentioned in the input, return students: [] (EMPTY ARRAY)
-  * Do NOT guess or default to any student name
+  * Example: "30m Biology" → students: [] (no name mentioned, NOT all available students!)
+  * Example: "Jett 30m Biology" → students: ["Jett"]
+  * Do NOT guess or default to any student name, EVER
 - Extract subject (match to available subjects list)
   * Special: if "Field Trip" is mentioned, use "Field Trip" as subject
 - Extract MINUTES: Convert ANY time format to minutes (integer):
@@ -204,12 +218,12 @@ Rules:
     }
 
     // Handle single activity (possibly with multiple kids)
-    if (parsed.type === 'single' || parsed.students) {
+    if (parsed.type === 'single' || 'students' in parsed) {
       // Normalize to new format with students array
       // Only set student if students array has values, otherwise null (let parent select)
       const normalizedData: ParsedActivityData = {
         student: (parsed.students && parsed.students.length > 0) ? parsed.students[0] : (parsed.student || null),
-        students: parsed.students || (parsed.student ? [parsed.student] : []),
+        students: Array.isArray(parsed.students) ? parsed.students : (parsed.student ? [parsed.student] : []),
         subject: parsed.subject || null,
         minutes: parsed.minutes || null,
         note: parsed.note || null,
