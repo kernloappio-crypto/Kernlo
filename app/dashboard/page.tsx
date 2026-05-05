@@ -1262,7 +1262,7 @@ Format as professional homeschool compliance documentation.`;
 
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
-                        <div className="mb-3 pb-3 border-b border-gray-200">
+                        <div className="mb-3 pb-2">
                           <p style={{ color: "#333" }} className="text-xs font-semibold mb-3">
                             SUBJECTS BY HOURS
                           </p>
@@ -1287,7 +1287,7 @@ Format as professional homeschool compliance documentation.`;
 
                       {/* Goals Progress */}
                       {kidGoals.length > 0 && (
-                      <div className="mb-3 pb-3 border-b border-gray-200">
+                      <div className="mb-3 pb-2">
                         <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
                           MONTHLY GOALS: {kidGoals.length}
                         </p>
@@ -1333,7 +1333,7 @@ Format as professional homeschool compliance documentation.`;
 
                       {/* Total Hours Badge */}
                       {kidActivities.length > 0 && (
-                        <div className="mb-3 pb-3">
+                        <div className="mb-3 pb-2">
                           {(() => {
                             const totalMinutes = kidActivities.reduce((sum, a) => sum + a.duration, 0);
                             const totalHours = (totalMinutes / 60).toFixed(1);
@@ -1359,7 +1359,7 @@ Format as professional homeschool compliance documentation.`;
                       )}
 
                       {/* Attendance Badge */}
-                      <div className="mb-3 pb-3 border-b border-gray-200">
+                      <div className="mb-3 pb-2">
                         <div style={{ backgroundColor: COLORS.light, borderRadius: "8px" }} className="p-2 flex items-center justify-between">
                           <span style={{ color: "#555" }} className="text-xs font-medium">
                             📅 This Month

@@ -625,7 +625,7 @@ export default function KidDetailPage() {
             </h3>
             
             {/* Attendance Section */}
-            <div className="mb-4 pb-4 border-b border-gray-200">
+            <div className="mb-3 pb-2">
               <p style={{ color: "#555" }} className="text-xs font-medium mb-3">Attendance</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -640,7 +640,7 @@ export default function KidDetailPage() {
             </div>
             
             {/* State Requirements Section */}
-            <div>
+            <div className="mt-3 pt-2">
               <p style={{ color: "#555" }} className="text-xs font-medium mb-4">State: {complianceState}</p>
               {STATE_REQUIREMENTS[complianceState]?.totalHours > 0 ? (
                 (() => {
