@@ -118,12 +118,14 @@ Return ONLY valid JSON (no markdown, no code blocks):
 }
 
 Rules:
-- MULTI-KID DETECTION:
+- MULTI-KID DETECTION (CRITICAL):
   * Look for: "X and Y", "X & Y", "X, Y", "X, Y, and Z"
-  * Example: "Jett and Alerie did 30m math" → one activity, two kids
-  * Example: "Jett 30m math and Alerie 45m science" → two activities, one kid each
-  * When kids do the SAME activity (subject, duration), group them: students: ["Jett", "Alerie"]
-  * When kids do DIFFERENT activities, use type: "multiple" with separate entries
+  * Example 1: "Jett and Alerie did 30m math" → students: ["Jett", "Alerie"], subject: "Math", minutes: 30
+  * Example 2: "Jett and Alerie 30m math" → students: ["Jett", "Alerie"], subject: "Math", minutes: 30
+  * Example 3: "Jett & Alerie 30 min reading" → students: ["Jett", "Alerie"], subject: "Reading", minutes: 30
+  * Example 4: "Jett 30m math and Alerie 45m science" → type: "multiple" with two separate activities
+  * When kids do the SAME activity (subject AND duration), group them: students: ["Jett", "Alerie"]
+  * When kids do DIFFERENT activities or durations, use type: "multiple" with separate entries
 - Extract student names (e.g., "Ella", "Jett", "Tripp", "Alerie")
   * If "and" or "&" or "," separates names, extract ALL
   * Return in students array
