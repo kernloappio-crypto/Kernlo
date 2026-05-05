@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { ParsedActivityData } from '@/lib/types';
 
 const AVAILABLE_PLATFORMS = ['Khan Academy', 'IXL', 'YouTube', 'Epic!', 'Duolingo', 'Quizlet', 'Outschool', 'Twinkl', 'Acellus', 'Other'];
@@ -28,17 +28,48 @@ interface ConfirmCardProps {
 
 const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
   const [student, setStudent] = useState(data.student || '');
-  const [subject, setSubject] = useState(data.subject);
+  const [subject, setSubject] = useState(data.subject || '');
   const [minutes, setMinutes] = useState(data.minutes ? data.minutes.toString() : '');
-  const [notes, setNotes] = useState(data.note);
+  const [notes, setNotes] = useState(data.note || '');
   const [platform, setPlatform] = useState(data.platform || '');
   const [date, setDate] = useState(data.date || new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  // Determine if NLP parse is complete or incomplete
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!student) missing.push('Student name');
+    if (!subject) missing.push('Subject');
+    if (!minutes) missing.push('Duration');
+    return missing;
+  }, [student, subject, minutes]);
+
+  const isComplete = missingFields.length === 0;
+  const isHighConfidence = data.confidence >= 0.8;
+  const shouldShowAsConfirm = isComplete && isHighConfidence;
+
+  // Build detection summary
+  const detectedFields = useMemo(() => {
+    const detected: string[] = [];
+    if (data.subject) detected.push(data.subject);
+    if (data.minutes) detected.push(`${data.minutes} minutes`);
+    if (data.platform) detected.push(data.platform);
+    return detected;
+  }, [data]);
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, boolean> = {};
+    if (!student) errors['student'] = true;
+    if (!subject) errors['subject'] = true;
+    if (!minutes) errors['minutes'] = true;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleConfirm = async () => {
-    if (!student || !subject || !minutes) {
-      setError('Please fill in: Student, Subject, and Minutes');
+    if (!validateForm()) {
       return;
     }
 
@@ -61,7 +92,6 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
       });
 
       if (response.ok) {
-        // Success
         onConfirm();
       } else {
         const result = await response.json();
@@ -77,74 +107,131 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Confirm Activity</h2>
+        {/* Header */}
+        <h2 className="text-2xl font-bold mb-2 text-gray-900">
+          {shouldShowAsConfirm ? 'Confirm Activity' : 'Complete Your Activity Log'}
+        </h2>
+        <p className="text-sm text-gray-600 mb-6">
+          {shouldShowAsConfirm 
+            ? 'Review the extracted details and confirm.'
+            : 'Fill in the missing information to save your activity.'}
+        </p>
 
-        <div className="space-y-4 mb-6">
-          {/* Student */}
+        {/* Detection Summary - Show what was extracted */}
+        {detectedFields.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm font-medium text-blue-900">
+              ✓ Detected: <span className="font-semibold">{detectedFields.join(', ')}</span>
+            </p>
+          </div>
+        )}
+
+        {/* Missing Fields Alert - Prominently show what's missing */}
+        {missingFields.length > 0 && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-6">
+            <p className="text-sm font-bold text-amber-900 flex items-start gap-2">
+              <span className="text-lg">⚠️</span>
+              <span>
+                Missing required: <span className="text-red-700">{missingFields.join(', ')}</span>
+              </span>
+            </p>
+          </div>
+        )}
+
+        {/* Form Fields */}
+        <div className="space-y-5 mb-6">
+          {/* Student - REQUIRED */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Student Name <span className="text-red-600">*</span>
+            </label>
             <input
               type="text"
               value={student}
-              onChange={(e) => setStudent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setStudent(e.target.value);
+                if (e.target.value) {
+                  setFieldErrors(prev => ({ ...prev, student: false }));
+                }
+              }}
+              placeholder="e.g., Alerie"
+              className={`w-full px-3 py-2 border-2 rounded-md focus:outline-none transition ${
+                fieldErrors['student']
+                  ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-300'
+                  : 'border-gray-300 focus:ring-2 focus:ring-blue-400'
+              }`}
             />
+            {fieldErrors['student'] && (
+              <p className="text-xs font-semibold text-red-600 mt-1">Required field</p>
+            )}
           </div>
 
-          {/* Subject */}
+          {/* Subject - REQUIRED */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Subject <span className="text-red-600">*</span>
+            </label>
             <select
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setSubject(e.target.value);
+                if (e.target.value) {
+                  setFieldErrors(prev => ({ ...prev, subject: false }));
+                }
+              }}
+              className={`w-full px-3 py-2 border-2 rounded-md focus:outline-none transition ${
+                fieldErrors['subject']
+                  ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-300'
+                  : 'border-gray-300 focus:ring-2 focus:ring-blue-400'
+              }`}
             >
+              <option value="">Select a subject...</option>
               {AVAILABLE_SUBJECTS.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
-          </div>
-
-          {/* Minutes - REQUIRED */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration (minutes) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={minutes}
-              onChange={(e) => setMinutes(e.target.value)}
-              placeholder="Required - e.g., 30"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                !minutes
-                  ? 'border-red-400 bg-red-50 focus:ring-red-500'
-                  : 'border-gray-300 focus:ring-blue-500'
-              }`}
-            />
-            {!minutes && (
-              <p className="text-xs text-red-600 mt-1">Duration is required</p>
+            {fieldErrors['subject'] && (
+              <p className="text-xs font-semibold text-red-600 mt-1">Required field</p>
             )}
           </div>
 
-          {/* Notes */}
+          {/* Duration - REQUIRED */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Topic/Notes</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Duration (minutes) <span className="text-red-600">*</span>
+            </label>
             <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g., Fractions"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="number"
+              min="1"
+              max="999"
+              value={minutes}
+              onChange={(e) => {
+                setMinutes(e.target.value);
+                if (e.target.value) {
+                  setFieldErrors(prev => ({ ...prev, minutes: false }));
+                }
+              }}
+              placeholder="e.g., 30"
+              className={`w-full px-3 py-2 border-2 rounded-md focus:outline-none transition ${
+                fieldErrors['minutes']
+                  ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-300'
+                  : 'border-gray-300 focus:ring-2 focus:ring-blue-400'
+              }`}
             />
+            {fieldErrors['minutes'] && (
+              <p className="text-xs font-semibold text-red-600 mt-1">Required field</p>
+            )}
           </div>
 
-          {/* Platform / Location */}
+          {/* Platform / Location - OPTIONAL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Platform / Location (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Platform / Location <span className="text-xs text-gray-500">(optional)</span>
+            </label>
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             >
               <option value="">Select or leave blank</option>
               {AVAILABLE_PLATFORMS.map(p => (
@@ -153,34 +240,60 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
             </select>
           </div>
 
-          {/* Date */}
+          {/* Date - OPTIONAL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date <span className="text-xs text-gray-500">(optional)</span>
+            </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </div>
+
+          {/* Notes/Topic - OPTIONAL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Topic / Notes <span className="text-xs text-gray-500">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g., Fractions, Photosynthesis"
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+            <p className="text-sm text-red-700 font-medium">{error}</p>
+          </div>
+        )}
 
+        {/* Action Buttons */}
         <div className="flex gap-3">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-md text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isLoading}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 disabled:bg-gray-400 transition"
+            disabled={isLoading || !isComplete}
+            className={`flex-1 px-4 py-2 text-white font-semibold rounded-md transition ${
+              isLoading || !isComplete
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
-            {isLoading ? 'Logging...' : 'Confirm'}
+            {isLoading ? 'Saving...' : shouldShowAsConfirm ? 'Confirm' : 'Complete & Save'}
           </button>
         </div>
       </div>
