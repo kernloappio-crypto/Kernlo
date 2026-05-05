@@ -163,9 +163,14 @@ const useVoiceRecognition = ({
    * Start recording
    */
   const startRecording = useCallback(() => {
-    if (!isSupported || !recognitionRef.current) return;
+    console.log('🎤 startRecording called - isSupported:', isSupported, 'recognitionRef:', recognitionRef.current);
+    if (!isSupported || !recognitionRef.current) {
+      console.log('❌ Skipping - isSupported:', isSupported, 'recognitionRef exists:', !!recognitionRef.current);
+      return;
+    }
 
     try {
+      console.log('🎤 Starting recording...');
       recognitionRef.current.start();
       setIsRecording(true);
       lastTranscriptRef.current = '';
