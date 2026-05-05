@@ -1222,34 +1222,17 @@ Format as professional homeschool compliance documentation.`;
               setRefreshCounter(c => c + 1);
             }} />
           </div>
-          {/* Pending Count Badge - Click to open modal */}
-          {pendingCount > 0 && (
-            <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
-              <button
-                onClick={() => setShowReviewModal(true)}
-                style={{
-                  width: '100%',
-                  backgroundColor: '#fef3c7',
-                  color: '#92400e',
-                  border: '1px solid #fcd34d',
-                  borderRadius: '6px',
-                  padding: '0.75rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseOver={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fde68a';
-                }}
-                onMouseOut={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fef3c7';
-                }}
-              >
-                ⚠️ {pendingCount} activity{pendingCount !== 1 ? 'ies' : ''} waiting for approval - Click to review
-              </button>
-            </div>
-          )}
+          {/* Review Queue - SMS/Twilio Activities (pending approval) */}
+          <ReviewQueue 
+            userId={userId} 
+            onActivityApproved={() => {
+              setRefreshCounter(c => c + 1);
+            }}
+            onPendingCountChange={(count) => {
+              console.log(`📊 Dashboard: Pending count updated to ${count}`);
+              setPendingCount(count);
+            }}
+          />
           {/* Momentum Grid - Activity Heatmap (HIDDEN - Replaced with ConsistencyRing) */}
           {/* <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full">
             <MomentumGrid userId={userId} refreshCounter={refreshCounter} />
