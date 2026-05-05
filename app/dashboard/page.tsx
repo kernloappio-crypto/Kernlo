@@ -12,6 +12,7 @@ import CommandBar from "@/components/CommandBar";
 import ReviewQueue from "@/components/ReviewQueue";
 import MomentumGrid from "@/components/MomentumGrid";
 import ConsistencyRing from "@/components/ConsistencyRing";
+import SubjectProgressBars from "@/components/SubjectProgressBars";
 
 export const dynamic = "force-dynamic";
 
@@ -1262,29 +1263,25 @@ Format as professional homeschool compliance documentation.`;
                       {/* Subjects Breakdown */}
                       {kidActivities.length > 0 && (
                         <div className="mb-3 pb-3 border-b border-gray-200">
-                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
+                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-3">
                             SUBJECTS BY HOURS
                           </p>
-                          <div className="space-y-1">
-                            {(() => {
-                              const subjectHours: { [key: string]: number } = {};
-                              kidActivities.forEach((a) => {
-                                subjectHours[a.subject] = (subjectHours[a.subject] || 0) + a.duration;
-                              });
-                              return Object.entries(subjectHours)
-                                .sort(([, a], [, b]) => b - a)
-                                .map(([subject, hours]) => (
-                                  <div key={subject} className="flex justify-between items-center text-xs">
-                                    <span style={{ color: "#1a1a2e" }} className="font-medium">
-                                      {subject}
-                                    </span>
-                                    <span style={{ color: COLORS.primary }} className="font-semibold">
-                                      {(hours / 60).toFixed(1)}h
-                                    </span>
-                                  </div>
-                                ));
-                            })()}
-                          </div>
+                          {(() => {
+                            const subjectHoursMap = new Map<string, number>();
+                            kidActivities.forEach((a) => {
+                              const current = subjectHoursMap.get(a.subject) || 0;
+                              subjectHoursMap.set(a.subject, current + a.duration);
+                            });
+                            const subjectHours = Array.from(subjectHoursMap.entries())
+                              .map(([subject, hours]) => ({
+                                subject,
+                                hours: hours / 60, // Convert to hours
+                              }))
+                              .sort((a, b) => b.hours - a.hours)
+                              .slice(0, 4);
+                            
+                            return <SubjectProgressBars subjects={subjectHours} />;
+                          })()}
                         </div>
                       )}
 
