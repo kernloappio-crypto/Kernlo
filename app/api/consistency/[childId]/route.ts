@@ -22,8 +22,8 @@ function getSupabaseClient(token: string) {
 
 /**
  * GET /api/consistency/[childId]?week=current
- * Fetch unique days logged in current week for a specific child
- * Returns: { daysLogged: number, target: number }
+ * Fetch unique days logged in current week AND month for a specific child
+ * Returns: { daysLogged: number, weeklyTarget: number, monthlyDaysLogged: number, daysInMonth: number, weekStart, weekEnd, monthStart, monthEnd }
  */
 export async function GET(
   req: NextRequest,
@@ -61,14 +61,11 @@ export async function GET(
     
     const childName = kidData.name;
 
-    // Get current week boundaries (Monday-Sunday)
+    // ============ WEEKLY DATA ============
     const now = new Date();
     const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
     // Calculate Monday of current week
-    // If Sunday (0), go back 6 days to get Monday
-    // If Monday (1), go back 0 days
-    // If Tuesday (2), go back 1 day to get Monday, etc.
     const daysToSubtract = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
     const monday = new Date(now);
     monday.setDate(monday.getDate() - daysToSubtract);
@@ -82,10 +79,22 @@ export async function GET(
     const weekStart = monday.toISOString().split('T')[0];
     const weekEnd = sunday.toISOString().split('T')[0];
 
+    // ============ MONTHLY DATA ============
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    monthStart.setHours(0, 0, 0, 0);
+    
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+    
+    const monthStartStr = monthStart.toISOString().split('T')[0];
+    const monthEndStr = monthEnd.toISOString().split('T')[0];
+    const daysInMonth = monthEnd.getDate(); // Get the last day of the month
+
     console.log(`📅 Week range: ${weekStart} to ${weekEnd}`);
+    console.log(`📅 Month range: ${monthStartStr} to ${monthEndStr} (${daysInMonth} days)`);
 
     // Query confirmed activities for this specific child in the current week
-    const { data, error } = await supabase
+    const { data: weekData, error: weekError } = await supabase
       .from('activities')
       .select('date, id')
       .eq('user_id', userData.user.id)
@@ -94,36 +103,70 @@ export async function GET(
       .gte('date', weekStart)
       .lte('date', weekEnd);
 
-    if (error) {
-      console.error('🔴 Consistency query error:', error);
+    if (weekError) {
+      console.error('🔴 Weekly consistency query error:', weekError);
       return NextResponse.json(
-        { error: error.message },
+        { error: weekError.message },
         { status: 400 }
       );
     }
 
-    // Get unique days (distinct dates)
-    const uniqueDays = new Set<string>();
-    if (data) {
-      data.forEach((activity) => {
+    // Get unique days for the week
+    const weekUniqueDays = new Set<string>();
+    if (weekData) {
+      weekData.forEach((activity) => {
         if (activity.date) {
-          uniqueDays.add(activity.date);
+          weekUniqueDays.add(activity.date);
         }
       });
     }
 
-    const daysLogged = uniqueDays.size;
-    const target = 5;
+    const daysLogged = weekUniqueDays.size;
+    const weeklyTarget = 5;
+
+    // Query confirmed activities for this specific child in the current month
+    const { data: monthData, error: monthError } = await supabase
+      .from('activities')
+      .select('date, id')
+      .eq('user_id', userData.user.id)
+      .eq('child_name', childName)
+      .eq('status', 'confirmed')
+      .gte('date', monthStartStr)
+      .lte('date', monthEndStr);
+
+    if (monthError) {
+      console.error('🔴 Monthly consistency query error:', monthError);
+      return NextResponse.json(
+        { error: monthError.message },
+        { status: 400 }
+      );
+    }
+
+    // Get unique days for the month
+    const monthUniqueDays = new Set<string>();
+    if (monthData) {
+      monthData.forEach((activity) => {
+        if (activity.date) {
+          monthUniqueDays.add(activity.date);
+        }
+      });
+    }
+
+    const monthlyDaysLogged = monthUniqueDays.size;
 
     console.log(
-      `✅ Consistency for child ${childId}: ${daysLogged}/${target} days`
+      `✅ Consistency for child ${childId}: ${daysLogged}/${weeklyTarget} days this week, ${monthlyDaysLogged}/${daysInMonth} days this month`
     );
 
     return NextResponse.json({
       daysLogged,
-      target,
+      weeklyTarget,
+      monthlyDaysLogged,
+      daysInMonth,
       weekStart,
       weekEnd,
+      monthStart: monthStartStr,
+      monthEnd: monthEndStr,
     });
   } catch (error: any) {
     console.error('🔴 Consistency endpoint error:', error);

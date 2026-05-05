@@ -9,19 +9,26 @@ interface ConsistencyRingProps {
   refreshCounter?: number;
 }
 
+interface ConsistencyData {
+  daysLogged: number;
+  weeklyTarget: number;
+  monthlyDaysLogged: number;
+  daysInMonth: number;
+}
+
 const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   childId,
   childName,
   userId,
   refreshCounter = 0,
 }) => {
-  const [daysLogged, setDaysLogged] = useState(0);
+  const [data, setData] = useState<ConsistencyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showTooltip, setShowTooltip] = useState<'weekly' | 'monthly' | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  const TARGET_DAYS = 5;
+  const WEEKLY_TARGET = 5;
 
   // Track when component is mounted (client-side only)
   useEffect(() => {
@@ -68,13 +75,18 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
           throw new Error('Failed to fetch consistency data');
         }
 
-        const data = await response.json();
-        console.log(`✅ ConsistencyRing data: ${childName} has ${data.daysLogged} days logged this week`);
-        setDaysLogged(data.daysLogged || 0);
+        const respData = await response.json();
+        console.log(`✅ ConsistencyRing data: ${childName} has ${respData.daysLogged}/${respData.weeklyTarget} days this week, ${respData.monthlyDaysLogged}/${respData.daysInMonth} days this month`);
+        setData({
+          daysLogged: respData.daysLogged || 0,
+          weeklyTarget: respData.weeklyTarget || WEEKLY_TARGET,
+          monthlyDaysLogged: respData.monthlyDaysLogged || 0,
+          daysInMonth: respData.daysInMonth || 31,
+        });
       } catch (err: any) {
         console.error('Error fetching consistency:', err);
         setError(err.message || 'Failed to load consistency data');
-        setDaysLogged(0);
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -83,132 +95,224 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
     fetchConsistency();
   }, [childId, refreshCounter, isMounted]);
 
-  // Determine color based on progress
-  const isComplete = daysLogged >= TARGET_DAYS;
-  const ringColor = isComplete ? '#22c55e' : '#b3d9ff'; // green or light blue
-  const textColor = isComplete ? '#22c55e' : '#0066cc';
-
-  // SVG dimensions
+  // SVG dimensions and render helper
   const size = 60;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    circumference - (daysLogged / TARGET_DAYS) * circumference;
+
+  // Helper to render a single ring
+  const renderRing = (
+    current: number,
+    target: number,
+    color: string,
+    onMouseEnter: () => void,
+    onMouseLeave: () => void
+  ) => {
+    const isComplete = current >= target;
+    const ringColor = isComplete ? color : '#e5e7eb';
+    const textColor = isComplete ? color : '#999';
+    const strokeDashoffset = circumference - (current / target) * circumference;
+
+    return (
+      <div
+        className="relative flex flex-col items-center justify-center"
+        style={{ width: `${size}px` }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {/* SVG Ring */}
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="transform -rotate-90"
+        >
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#f0f0f0"
+            strokeWidth={strokeWidth}
+          />
+
+          {/* Progress ring */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            style={{
+              transition: 'stroke-dashoffset 0.5s ease-in-out, stroke 0.3s ease-in-out',
+            }}
+          />
+        </svg>
+
+        {/* Text in center */}
+        <div
+          className="absolute flex flex-col items-center justify-center"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '11px',
+              fontWeight: 'bold',
+              color: textColor,
+              lineHeight: '1',
+            }}
+          >
+            {current}/{target}
+          </div>
+          <div
+            style={{
+              fontSize: '6px',
+              color: '#999',
+              marginTop: '1px',
+              textAlign: 'center',
+              lineHeight: '1',
+            }}
+          >
+            days
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Always show loading state until component is mounted to avoid hydration mismatch
   if (!isMounted || loading) {
     return (
       <div
-        className="flex flex-col items-center justify-center"
-        style={{ width: `${size}px`, height: `${size}px` }}
+        className="flex gap-2"
+        style={{ width: '140px', justifyContent: 'flex-end' }}
       >
+        {/* Weekly skeleton */}
         <div
-          style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: '#ccc',
-            animation: 'pulse 2s infinite',
-          }}
-        />
+          className="flex flex-col items-center justify-center"
+          style={{ width: `${size}px`, height: `${size}px` }}
+        >
+          <div
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#ccc',
+              animation: 'pulse 2s infinite',
+            }}
+          />
+        </div>
+        {/* Monthly skeleton */}
+        <div
+          className="flex flex-col items-center justify-center"
+          style={{ width: `${size}px`, height: `${size}px` }}
+        >
+          <div
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: '#ccc',
+              animation: 'pulse 2s infinite',
+            }}
+          />
+        </div>
       </div>
     );
   }
 
+  if (!data) {
+    return null;
+  }
+
   return (
     <div
-      className="relative flex flex-col items-center justify-center"
-      style={{ width: `${size}px` }}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      className="flex gap-2"
+      style={{ width: '140px', justifyContent: 'flex-end' }}
     >
-      {/* SVG Ring */}
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="transform -rotate-90"
-      >
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#e5e7eb"
-          strokeWidth={strokeWidth}
-        />
+      {/* Weekly Ring (Blue) */}
+      {renderRing(
+        data.daysLogged,
+        data.weeklyTarget,
+        '#0066cc',
+        () => setShowTooltip('weekly'),
+        () => setShowTooltip(null)
+      )}
 
-        {/* Progress ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={ringColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          style={{
-            transition: 'stroke-dashoffset 0.5s ease-in-out, stroke 0.3s ease-in-out',
-          }}
-        />
-      </svg>
+      {/* Monthly Ring (Green) */}
+      {renderRing(
+        data.monthlyDaysLogged,
+        data.daysInMonth,
+        '#66bb6a',
+        () => setShowTooltip('monthly'),
+        () => setShowTooltip(null)
+      )}
 
-      {/* Text in center */}
-      <div
-        className="absolute flex flex-col items-center justify-center"
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '12px',
-            fontWeight: 'bold',
-            color: textColor,
-            lineHeight: '1',
-          }}
-        >
-          {daysLogged}/{TARGET_DAYS}
-        </div>
-        <div
-          style={{
-            fontSize: '7px',
-            color: '#666',
-            marginTop: '2px',
-            textAlign: 'center',
-            lineHeight: '1',
-          }}
-        >
-          days
-        </div>
-      </div>
-
-      {/* Tooltip */}
-      {showTooltip && (
+      {/* Tooltips */}
+      {showTooltip === 'weekly' && (
         <div
           style={{
             position: 'absolute',
-            bottom: '-30px',
+            bottom: '-32px',
             left: '50%',
             transform: 'translateX(-50%)',
             backgroundColor: '#1a1a2e',
             color: 'white',
             padding: '4px 8px',
             borderRadius: '4px',
-            fontSize: '11px',
+            fontSize: '10px',
             whiteSpace: 'nowrap',
             zIndex: 10,
             pointerEvents: 'none',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
         >
-          {daysLogged}/{TARGET_DAYS} days logged this week
+          {data.daysLogged}/{data.weeklyTarget} days this week
+          <div
+            style={{
+              position: 'absolute',
+              top: '-4px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '0',
+              height: '0',
+              borderLeft: '4px solid transparent',
+              borderRight: '4px solid transparent',
+              borderBottom: '4px solid #1a1a2e',
+            }}
+          />
+        </div>
+      )}
+
+      {showTooltip === 'monthly' && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '-32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#1a1a2e',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            whiteSpace: 'nowrap',
+            zIndex: 10,
+            pointerEvents: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          {data.monthlyDaysLogged}/{data.daysInMonth} days this month
           <div
             style={{
               position: 'absolute',
