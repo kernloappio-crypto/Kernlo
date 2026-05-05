@@ -242,8 +242,8 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto mb-6">
-      <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+    <div className="w-full max-w-2xl mx-auto mb-6 sticky top-0 z-40 sm:static bg-white rounded-lg shadow-md sm:shadow-none sm:rounded-none sm:bg-transparent">
+      <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200 sm:shadow-md sm:rounded-lg sm:border">
         <label className="block text-sm font-semibold text-gray-700 mb-2">
           What did they learn today?
         </label>

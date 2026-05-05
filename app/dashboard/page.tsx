@@ -10,6 +10,7 @@ import { getAttendanceDaysMonthly } from "@/lib/supabase-data";
 import ParentDashboardCalendar from "@/components/ParentDashboardCalendar";
 import CommandBar from "@/components/CommandBar";
 import ReviewQueue from "@/components/ReviewQueue";
+import ReviewModal from "@/components/ReviewModal";
 import MomentumGrid from "@/components/MomentumGrid";
 import ConsistencyRing from "@/components/ConsistencyRing";
 import SubjectProgressBars from "@/components/SubjectProgressBars";
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [userState, setUserState] = useState<string | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -1220,21 +1222,32 @@ Format as professional homeschool compliance documentation.`;
               setRefreshCounter(c => c + 1);
             }} />
           </div>
-          {/* Review Queue - Pending Approvals (only render if there are pending items) */}
+          {/* Pending Count Badge - Click to open modal */}
           {pendingCount > 0 && (
             <div style={{ backgroundColor: COLORS.light }} className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-4">
-              <ReviewQueue 
-                userId={userId} 
-                onActivityApproved={() => {
-                  // Trigger refresh of kid cards after approval (activities changed from pending to confirmed)
-                  setRefreshCounter(c => c + 1);
+              <button
+                onClick={() => setShowReviewModal(true)}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
+                  border: '1px solid #fcd34d',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
                 }}
-                onPendingCountChange={(count) => {
-                  // Sync dashboard pending count with ReviewQueue's actual pending count
-                  console.log(`📊 Dashboard: Pending count updated to ${count}`);
-                  setPendingCount(count);
+                onMouseOver={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fde68a';
                 }}
-              />
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fef3c7';
+                }}
+              >
+                ⚠️ {pendingCount} activity{pendingCount !== 1 ? 'ies' : ''} waiting for approval - Click to review
+              </button>
             </div>
           )}
           {/* Momentum Grid - Activity Heatmap (HIDDEN - Replaced with ConsistencyRing) */}
@@ -1949,6 +1962,23 @@ Format as professional homeschool compliance documentation.`;
           </div>
         </div>
       )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        userId={userId}
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onActivityApproved={() => {
+          setRefreshCounter(c => c + 1);
+        }}
+        onPendingCountChange={(count) => {
+          console.log(`📊 Dashboard: Pending count updated to ${count}`);
+          setPendingCount(count);
+          if (count === 0) {
+            setShowReviewModal(false);
+          }
+        }}
+      />
 
     </div>
   );
