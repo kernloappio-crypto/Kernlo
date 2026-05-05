@@ -202,8 +202,9 @@ Rules:
     // Handle single activity (possibly with multiple kids)
     if (parsed.type === 'single' || parsed.students) {
       // Normalize to new format with students array
+      // Only set student if students array has values, otherwise null (let parent select)
       const normalizedData: ParsedActivityData = {
-        student: parsed.students?.[0] || parsed.student || null,
+        student: (parsed.students && parsed.students.length > 0) ? parsed.students[0] : (parsed.student || null),
         students: parsed.students || (parsed.student ? [parsed.student] : []),
         subject: parsed.subject || null,
         minutes: parsed.minutes || null,
