@@ -76,19 +76,57 @@ Available subjects: ${AVAILABLE_SUBJECTS.join(', ')}
 
 Parse this: "${text}"
 
+IMPORTANT: Check if input mentions multiple kids or multiple separate activities.
+
 Return ONLY valid JSON (no markdown, no code blocks):
+
+**CASE 1: Single activity (possibly with multiple kids doing the same thing)**
 {
-  "student": "student_name or null if unclear",
-  "subject": "subject or 'Extracurricular' if unrecognized",
-  "minutes": null,
+  "type": "single",
+  "students": ["student1", "student2"],  // Array of student names (can be 1 or more)
+  "subject": "subject",
+  "minutes": 30,
   "note": "lesson topic or details",
   "platform": "platform or location",
   "date": "YYYY-MM-DD or null",
   "confidence": 0.95
 }
 
+**CASE 2: Multiple separate activities**
+{
+  "type": "multiple",
+  "activities": [
+    {
+      "students": ["student1"],
+      "subject": "subject",
+      "minutes": 30,
+      "note": "lesson topic",
+      "platform": "platform",
+      "date": "YYYY-MM-DD or null",
+      "confidence": 0.95
+    },
+    {
+      "students": ["student2"],
+      "subject": "subject2",
+      "minutes": 45,
+      "note": "lesson topic2",
+      "platform": "platform2",
+      "date": "YYYY-MM-DD or null",
+      "confidence": 0.95
+    }
+  ]
+}
+
 Rules:
-- Extract student name (e.g., "Ella", "Jett", "Tripp")
+- MULTI-KID DETECTION:
+  * Look for: "X and Y", "X & Y", "X, Y", "X, Y, and Z"
+  * Example: "Jett and Alerie did 30m math" → one activity, two kids
+  * Example: "Jett 30m math and Alerie 45m science" → two activities, one kid each
+  * When kids do the SAME activity (subject, duration), group them: students: ["Jett", "Alerie"]
+  * When kids do DIFFERENT activities, use type: "multiple" with separate entries
+- Extract student names (e.g., "Ella", "Jett", "Tripp", "Alerie")
+  * If "and" or "&" or "," separates names, extract ALL
+  * Return in students array
 - Extract subject (match to available subjects list)
   * Special: if "Field Trip" is mentioned, use "Field Trip" as subject
 - Extract MINUTES: Convert ANY time format to minutes (integer):
@@ -116,10 +154,10 @@ Rules:
   * If missing, set to null (user will be asked)
 - Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
 - Extract DATE if mentioned in format like "May 5", "today", "yesterday", etc. Otherwise set to null
-- If student name is not in available_students, set confidence to 0.5 and return the best guess
+- If any student name is not in available_students, set confidence to 0.5 and return the best guess
 - If subject is not in available subjects, use "Extracurricular" (unless "Field Trip")
 - confidence should be 0.0-1.0 based on how clear the input is
-  * Full clarity (all fields found, known student) = 0.95+
+  * Full clarity (all fields found, known students) = 0.95+
   * Missing duration (minutes=null) = 0.3 or lower (required field missing)
   * Missing platform/notes = 0.6-0.8
   * Ambiguous = 0.3-0.5
@@ -146,26 +184,88 @@ Rules:
       jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
     }
 
-    const parsed: ParsedActivityData = JSON.parse(jsonStr);
+    const parsed = JSON.parse(jsonStr);
 
-    // Always return the parsed data; confidence is checked by frontend
-    // Frontend will show confirm card if confidence < 0.9 OR required fields missing
-    const isHighConfidence = parsed.confidence >= 0.9;
-    const hasRequiredFields = parsed.student && parsed.subject && parsed.minutes;
+    // Handle multi-activity response from NLP
+    if (parsed.type === 'multiple' && parsed.activities) {
+      // Multiple separate activities (e.g., "Jett 30m math and Alerie 45m science")
+      return NextResponse.json({
+        success: true,
+        data: {
+          type: 'multiple',
+          activities: parsed.activities,
+          confidence: Math.min(...parsed.activities.map((a: any) => a.confidence)),
+        },
+      });
+    }
+
+    // Handle single activity (possibly with multiple kids)
+    if (parsed.type === 'single' || parsed.students) {
+      // Normalize to new format with students array
+      const normalizedData: ParsedActivityData = {
+        student: parsed.students?.[0] || parsed.student || null,
+        students: parsed.students || (parsed.student ? [parsed.student] : []),
+        subject: parsed.subject || null,
+        minutes: parsed.minutes || null,
+        note: parsed.note || null,
+        platform: parsed.platform || null,
+        date: parsed.date || null,
+        confidence: parsed.confidence || 0,
+      };
+
+      // Check confidence and required fields
+      const isHighConfidence = normalizedData.confidence >= 0.9;
+      const hasRequiredFields =
+        (normalizedData.students?.length || 0) > 0 &&
+        normalizedData.subject &&
+        normalizedData.minutes;
+
+      if (isHighConfidence && hasRequiredFields) {
+        return NextResponse.json({
+          success: true,
+          data: normalizedData,
+        });
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            data: normalizedData,
+            error: `Please review the parsed activity${
+              normalizedData.confidence < 0.9 ? ' (low confidence)' : ''
+            }${!hasRequiredFields ? ' (missing fields)' : ''}.`,
+          },
+          { status: 200 }
+        );
+      }
+    }
+
+    // Fallback: old format (shouldn't happen with new prompt, but handle it)
+    const fallbackData: ParsedActivityData = {
+      student: parsed.student || null,
+      students: parsed.student ? [parsed.student] : [],
+      subject: parsed.subject || null,
+      minutes: parsed.minutes || null,
+      note: parsed.note || null,
+      platform: parsed.platform || null,
+      date: parsed.date || null,
+      confidence: parsed.confidence || 0,
+    };
+
+    const isHighConfidence = fallbackData.confidence >= 0.9;
+    const hasRequiredFields = (fallbackData.students?.length || 0) > 0 && fallbackData.subject && fallbackData.minutes;
 
     if (isHighConfidence && hasRequiredFields) {
       return NextResponse.json({
         success: true,
-        data: parsed,
+        data: fallbackData,
       });
     } else {
-      // Return parsed data for user review (frontend will show confirm card)
       return NextResponse.json(
         {
           success: false,
-          data: parsed,
+          data: fallbackData,
           error: `Please review the parsed activity${
-            parsed.confidence < 0.9 ? ' (low confidence)' : ''
+            fallbackData.confidence < 0.9 ? ' (low confidence)' : ''
           }${!hasRequiredFields ? ' (missing fields)' : ''}.`,
         },
         { status: 200 }

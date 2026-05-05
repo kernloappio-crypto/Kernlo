@@ -5,12 +5,26 @@
 // NLP Parsing
 export interface ParsedActivityData {
   student: string | null;
+  students?: string[]; // New: array of students for multi-kid support
   subject: string | null;  // Can be null if not extracted
   minutes: number | null;  // Can be null if duration not found
   note: string | null;     // Can be null if no topic
   platform: string | null;
   date: string | null;
   confidence: number;
+}
+
+// Multi-activity support (when NLP detects multiple separate activities)
+export interface ParsedActivityDataArray {
+  activities: Array<{
+    students: string[];  // Multiple kids per activity
+    subject: string | null;
+    minutes: number | null;
+    note: string | null;
+    platform: string | null;
+    date: string | null;
+    confidence: number;
+  }>;
 }
 
 export interface NLPParseRequest {

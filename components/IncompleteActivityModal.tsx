@@ -41,8 +41,15 @@ const IncompleteActivityModal: React.FC<IncompleteActivityModalProps> = ({
   }
 
   // State for form fields
-  const [student, setStudent] = useState<string>(() => {
-    return (data?.student && typeof data.student === 'string') ? data.student : '';
+  const [selectedKids, setSelectedKids] = useState<Set<string>>(() => {
+    // Pre-populate with kids from parsed data (if multiple) or single student
+    const initial = new Set<string>();
+    if (data?.students && Array.isArray(data.students)) {
+      data.students.forEach(kid => initial.add(kid));
+    } else if (data?.student && typeof data.student === 'string') {
+      initial.add(data.student);
+    }
+    return initial;
   });
 
   const [subject, setSubject] = useState<string>(() => {
@@ -102,28 +109,28 @@ const IncompleteActivityModal: React.FC<IncompleteActivityModalProps> = ({
     }
   }, [isOpen, userId]);
 
-  // Determine missing fields (required only: student, subject, duration)
+  // Determine missing fields (required only: at least one child, subject, duration)
   const missingFields = useMemo(() => {
     const missing: string[] = [];
-    if (!student) missing.push('Child Name');
+    if (selectedKids.size === 0) missing.push('Child Name');
     if (!subject) missing.push('Subject');
     if (!minutes) missing.push('Duration');
     return missing;
-  }, [student, subject, minutes]);
+  }, [selectedKids, subject, minutes]);
 
   const isComplete = missingFields.length === 0;
 
   // Validate form
   const validateForm = (): boolean => {
     const errors: Record<string, boolean> = {};
-    if (!student) errors['student'] = true;
+    if (selectedKids.size === 0) errors['kids'] = true;
     if (!subject) errors['subject'] = true;
     if (!minutes) errors['minutes'] = true;
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Handle confirm
+  // Handle confirm - create activity for each selected kid
   const handleConfirm = async () => {
     if (!validateForm()) {
       return;
@@ -142,28 +149,41 @@ const IncompleteActivityModal: React.FC<IncompleteActivityModalProps> = ({
         return;
       }
 
-      const response = await fetch('/api/activities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          child_name: student,
-          subject,
-          duration: parseInt(minutes, 10),
-          platform: platform || 'Not specified',
-          date: date || new Date().toISOString().split('T')[0],
-          notes: notes || null,
-        }),
-      });
+      // Create activity for each selected kid
+      const kidArray = Array.from(selectedKids);
+      const promises = kidArray.map(childName =>
+        fetch('/api/activities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            child_name: childName,
+            subject,
+            duration: parseInt(minutes, 10),
+            platform: platform || 'Not specified',
+            date: date || new Date().toISOString().split('T')[0],
+            notes: notes || null,
+          }),
+        })
+      );
 
-      if (response.ok) {
+      const responses = await Promise.all(promises);
+      const allOk = responses.every(r => r.ok);
+
+      if (allOk) {
         onConfirm();
       } else {
-        const result = await response.json();
-        setError(result.error || 'Failed to log activity');
+        // Find first error
+        for (const response of responses) {
+          if (!response.ok) {
+            const result = await response.json();
+            setError(result.error || 'Failed to log activity');
+            break;
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Error logging activity');
@@ -289,7 +309,7 @@ const IncompleteActivityModal: React.FC<IncompleteActivityModalProps> = ({
 
           {/* Form Fields - Compact */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {/* Child Name - Dropdown */}
+            {/* Child Name - Checkboxes (Multi-select) */}
             <div>
               <label
                 style={{
@@ -297,40 +317,71 @@ const IncompleteActivityModal: React.FC<IncompleteActivityModalProps> = ({
                   fontSize: '0.875rem',
                   fontWeight: 600,
                   color: '#1a1a2e',
-                  marginBottom: '0.375rem',
+                  marginBottom: '0.5rem',
                 }}
               >
                 Child Name <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
-              <select
-                value={student}
-                onChange={(e) => {
-                  setStudent(e.target.value);
-                  if (e.target.value) {
-                    setFieldErrors((prev) => ({ ...prev, student: false }));
-                  }
-                }}
+              <div
                 style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: '0.5rem',
+                  padding: fieldErrors['kids'] ? '0.5rem' : '0',
                   borderRadius: '6px',
-                  border: fieldErrors['student'] ? '2px solid #ff6b6b' : '1px solid #d1d5db',
-                  backgroundColor: fieldErrors['student'] ? '#fee2e2' : 'white',
-                  fontSize: '0.875rem',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer',
+                  backgroundColor: fieldErrors['kids'] ? '#fee2e2' : 'transparent',
+                  border: fieldErrors['kids'] ? '2px solid #ff6b6b' : 'none',
                 }}
               >
-                <option value="">Select child...</option>
                 {kids.map((kid) => (
-                  <option key={kid.id} value={kid.name}>
-                    {kid.name}
-                  </option>
+                  <label
+                    key={kid.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      cursor: 'pointer',
+                      padding: '0.375rem',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s',
+                    }}
+                    onMouseOver={(e) => {
+                      (e.currentTarget as HTMLLabelElement).style.backgroundColor = 'rgba(0, 102, 204, 0.05)';
+                    }}
+                    onMouseOut={(e) => {
+                      (e.currentTarget as HTMLLabelElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedKids.has(kid.name)}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedKids);
+                        if (e.target.checked) {
+                          newSelected.add(kid.name);
+                        } else {
+                          newSelected.delete(kid.name);
+                        }
+                        setSelectedKids(newSelected);
+                        if (newSelected.size > 0) {
+                          setFieldErrors((prev) => ({ ...prev, kids: false }));
+                        }
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        width: '16px',
+                        height: '16px',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: '#1a1a2e' }}>
+                      {kid.name}
+                    </span>
+                  </label>
                 ))}
-              </select>
-              {fieldErrors['student'] && (
+              </div>
+              {fieldErrors['kids'] && (
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#ff6b6b', fontWeight: 600 }}>
-                  Required
+                  Select at least one child
                 </p>
               )}
             </div>

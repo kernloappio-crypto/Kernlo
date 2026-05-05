@@ -16,8 +16,18 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
+  const [parsedActivities, setParsedActivities] = useState<Array<{
+    students: string[];
+    subject: string | null;
+    minutes: number | null;
+    note: string | null;
+    platform: string | null;
+    date: string | null;
+    confidence: number;
+  }> | null>(null);
   const [showCompleteReview, setShowCompleteReview] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [showMultiActivityModal, setShowMultiActivityModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
@@ -45,9 +55,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
    */
   const hasRequiredFields = (data: ParsedActivityData | null): boolean => {
     if (!data) return false;
+    // Check that at least one student is selected (either student or students array)
+    const hasStudents = (data.students && data.students.length > 0) || (data.student && typeof data.student === 'string');
     return !!(
-      data.student &&
-      typeof data.student === 'string' &&
+      hasStudents &&
       data.subject &&
       typeof data.subject === 'string' &&
       data.minutes !== null &&
@@ -152,20 +163,32 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       if (!result.data) {
         setError(result.error || 'Could not parse. Try: "Ella did 30m of Math"');
         setParsedData(null);
+        setParsedActivities(null);
         setShowCompleteReview(false);
         setShowIncompleteModal(false);
+        setShowMultiActivityModal(false);
         return;
       }
 
       const data = result.data;
 
-      // Validate data structure
+      // Handle multi-activity response
+      if (data.type === 'multiple' && data.activities) {
+        console.log('📚 Multiple activities detected:', data.activities);
+        setParsedActivities(data.activities);
+        setShowMultiActivityModal(true);
+        return;
+      }
+
+      // Validate data structure for single activity
       if (typeof data.confidence !== 'number') {
         console.error('❌ Invalid NLP response: confidence is not a number', data);
         setError('Invalid response from parser. Please try again.');
         setParsedData(null);
+        setParsedActivities(null);
         setShowCompleteReview(false);
         setShowIncompleteModal(false);
+        setShowMultiActivityModal(false);
         return;
       }
 
@@ -193,8 +216,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       console.error('❌ Parse error:', err);
       setError(err.message || 'Parsing failed');
       setParsedData(null);
+      setParsedActivities(null);
       setShowCompleteReview(false);
       setShowIncompleteModal(false);
+      setShowMultiActivityModal(false);
     } finally {
       setIsLoading(false);
     }
@@ -223,8 +248,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const handleClearAll = () => {
     setText('');
     setParsedData(null);
+    setParsedActivities(null);
     setShowCompleteReview(false);
     setShowIncompleteModal(false);
+    setShowMultiActivityModal(false);
     setError(null);
     setSuccessMessage(null);
   };
@@ -232,6 +259,199 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   /**
    * Render CompleteActivityReview or IncompleteActivityModal if needed, otherwise render input
    */
+  if (showMultiActivityModal && parsedActivities) {
+    // For multi-activity, show simple modal confirming each activity
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999,
+          padding: '1rem',
+        }}
+        onClick={handleCancel}
+      >
+        <div
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1rem',
+              borderBottom: '1px solid #e0e7ff',
+              backgroundColor: '#f0f7ff',
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: '1.125rem',
+                fontWeight: 600,
+                color: '#0066cc',
+              }}
+            >
+              Confirm {parsedActivities.length} Activities
+            </h2>
+            <button
+              onClick={handleCancel}
+              title="Close"
+              style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: 'transparent',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '4px',
+                color: '#999',
+                transition: 'all 0.2s',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+            {parsedActivities.map((activity, idx) => (
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  marginBottom: idx < parsedActivities.length - 1 ? '0.75rem' : 0,
+                }}
+              >
+                <div style={{ fontSize: '0.875rem', color: '#1a1a2e' }}>
+                  <strong>{activity.students.join(', ')}</strong> • {activity.subject} • {activity.minutes}m
+                  {activity.note && ` • ${activity.note}`}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              padding: '1rem',
+              borderTop: '1px solid #e0e7ff',
+              backgroundColor: '#f0f7ff',
+            }}
+          >
+            <button
+              onClick={async () => {
+                setIsLoading(true);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session) {
+                    setError('Not authenticated');
+                    setIsLoading(false);
+                    return;
+                  }
+
+                  const promises = parsedActivities.flatMap(activity =>
+                    activity.students.map(childName =>
+                      fetch('/api/activities', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({
+                          user_id: userId,
+                          child_name: childName,
+                          subject: activity.subject,
+                          duration: activity.minutes,
+                          platform: activity.platform || 'Not specified',
+                          date: activity.date || new Date().toISOString().split('T')[0],
+                          notes: activity.note || null,
+                        }),
+                      })
+                    )
+                  );
+
+                  const responses = await Promise.all(promises);
+                  const allOk = responses.every(r => r.ok);
+
+                  if (allOk) {
+                    handleConfirmCardSuccess();
+                  } else {
+                    setError('Failed to log some activities');
+                  }
+                } catch (err: any) {
+                  setError(err.message || 'Error logging activities');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              style={{
+                flex: 1,
+                minWidth: '120px',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#0066cc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                opacity: isLoading ? 0.6 : 1,
+              }}
+            >
+              {isLoading ? '⏳' : '✅'} Confirm All
+            </button>
+            <button
+              onClick={handleCancel}
+              style={{
+                flex: 1,
+                minWidth: '120px',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#f0f0f0',
+                color: '#1a1a2e',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (showCompleteReview && parsedData) {
     return (
       <CompleteActivityReview
