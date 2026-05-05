@@ -11,9 +11,11 @@ interface CommandBarProps {
 }
 
 const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => {
+  // State: pure and simple
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedActivityData | null>(null);
+  const [showConfirmCard, setShowConfirmCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
@@ -36,17 +38,106 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     if (userId) fetchKids();
   }, [userId]);
 
+  /**
+   * Check if parsed data has all required fields
+   */
+  const hasRequiredFields = (data: ParsedActivityData | null): boolean => {
+    if (!data) return false;
+    return !!(
+      data.student &&
+      typeof data.student === 'string' &&
+      data.subject &&
+      typeof data.subject === 'string' &&
+      data.minutes !== null &&
+      data.minutes !== undefined &&
+      typeof data.minutes === 'number' &&
+      data.minutes > 0
+    );
+  };
+
+  /**
+   * Check if parsed data has high confidence (≥90%)
+   */
+  const isHighConfidence = (data: ParsedActivityData | null): boolean => {
+    return !!(
+      data &&
+      typeof data.confidence === 'number' &&
+      data.confidence >= 0.9
+    );
+  };
+
+  /**
+   * Auto-save activity to database
+   * Called directly after NLP response in handleParse (no useEffect)
+   */
+  const autoSaveActivity = async (data: ParsedActivityData): Promise<boolean> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        setError('Not authenticated');
+        return false;
+      }
+
+      const payload = {
+        child_name: data.student,
+        subject: data.subject,
+        duration: data.minutes,
+        platform: data.platform || 'Not specified',
+        date: data.date || new Date().toISOString().split('T')[0],
+        notes: data.note || null,
+        status: 'pending' as const,
+        raw_input: text.trim(),
+      };
+
+      console.log('📤 Auto-saving activity (high confidence):', payload);
+
+      const response = await fetch('/api/activities', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save activity');
+        return false;
+      }
+
+      setSuccessMessage('✅ Activity logged - waiting for your approval');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      return true;
+    } catch (err: any) {
+      console.error('❌ Auto-save failed:', err);
+      setError(err.message || 'Error saving activity');
+      return false;
+    }
+  };
+
+  /**
+   * Main handler: Parse text → check confidence → auto-save or show ConfirmCard
+   * This is the ONLY place where we decide what to do next
+   */
   const handleParse = async () => {
-    // NO pre-validation - send raw text directly to NLP
+    if (!text.trim()) {
+      setError('Please enter what they learned');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const response = await fetch('/api/nlp-parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: text.trim() || '',
+          text: text.trim(),
           user_id: userId,
           available_students: availableStudents,
         }),
@@ -55,132 +146,100 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       const result = await response.json();
 
       console.log('📥 NLP response:', result);
-      console.log('📥 NLP response.data:', result.data);
-      console.log('📥 NLP response.data?.student:', result.data?.student);
-      console.log('📥 NLP response.data?.minutes:', result.data?.minutes);
 
       if (!result.data) {
         setError(result.error || 'Could not parse. Try: "Ella did 30m of Math"');
+        setParsedData(null);
+        setShowConfirmCard(false);
         return;
       }
 
-      // Validate data structure - ensure critical fields are the right type
       const data = result.data;
+
+      // Validate data structure
       if (typeof data.confidence !== 'number') {
         console.error('❌ Invalid NLP response: confidence is not a number', data);
         setError('Invalid response from parser. Please try again.');
+        setParsedData(null);
+        setShowConfirmCard(false);
         return;
       }
 
-      // Data is valid, set it for display
+      // Set parsed data for potential display
       setParsedData(data);
-      
-      if (!result.success) {
-        setError(`Low confidence. Please review and edit if needed.`);
+
+      // Decision tree: straight linear logic (no useEffect chains)
+      const hasMissingFields = !hasRequiredFields(data);
+      const lowConfidence = !isHighConfidence(data);
+
+      // If missing fields OR low confidence → show ConfirmCard
+      if (hasMissingFields || lowConfidence) {
+        console.log('📋 Showing ConfirmCard (missing fields or low confidence)');
+        setShowConfirmCard(true);
+        return;
+      }
+
+      // If all fields present AND high confidence → auto-save
+      if (hasRequiredFields(data) && isHighConfidence(data)) {
+        console.log('✨ Auto-saving (complete + high confidence)');
+        const success = await autoSaveActivity(data);
+        if (success) {
+          handleClearAll();
+          onActivityLogged?.();
+        }
+        return;
       }
     } catch (err: any) {
       console.error('❌ Parse error:', err);
       setError(err.message || 'Parsing failed');
+      setParsedData(null);
+      setShowConfirmCard(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleClearAll = () => {
-    setText('');
-    setParsedData(null);
-    setError(null);
-  };
-
-  const handleActivityLogged = () => {
+  /**
+   * User confirmed via ConfirmCard and activity was saved
+   */
+  const handleConfirmCardSuccess = () => {
+    console.log('✅ ConfirmCard saved successfully');
     handleClearAll();
     onActivityLogged?.();
   };
 
-  // Check if we have required fields for auto-save
-  // Required: student, subject, minutes (all must be non-null and valid types)
-  // Platform is optional (user can fill in confirm card)
-  const hasRequiredFields = parsedData
-    && parsedData.student
-    && parsedData.subject
-    && parsedData.minutes !== null
-    && parsedData.minutes !== undefined
-    && typeof parsedData.minutes === 'number'
-    && parsedData.minutes > 0;
-  
-  // Auto-confirm if confidence >= 90%
-  const isHighConfidence = parsedData && typeof parsedData.confidence === 'number' && parsedData.confidence >= 0.9;
+  /**
+   * User cancelled ConfirmCard
+   */
+  const handleCancel = () => {
+    console.log('❌ User cancelled ConfirmCard');
+    handleClearAll();
+  };
 
-  // Show confirm card only if parsing succeeded AND (missing required fields OR low confidence)
-  const showConfirmCard = parsedData && (!hasRequiredFields || !isHighConfidence);
-  
-  if (showConfirmCard) {
+  /**
+   * Clear all state for next entry
+   */
+  const handleClearAll = () => {
+    setText('');
+    setParsedData(null);
+    setShowConfirmCard(false);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  /**
+   * Render ConfirmCard if needed, otherwise render input
+   */
+  if (showConfirmCard && parsedData) {
     return (
       <ConfirmCard
-        data={parsedData!}
+        data={parsedData}
         userId={userId}
-        onCancel={handleClearAll}
-        onConfirm={handleActivityLogged}
+        onCancel={handleCancel}
+        onConfirm={handleConfirmCardSuccess}
       />
     );
   }
-
-  // Auto-save if required fields are present AND high confidence (90%+)
-  // CRITICAL: Only run if ConfirmCard is NOT showing to prevent render race conditions
-  useEffect(() => {
-    // Only auto-save if we have all required fields, high confidence, AND ConfirmCard is NOT showing
-    if (hasRequiredFields && isHighConfidence && parsedData && !showConfirmCard) {
-      const submitActivity = async () => {
-        try {
-          // Get auth token from Supabase session
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token;
-
-          if (!token) {
-            setError('Not authenticated');
-            return;
-          }
-
-          const payload = {
-            child_name: parsedData.student,
-            subject: parsedData.subject,
-            duration: parsedData.minutes,
-            platform: parsedData.platform || 'Not specified',
-            date: parsedData.date || new Date().toISOString().split('T')[0],
-            notes: parsedData.note || null,
-            // Auto-submitted via NLP gets 'pending' status + raw input for audit trail
-            status: 'pending' as const,
-            raw_input: text.trim(),
-          };
-
-          console.log('📤 Submitting activity (AI-logged, status=pending):', payload);
-
-          const response = await fetch('/api/activities', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (response.ok) {
-            setSuccessMessage(`✅ Activity logged - waiting for your approval`);
-            setTimeout(() => setSuccessMessage(null), 3000); // Hide after 3 seconds
-            handleActivityLogged();
-            onActivityLogged?.();
-          } else {
-            const errorData = await response.json();
-            setError(errorData.error || 'Failed to save activity');
-          }
-        } catch (err: any) {
-          setError(err.message || 'Error saving activity');
-        }
-      };
-
-      submitActivity();
-    }
-  }, [hasRequiredFields, isHighConfidence, parsedData, showConfirmCard, text]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">
