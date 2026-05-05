@@ -1160,24 +1160,17 @@ Format as professional homeschool compliance documentation.`;
       <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
         <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
-              {parentProfile?.first_name ? `${parentProfile.first_name}'s Dashboard` : "Parent Dashboard"}
-            </h1>
-            {userState && kids.length > 0 && (
-              <Link
-                href={`/dashboard/${kids[0].id}/compliance`}
-                style={{ color: "#9CA3AF", fontSize: "13px" }}
-                className="inline-block mt-2 hover:text-gray-600 transition-colors hover:underline"
-              >
-                {userState}
-              </Link>
-            )}
-            {userState && kids.length === 0 && (
-              <div style={{ color: "#9CA3AF", fontSize: "13px" }} className="inline-block mt-2">
-                {userState}
-              </div>
-            )}
-            <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
+                {parentProfile?.first_name ? `${parentProfile.first_name}'s Dashboard` : "Parent Dashboard"}
+              </h1>
+              {userState && (
+                <div style={{ color: "#9CA3AF", fontSize: "13px" }} className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                  {userState}
+                </div>
+              )}
+            </div>
+            <p style={{ color: "#333" }} className="text-xs sm:text-sm">
               Manage all your kids' homeschool progress
             </p>
           </div>
