@@ -50,6 +50,13 @@ interface ParentProfile {
   email: string;
 }
 
+interface ComplianceState {
+  id: string;
+  user_id: string;
+  state: string;
+  child_name?: string;
+}
+
 const COLORS = {
   primary: "#0066cc",
   secondary: "#00d4ff",
@@ -89,6 +96,7 @@ export default function DashboardPage() {
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [userState, setUserState] = useState<string | null>(null);
 
   // Quick Log states
   const [showQuickLog, setShowQuickLog] = useState(false);
@@ -343,6 +351,28 @@ export default function DashboardPage() {
           }
         } catch (e: any) {
           console.log(`⚠️ Could not load parent profile: ${e?.message}`);
+        }
+
+        // Load compliance state
+        try {
+          console.log("🏛️ Loading compliance state...");
+          const { data: stateData, error: stateError } = await supabase
+            .from("compliance_state")
+            .select("*")
+            .eq("user_id", user.id)
+            .is("child_name", null)
+            .single();
+
+          if (stateError && stateError.code !== "PGRST116") {
+            console.log(`⚠️ State error: ${stateError.message}`);
+          } else if (stateData) {
+            console.log(`✅ Compliance state loaded: ${stateData.state}`);
+            setUserState(stateData.state);
+          } else {
+            console.log("ℹ️ No compliance state set yet");
+          }
+        } catch (e: any) {
+          console.log(`⚠️ Could not load compliance state: ${e?.message}`);
         }
 
         console.log("⏰ Initializing date range...");
@@ -1145,6 +1175,11 @@ Format as professional homeschool compliance documentation.`;
             <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
               {parentProfile?.first_name ? `${parentProfile.first_name}'s Dashboard` : "Parent Dashboard"}
             </h1>
+            {userState && (
+              <div style={{ color: "#9CA3AF", fontSize: "13px" }} className="inline-block mt-2">
+                {userState}
+              </div>
+            )}
             <p style={{ color: "#333" }} className="text-xs sm:text-sm mt-1">
               Manage all your kids' homeschool progress
             </p>
