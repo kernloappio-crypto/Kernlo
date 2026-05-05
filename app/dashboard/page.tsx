@@ -333,6 +333,7 @@ export default function DashboardPage() {
         // See the attendance loading section below
 
         // Load parent profile
+        let loadedProfile: ParentProfile | null = null;
         try {
           console.log("👤 Loading parent profile...");
           const { data: profileData, error: profileError } = await supabase
@@ -346,33 +347,20 @@ export default function DashboardPage() {
           } else if (profileData) {
             console.log(`✅ Parent profile loaded: ${profileData.first_name} ${profileData.last_name}`);
             setParentProfile(profileData);
+            loadedProfile = profileData;
+            
+            // Load compliance state from profile
+            if (profileData.compliance_state) {
+              console.log(`✅ Compliance state loaded from profile: ${profileData.compliance_state}`);
+              setUserState(profileData.compliance_state);
+            } else {
+              console.log("ℹ️ No compliance state set in profile yet");
+            }
           } else {
             console.log("ℹ️ No profile yet - user can create one");
           }
         } catch (e: any) {
           console.log(`⚠️ Could not load parent profile: ${e?.message}`);
-        }
-
-        // Load compliance state
-        try {
-          console.log("🏛️ Loading compliance state...");
-          const { data: stateData, error: stateError } = await supabase
-            .from("compliance_state")
-            .select("*")
-            .eq("user_id", user.id)
-            .is("child_name", null)
-            .single();
-
-          if (stateError && stateError.code !== "PGRST116") {
-            console.log(`⚠️ State error: ${stateError.message}`);
-          } else if (stateData) {
-            console.log(`✅ Compliance state loaded: ${stateData.state}`);
-            setUserState(stateData.state);
-          } else {
-            console.log("ℹ️ No compliance state set yet");
-          }
-        } catch (e: any) {
-          console.log(`⚠️ Could not load compliance state: ${e?.message}`);
         }
 
         console.log("⏰ Initializing date range...");

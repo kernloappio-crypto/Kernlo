@@ -81,6 +81,10 @@ export default function Navbar({}: NavbarProps) {
         onClose={() => setProfileModalOpen(false)}
         userId={userId}
         userEmail={userEmail}
+        onProfileUpdate={() => {
+          // Refresh the page to update the dashboard with new state
+          window.location.reload();
+        }}
       />
       <nav style={{ backgroundColor: "white", borderBottom: `1px solid #e5e7eb` }} className="sticky top-0 left-0 right-0 z-50">
         <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">

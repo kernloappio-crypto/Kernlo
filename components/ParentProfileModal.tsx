@@ -13,9 +13,64 @@ interface ParentProfile {
   phone?: string;
   home_school_name?: string;
   website?: string;
+  compliance_state?: string;
   created_at?: string;
   updated_at?: string;
 }
+
+const US_STATES = [
+  { code: "AL", name: "Alabama" },
+  { code: "AK", name: "Alaska" },
+  { code: "AZ", name: "Arizona" },
+  { code: "AR", name: "Arkansas" },
+  { code: "CA", name: "California" },
+  { code: "CO", name: "Colorado" },
+  { code: "CT", name: "Connecticut" },
+  { code: "DE", name: "Delaware" },
+  { code: "FL", name: "Florida" },
+  { code: "GA", name: "Georgia" },
+  { code: "HI", name: "Hawaii" },
+  { code: "ID", name: "Idaho" },
+  { code: "IL", name: "Illinois" },
+  { code: "IN", name: "Indiana" },
+  { code: "IA", name: "Iowa" },
+  { code: "KS", name: "Kansas" },
+  { code: "KY", name: "Kentucky" },
+  { code: "LA", name: "Louisiana" },
+  { code: "ME", name: "Maine" },
+  { code: "MD", name: "Maryland" },
+  { code: "MA", name: "Massachusetts" },
+  { code: "MI", name: "Michigan" },
+  { code: "MN", name: "Minnesota" },
+  { code: "MS", name: "Mississippi" },
+  { code: "MO", name: "Missouri" },
+  { code: "MT", name: "Montana" },
+  { code: "NE", name: "Nebraska" },
+  { code: "NV", name: "Nevada" },
+  { code: "NH", name: "New Hampshire" },
+  { code: "NJ", name: "New Jersey" },
+  { code: "NM", name: "New Mexico" },
+  { code: "NY", name: "New York" },
+  { code: "NC", name: "North Carolina" },
+  { code: "ND", name: "North Dakota" },
+  { code: "OH", name: "Ohio" },
+  { code: "OK", name: "Oklahoma" },
+  { code: "OR", name: "Oregon" },
+  { code: "PA", name: "Pennsylvania" },
+  { code: "RI", name: "Rhode Island" },
+  { code: "SC", name: "South Carolina" },
+  { code: "SD", name: "South Dakota" },
+  { code: "TN", name: "Tennessee" },
+  { code: "TX", name: "Texas" },
+  { code: "UT", name: "Utah" },
+  { code: "VT", name: "Vermont" },
+  { code: "VA", name: "Virginia" },
+  { code: "WA", name: "Washington" },
+  { code: "WV", name: "West Virginia" },
+  { code: "WI", name: "Wisconsin" },
+  { code: "WY", name: "Wyoming" },
+  { code: "DC", name: "District of Columbia" },
+];
 
 interface ParentProfileModalProps {
   isOpen: boolean;
@@ -46,6 +101,7 @@ export default function ParentProfileModal({
     phone: "",
     home_school_name: "",
     website: "",
+    compliance_state: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -105,6 +161,12 @@ export default function ParentProfileModal({
       return;
     }
 
+    // Validate state is selected
+    if (!profile.compliance_state || profile.compliance_state === "") {
+      setError("State of Residence is required");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess(false);
@@ -123,6 +185,7 @@ export default function ParentProfileModal({
             phone: profile.phone?.trim() || null,
             home_school_name: profile.home_school_name?.trim() || null,
             website: profile.website?.trim() || null,
+            compliance_state: profile.compliance_state || null,
           },
           { onConflict: "user_id" }
         )
@@ -323,6 +386,31 @@ export default function ParentProfileModal({
                   }}
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              {/* State of Residence */}
+              <div>
+                <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
+                  State of Residence <span style={{ color: "#ff6b6b" }}>*</span>
+                </label>
+                <select
+                  value={profile.compliance_state || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, compliance_state: e.target.value })
+                  }
+                  style={{
+                    color: profile.compliance_state ? COLORS.dark : "#999",
+                    borderColor: "#ddd",
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select your state</option>
+                  {US_STATES.map((state) => (
+                    <option key={state.code} value={state.code}>
+                      {state.name} ({state.code})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Website/Social */}
