@@ -1331,52 +1331,30 @@ Format as professional homeschool compliance documentation.`;
                       </div>
                       )}
 
-                      {/* Activity Type Breakdown */}
+                      {/* Total Hours Badge */}
                       {kidActivities.length > 0 && (
-                        <div className="mb-3 pb-3 border-b border-gray-200">
-                          <p style={{ color: "#333" }} className="text-xs font-semibold mb-1">
-                            ACTIVITY BREAKDOWN
-                          </p>
-                          <div className="space-y-0.5 text-xs">
-                            {(() => {
-                              const coreMinutes = kidActivities
-                                .filter((a) => !a.activity_type || a.activity_type === "Core Subject")
-                                .reduce((sum, a) => sum + a.duration, 0);
-                              const extracurricularMinutes = kidActivities
-                                .filter((a) => a.activity_type === "Extracurricular")
-                                .reduce((sum, a) => sum + a.duration, 0);
-                              const enrichmentMinutes = kidActivities
-                                .filter((a) => a.activity_type === "Field Trip / Enrichment")
-                                .reduce((sum, a) => sum + a.duration, 0);
-                              
-                              const coreHours = coreMinutes / 60;
-                              const extracurricularHours = extracurricularMinutes / 60;
-                              const enrichmentHours = enrichmentMinutes / 60;
-                              
-                              return (
-                                <>
-                                  {coreMinutes > 0 && (
-                                    <div className="flex justify-between">
-                                      <span style={{ color: "#1a1a2e" }}>Core Subjects</span>
-                                      <span style={{ color: COLORS.primary }} className="font-semibold">{coreHours.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                  {extracurricularMinutes > 0 && (
-                                    <div className="flex justify-between">
-                                      <span style={{ color: "#1a1a2e" }}>Extracurricular</span>
-                                      <span style={{ color: "#ff9900" }} className="font-semibold">{extracurricularHours.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                  {enrichmentMinutes > 0 && (
-                                    <div className="flex justify-between">
-                                      <span style={{ color: "#1a1a2e" }}>Enrichment</span>
-                                      <span style={{ color: "#66bb6a" }} className="font-semibold">{enrichmentHours.toFixed(1)}h</span>
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </div>
+                        <div className="mb-3 pb-3">
+                          {(() => {
+                            const totalMinutes = kidActivities.reduce((sum, a) => sum + a.duration, 0);
+                            const totalHours = (totalMinutes / 60).toFixed(1);
+                            
+                            return (
+                              <div
+                                style={{
+                                  backgroundColor: "#e8f0ff",
+                                  borderRadius: "8px",
+                                  padding: "10px 12px",
+                                  border: `2px solid ${COLORS.primary}`,
+                                  marginTop: "2px",
+                                }}
+                                className="flex items-center justify-center"
+                              >
+                                <span style={{ color: COLORS.primary }} className="text-sm font-bold">
+                                  ⏱️ {totalHours}h Total
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 

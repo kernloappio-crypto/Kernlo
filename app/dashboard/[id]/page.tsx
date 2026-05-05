@@ -202,10 +202,21 @@ export default function KidDetailPage() {
 
         // Load activities
         try {
+          console.log("🔄 KidDetail: Loading activities for user:", user.id, "kid name:", kidData?.name);
           const activitiesData = await getActivities(user.id);
+          console.log("🔄 KidDetail: Got activitiesData count:", activitiesData.length, "data:", activitiesData);
+          
           const kidActivities = activitiesData.filter(
-            (a: any) => a.child_name === kidData?.name
+            (a: any) => {
+              const matches = a.child_name === kidData?.name;
+              if (!matches) {
+                console.log(`  ⚠️  Activity skipped - child_name mismatch: "${a.child_name}" !== "${kidData?.name}"`);
+              }
+              return matches;
+            }
           );
+          
+          console.log("🔄 KidDetail: Filtered to kid activities count:", kidActivities.length, "data:", kidActivities);
           setActivities(kidActivities as Activity[]);
         } catch (err) {
           console.error("Error loading activities:", err);
@@ -636,11 +647,19 @@ export default function KidDetailPage() {
                   const stateReqs = STATE_REQUIREMENTS[complianceState];
                   const subjects = Object.keys(stateReqs.subjects).slice(0, 3);
                   
+                  console.log("📋 Dashboard Compliance Card: Processing", {
+                    complianceState: complianceState,
+                    subjectsToCheck: subjects,
+                    activitiesCount: activities.length,
+                  });
+                  
                   const subjectHours = subjects.map((subject) => {
                     const subjectActivities = activities.filter((a) => a.subject === subject);
                     // Convert minutes to hours: divide by 60
                     const hours = subjectActivities.reduce((sum, a) => sum + a.duration, 0) / 60;
                     const required = stateReqs.subjects[subject] || 0;
+                    
+                    console.log(`  → ${subject}: ${subjectActivities.length} activities = ${hours} hours (target: ${required})`);
                     
                     return {
                       subject,
@@ -648,6 +667,8 @@ export default function KidDetailPage() {
                       target: required,
                     };
                   });
+                  
+                  console.log("📋 Dashboard Compliance Card: Final subjectHours:", subjectHours);
                   
                   return (
                     <SubjectProgressBars 
@@ -682,10 +703,16 @@ export default function KidDetailPage() {
                 // Calculate total hours per subject
                 const subjectHoursMap = new Map<string, number>();
                 
+                console.log("📊 Dashboard Subject Progress: Processing activities:", {
+                  activitiesCount: activities.length,
+                  activities: activities,
+                });
+
                 activities.forEach((activity) => {
                   const current = subjectHoursMap.get(activity.subject) || 0;
                   // Convert minutes to hours: divide by 60
                   const hours = activity.duration / 60;
+                  console.log(`  → ${activity.subject}: ${activity.duration} min = ${hours} hours`);
                   subjectHoursMap.set(activity.subject, current + hours);
                 });
 
@@ -696,6 +723,8 @@ export default function KidDetailPage() {
                   }))
                   .sort((a, b) => b.hours - a.hours)
                   .slice(0, 4);
+
+                console.log("📊 Dashboard Subject Progress: Final subjectHours array:", subjectHours);
 
                 return (
                   <div>

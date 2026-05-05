@@ -228,7 +228,25 @@ export async function getActivities(userId: string, childName?: string, includeA
 
   const { data, error } = await query;
 
-  if (error) throw error;
+  if (error) {
+    console.error('🔴 getActivities ERROR:', {
+      error: error.message,
+      code: error.code,
+      userId,
+      childName,
+      includeAll,
+    });
+    throw error;
+  }
+  
+  console.log('📊 getActivities returned:', {
+    count: data?.length || 0,
+    userId,
+    childName,
+    includeAll,
+    statuses: Array.from(new Set((data || []).map((a: any) => a.status))),
+    subjects: Array.from(new Set((data || []).map((a: any) => a.subject))),
+  });
   
   // Sort client-side after RLS passes
   const sorted = data || [];
