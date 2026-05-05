@@ -118,6 +118,7 @@ const useVoiceRecognition = ({
      * Handle error
      */
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.log('❌ SPEECH RECOGNITION ERROR:', event.error);
       console.error('Speech recognition error:', event.error);
       let errorMsg = 'Microphone error';
 
@@ -131,6 +132,7 @@ const useVoiceRecognition = ({
         errorMsg = 'Microphone access not allowed';
       }
 
+      console.log('❌ Error message:', errorMsg);
       onError?.(errorMsg);
       stopRecording();
     };
