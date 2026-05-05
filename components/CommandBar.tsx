@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Mic } from 'lucide-react';
 import CompleteActivityReview from './CompleteActivityReview';
 import IncompleteActivityModal from './IncompleteActivityModal';
+import useVoiceRecognition from '@/hooks/useVoiceRecognition';
 import { supabase } from '@/lib/supabase-client';
 import type { ParsedActivityData } from '@/lib/types';
 
@@ -31,6 +33,23 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
+
+  // Voice recognition hook
+  const { isRecording, isSupported: isVoiceSupported, toggleRecording } = useVoiceRecognition({
+    onTranscript: (transcript: string) => {
+      setText(transcript);
+    },
+    onSubmit: () => {
+      // Auto-submit when silence detected
+      if (text.trim()) {
+        handleParse();
+      }
+    },
+    onError: (errorMsg: string) => {
+      setError(errorMsg);
+      setTimeout(() => setError(null), 5000);
+    },
+  });
 
   // Fetch kids list on mount
   useEffect(() => {
@@ -482,19 +501,44 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
           What did they learn today?
         </label>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !isLoading) {
-                handleParse();
-              }
-            }}
-            placeholder="e.g., Ella did 45m of fractions"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
-          />
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                  handleParse();
+                }
+              }}
+              placeholder="e.g., Ella did 45m of fractions"
+              className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+            />
+            {/* Mic Button - Right aligned inside input */}
+            {isVoiceSupported && (
+              <button
+                onClick={toggleRecording}
+                title={isRecording ? 'Stop recording' : 'Start recording'}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded transition-all duration-200 ${
+                  isRecording
+                    ? 'text-blue-600 animate-pulse'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                disabled={isLoading}
+                style={
+                  isRecording
+                    ? {
+                        color: '#0066cc',
+                        animation: 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      }
+                    : undefined
+                }
+              >
+                <Mic size={20} />
+              </button>
+            )}
+          </div>
           <button
             onClick={handleParse}
             disabled={isLoading}
@@ -510,6 +554,18 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
           </div>
         )}
       </div>
+
+      {/* Pulse animation CSS */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </div>
   );
 };
