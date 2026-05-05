@@ -41,6 +41,7 @@ const useVoiceRecognition = ({
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef('');
+  const isActiveRef = useRef(false); // Track if recognition is actively listening
 
   const SILENCE_DURATION = 1500; // 1.5 seconds
 
@@ -62,6 +63,14 @@ const useVoiceRecognition = ({
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.language = 'en-US';
+
+    /**
+     * Handle recognition started
+     */
+    recognition.onstart = () => {
+      console.log('🎤 Recognition started - listening for speech');
+      isActiveRef.current = true;
+    };
 
     /**
      * Handle incoming transcript
@@ -130,6 +139,8 @@ const useVoiceRecognition = ({
      * Handle end of recognition
      */
     recognition.onend = () => {
+      console.log('🎤 Recognition ended');
+      isActiveRef.current = false;
       setIsRecording(false);
     };
 
@@ -175,9 +186,15 @@ const useVoiceRecognition = ({
 
     try {
       console.log('🎤 Starting recording...');
+      // If already running, stop first to reset state
+      if (isActiveRef.current) {
+        console.log('⚠️  Recognition already running, stopping first...');
+        recognitionRef.current.stop();
+      }
       recognitionRef.current.start();
       setIsRecording(true);
       lastTranscriptRef.current = '';
+      console.log('🎤 start() called, waiting for onstart event...');
     } catch (err) {
       console.error('Failed to start recording:', err);
       onError?.('Failed to start microphone');
