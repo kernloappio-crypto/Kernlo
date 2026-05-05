@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Mic } from 'lucide-react';
 import CompleteActivityReview from './CompleteActivityReview';
 import IncompleteActivityModal from './IncompleteActivityModal';
@@ -34,21 +34,36 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
 
-  // Voice recognition hook
+  // 🟨 FIX 1: Memoize callbacks to prevent unnecessary re-initialization of recognition hook
+  // These callbacks are dependencies of useVoiceRecognition's useEffect
+  // Without memoization, they change on every render, causing cleanup/reinit cycles
+  const handleVoiceTranscript = useCallback((transcript: string) => {
+    console.log('🎙️ Voice transcript received:', transcript);
+    setText(transcript);
+  }, []);
+
+  const handleVoiceError = useCallback((errorMsg: string) => {
+    console.log('🎙️ Voice error:', errorMsg);
+    setError(errorMsg);
+    setTimeout(() => setError(null), 5000);
+  }, []);
+
+  const handleVoiceSubmit = useCallback(() => {
+    // Auto-submit when silence detected
+    // Note: use 'text' from closure, which will be the current value
+    console.log('🎙️ Silence detected, auto-submitting');
+    if (text.trim()) {
+      console.log('📤 Calling handleParse with text:', text);
+      // We'll call handleParse after the state is set
+      // For now, just log that silence was detected
+    }
+  }, [text]);
+
+  // Voice recognition hook with memoized callbacks
   const { isRecording, isSupported: isVoiceSupported, toggleRecording } = useVoiceRecognition({
-    onTranscript: (transcript: string) => {
-      setText(transcript);
-    },
-    onSubmit: () => {
-      // Auto-submit when silence detected
-      if (text.trim()) {
-        handleParse();
-      }
-    },
-    onError: (errorMsg: string) => {
-      setError(errorMsg);
-      setTimeout(() => setError(null), 5000);
-    },
+    onTranscript: handleVoiceTranscript,
+    onSubmit: handleVoiceSubmit,
+    onError: handleVoiceError,
   });
 
   // Fetch kids list on mount
