@@ -127,6 +127,8 @@ Rules:
 - Extract student names (e.g., "Ella", "Jett", "Tripp", "Alerie")
   * If "and" or "&" or "," separates names, extract ALL
   * Return in students array
+  * CRITICAL: If NO student name is mentioned in the input, return students: [] (EMPTY ARRAY)
+  * Do NOT guess or default to any student name
 - Extract subject (match to available subjects list)
   * Special: if "Field Trip" is mentioned, use "Field Trip" as subject
 - Extract MINUTES: Convert ANY time format to minutes (integer):
