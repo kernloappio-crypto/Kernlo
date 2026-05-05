@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic } from 'lucide-react';
 import CompleteActivityReview from './CompleteActivityReview';
 import IncompleteActivityModal from './IncompleteActivityModal';
@@ -33,6 +33,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [availableStudents, setAvailableStudents] = useState<string[]>([]);
+  
+  // 🟨 FIX: Ref to store handleParse for voice auto-submit
+  // Allows handleVoiceSubmit to call handleParse without circular dependency
+  const handleParseRef = useRef<() => void>(() => {});
 
   // 🟨 FIX 1: Memoize callbacks to prevent unnecessary re-initialization of recognition hook
   // These callbacks are dependencies of useVoiceRecognition's useEffect
@@ -50,12 +54,14 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
   const handleVoiceSubmit = useCallback(() => {
     // Auto-submit when silence detected
-    // Note: use 'text' from closure, which will be the current value
+    // Use ref to avoid circular dependency on handleParse
     console.log('🎙️ Silence detected, auto-submitting');
+    console.log('📤 onSubmit callback fired - calling handleParse');
     if (text.trim()) {
-      console.log('📤 Calling handleParse with text:', text);
-      // We'll call handleParse after the state is set
-      // For now, just log that silence was detected
+      // Call handleParse via ref - this is the actual parse function
+      handleParseRef.current();
+    } else {
+      console.log('⚠️ Text is empty after voice transcription, skipping auto-submit');
     }
   }, [text]);
 
@@ -169,7 +175,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
    * Main handler: Parse text → check confidence → auto-save or show ConfirmCard
    * This is the ONLY place where we decide what to do next
    */
-  const handleParse = async () => {
+  const handleParse = useCallback(async () => {
     if (!text.trim()) {
       setError('Please enter what they learned');
       return;
@@ -257,7 +263,12 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [text, userId, availableStudents]);
+
+  // 🟨 FIX: Update ref whenever handleParse changes
+  useEffect(() => {
+    handleParseRef.current = handleParse;
+  }, [handleParse]);
 
   /**
    * User confirmed via ConfirmCard and activity was saved
