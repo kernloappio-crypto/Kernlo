@@ -112,10 +112,12 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   const isHighConfidence = parsedData && typeof parsedData.confidence === 'number' && parsedData.confidence >= 0.9;
 
   // Show confirm card only if parsing succeeded AND (missing required fields OR low confidence)
-  if (parsedData && (!hasRequiredFields || !isHighConfidence)) {
+  const showConfirmCard = parsedData && (!hasRequiredFields || !isHighConfidence);
+  
+  if (showConfirmCard) {
     return (
       <ConfirmCard
-        data={parsedData}
+        data={parsedData!}
         userId={userId}
         onCancel={handleClearAll}
         onConfirm={handleActivityLogged}
@@ -124,8 +126,10 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   }
 
   // Auto-save if required fields are present AND high confidence (90%+)
+  // CRITICAL: Only run if ConfirmCard is NOT showing to prevent render race conditions
   useEffect(() => {
-    if (hasRequiredFields && isHighConfidence && parsedData) {
+    // Only auto-save if we have all required fields, high confidence, AND ConfirmCard is NOT showing
+    if (hasRequiredFields && isHighConfidence && parsedData && !showConfirmCard) {
       const submitActivity = async () => {
         try {
           // Get auth token from Supabase session
@@ -176,7 +180,7 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
 
       submitActivity();
     }
-  }, [hasRequiredFields, isHighConfidence, parsedData, text]);
+  }, [hasRequiredFields, isHighConfidence, parsedData, showConfirmCard, text]);
 
   return (
     <div className="w-full max-w-2xl mx-auto mb-6">
