@@ -96,9 +96,10 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   }, [childId, refreshCounter, isMounted]);
 
   // SVG dimensions and render helper
-  const size = 60;
+  const size = 80;
   const strokeWidth = 3;
-  const radius = (size - strokeWidth) / 2;
+  const centerPoint = size / 2;
+  const radius = centerPoint - strokeWidth - 2; // Ensure clearance from edge
   const circumference = 2 * Math.PI * radius;
 
   // Helper to render a single ring
@@ -117,7 +118,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
     return (
       <div
         className="relative flex flex-col items-center justify-center"
-        style={{ width: `${size}px` }}
+        style={{ width: `${size}px`, height: `${size}px` }}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
@@ -127,21 +128,23 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
           height={size}
           viewBox={`0 0 ${size} ${size}`}
           className="transform -rotate-90"
+          style={{ display: 'block' }}
         >
           {/* Background circle */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={centerPoint}
+            cy={centerPoint}
             r={radius}
             fill="none"
             stroke="#f0f0f0"
             strokeWidth={strokeWidth}
+            vectorEffect="non-scaling-stroke"
           />
 
           {/* Progress ring */}
           <circle
-            cx={size / 2}
-            cy={size / 2}
+            cx={centerPoint}
+            cy={centerPoint}
             r={radius}
             fill="none"
             stroke={ringColor}
@@ -149,6 +152,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
             style={{
               transition: 'stroke-dashoffset 0.5s ease-in-out, stroke 0.3s ease-in-out',
             }}
