@@ -65,25 +65,6 @@ const SUBJECT_ICONS: { [key: string]: React.ComponentType<any> } = {
   Default: BookMarked,
 };
 
-// Default targets per subject (in hours)
-const DEFAULT_TARGETS: { [key: string]: number } = {
-  Math: 240,
-  "Mathematics": 240,
-  Science: 120,
-  English: 240,
-  History: 120,
-  "Social Studies": 120,
-  Art: 60,
-  Arts: 60,
-  "Physical Education": 120,
-  PE: 120,
-  Music: 60,
-  "Language Arts": 240,
-  "Reading": 180,
-  Writing: 120,
-  Extracurricular: 100,
-};
-
 export default function SubjectProgressBars({
   subjects,
   colorOverride,
@@ -103,6 +84,22 @@ export default function SubjectProgressBars({
     );
   }
 
+  // RELATIVE ACTIVITY LEADERBOARD LOGIC
+  // Find the maximum hours across all subjects
+  const maxHours = Math.max(...subjects.map(s => s.hours), 0);
+  
+  // If max is 0, show empty state
+  if (maxHours === 0) {
+    return (
+      <p style={{ color: "#555" }} className="text-sm">
+        No activities logged yet
+      </p>
+    );
+  }
+
+  // Sort by hours descending
+  const sortedSubjects = [...subjects].sort((a, b) => b.hours - a.hours);
+
   const getColor = (subject: string): string => {
     if (colorOverride && colorOverride[subject]) {
       return colorOverride[subject];
@@ -114,31 +111,32 @@ export default function SubjectProgressBars({
     return SUBJECT_ICONS[subject] || SUBJECT_ICONS.Default;
   };
 
-  const getTarget = (subject: string): number => {
-    return DEFAULT_TARGETS[subject] || 100;
-  };
-
   return (
-    <div className="space-y-2">
-      {subjects.map((item, idx) => {
+    <div className="space-y-1.5">
+      {sortedSubjects.map((item, idx) => {
         const IconComponent = getIcon(item.subject);
         const barColor = getColor(item.subject);
-        const target = item.target || getTarget(item.subject);
-        const percentage = Math.min(100, (item.hours / target) * 100);
+        // Calculate percentage relative to max hours
+        const percentage = (item.hours / maxHours) * 100;
         
         // Format hours display
         const hoursDisplay = item.hours < 1 
           ? `${(item.hours).toFixed(1)}h` 
           : `${Math.round(item.hours * 10) / 10}h`;
 
+        // Calculate bar width in a sensible container
+        // We'll use a fixed container width for consistent display
+        const containerWidthPx = 200; // Fixed width for consistent spacing
+        const barWidthPx = (percentage / 100) * containerWidthPx;
+
         return (
-          <div key={`${item.subject}-${idx}`} className="flex items-center gap-3">
+          <div key={`${item.subject}-${idx}`} className="flex items-center gap-2">
             {/* Icon */}
             <div
               className="flex-shrink-0"
-              style={{ color: barColor, width: "20px", height: "20px" }}
+              style={{ color: barColor, width: "16px", height: "16px" }}
             >
-              <IconComponent size={16} strokeWidth={2.5} />
+              <IconComponent size={14} strokeWidth={2.5} />
             </div>
 
             {/* Subject Name */}
@@ -151,31 +149,22 @@ export default function SubjectProgressBars({
               </span>
             </div>
 
-            {/* Progress Bar Container */}
-            <div className="flex-1 flex items-center gap-3">
+            {/* Relative Activity Bar */}
+            <div className="flex-1 flex items-center gap-2">
               <div
                 style={{
-                  backgroundColor: "#e5e7eb",
+                  backgroundColor: barColor,
                   height: "8px",
                   borderRadius: "4px",
-                  flex: 1,
-                  overflow: "hidden",
-                  minWidth: "80px",
+                  width: `${percentage}%`,
+                  minWidth: percentage > 0 ? "4px" : "0px",
+                  transition: "width 0.3s ease",
+                  maxWidth: "100%",
                 }}
-              >
-                <div
-                  style={{
-                    backgroundColor: barColor,
-                    height: "100%",
-                    borderRadius: "4px",
-                    width: `${percentage}%`,
-                    transition: "width 0.3s ease",
-                  }}
-                />
-              </div>
-
-              {/* Hours Display (right-aligned) */}
-              <div style={{ color: barColor }} className="flex-shrink-0 text-right min-w-fit">
+              />
+              
+              {/* Hours Display (right-aligned, just after bar) */}
+              <div style={{ color: barColor }} className="flex-shrink-0 text-right">
                 <span className="text-sm font-semibold">{hoursDisplay}</span>
               </div>
             </div>

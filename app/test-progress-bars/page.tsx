@@ -3,26 +3,15 @@
 import SubjectProgressBars from "@/components/SubjectProgressBars";
 
 export default function TestProgressBarsPage() {
-  // Test data with various scenarios
+  // Test data: RELATIVE ACTIVITY LEADERBOARD (no targets, just hours)
+  // Max = 10h (Math), others scale relatively
   const testData = [
-    // 0 hours (empty bar)
-    { subject: "Math", hours: 0, target: 240 },
-    // Partial hours 25%
-    { subject: "Science", hours: 30, target: 120 },
-    // Partial hours 50%
-    { subject: "English", hours: 120, target: 240 },
-    // Partial hours 75%
-    { subject: "History", hours: 90, target: 120 },
-    // Full hours 100%
-    { subject: "Arts", hours: 60, target: 60 },
-    // Exceeds target
-    { subject: "Music", hours: 80, target: 60 },
-    // Small fractional hours
-    { subject: "Physical Education", hours: 0.8, target: 120 },
-    // All subject types
-    { subject: "Reading", hours: 45, target: 180 },
-    { subject: "Writing", hours: 20, target: 120 },
-    { subject: "Extracurricular", hours: 12, target: 100 },
+    { subject: "Math", hours: 10 },           // 100% (max)
+    { subject: "English", hours: 5 },         // 50%
+    { subject: "Science", hours: 3 },         // 30%
+    { subject: "History", hours: 2 },         // 20%
+    { subject: "Arts", hours: 1 },            // 10%
+    { subject: "Music", hours: 0.5 },         // 5%
   ];
 
   return (
@@ -46,40 +35,26 @@ export default function TestProgressBarsPage() {
         <div className="mt-12 space-y-8">
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
             <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: Empty Bar (0 hours)
+              📊 Test: Empty State (0 hours)
             </h2>
-            <SubjectProgressBars subjects={[{ subject: "Math", hours: 0, target: 240 }]} />
+            <SubjectProgressBars subjects={[]} />
           </div>
 
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
             <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: Partial Progress (25%)
+              📊 Test: Single Subject
             </h2>
-            <SubjectProgressBars subjects={[{ subject: "Science", hours: 30, target: 120 }]} />
+            <SubjectProgressBars subjects={[{ subject: "Math", hours: 10 }]} />
           </div>
 
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
             <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: 50% Progress
-            </h2>
-            <SubjectProgressBars subjects={[{ subject: "English", hours: 120, target: 240 }]} />
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: 75% Progress
-            </h2>
-            <SubjectProgressBars subjects={[{ subject: "History", hours: 90, target: 120 }]} />
-          </div>
-
-          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: Full/Exceeds Target (100%+)
+              📊 Test: Two Subjects (Relative Scaling)
             </h2>
             <SubjectProgressBars 
               subjects={[
-                { subject: "Arts", hours: 60, target: 60 },
-                { subject: "Music", hours: 80, target: 60 },
+                { subject: "Math", hours: 10 },
+                { subject: "Science", hours: 5 },
               ]} 
             />
           </div>
@@ -90,56 +65,79 @@ export default function TestProgressBarsPage() {
             </h2>
             <SubjectProgressBars 
               subjects={[
-                { subject: "Physical Education", hours: 0.8, target: 120 },
-                { subject: "Reading", hours: 1.5, target: 180 },
+                { subject: "Math", hours: 8.5 },
+                { subject: "Science", hours: 4.2 },
+                { subject: "English", hours: 2.1 },
               ]} 
             />
           </div>
 
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
             <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: All Subject Icons & Colors
+              📊 Test: All Equal Hours (All bars same width)
             </h2>
             <SubjectProgressBars 
               subjects={[
-                { subject: "Math", hours: 120, target: 240 },
-                { subject: "Science", hours: 60, target: 120 },
-                { subject: "English", hours: 180, target: 240 },
-                { subject: "History", hours: 100, target: 120 },
-                { subject: "Arts", hours: 45, target: 60 },
-                { subject: "Physical Education", hours: 80, target: 120 },
-                { subject: "Music", hours: 50, target: 60 },
-                { subject: "Language Arts", hours: 200, target: 240 },
-                { subject: "Reading", hours: 140, target: 180 },
-                { subject: "Writing", hours: 90, target: 120 },
-                { subject: "Extracurricular", hours: 75, target: 100 },
+                { subject: "Math", hours: 5 },
+                { subject: "Science", hours: 5 },
+                { subject: "English", hours: 5 },
+                { subject: "History", hours: 5 },
               ]} 
             />
           </div>
 
           <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
             <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-              📊 Test: No Subjects (Empty State)
+              📊 Test: All Subject Icons & Colors (Relative Leaderboard)
             </h2>
-            <SubjectProgressBars subjects={[]} />
+            <SubjectProgressBars 
+              subjects={[
+                { subject: "Math", hours: 10 },
+                { subject: "Science", hours: 8 },
+                { subject: "English", hours: 6 },
+                { subject: "History", hours: 4 },
+                { subject: "Arts", hours: 3 },
+                { subject: "Physical Education", hours: 2 },
+                { subject: "Music", hours: 1 },
+                { subject: "Language Arts", hours: 7 },
+                { subject: "Reading", hours: 5 },
+                { subject: "Writing", hours: 3 },
+                { subject: "Extracurricular", hours: 2 },
+              ]} 
+            />
+          </div>
+
+          <div style={{ backgroundColor: "white", borderRadius: "12px" }} className="p-8 border border-gray-200">
+            <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
+              📊 Test: Tiny Values (0.1h, 0.2h)
+            </h2>
+            <SubjectProgressBars 
+              subjects={[
+                { subject: "Math", hours: 2 },
+                { subject: "Science", hours: 0.2 },
+                { subject: "English", hours: 0.1 },
+              ]} 
+            />
           </div>
         </div>
 
         <div className="mt-12 py-8 px-8 border border-gray-200" style={{ backgroundColor: "white", borderRadius: "12px" }}>
           <h2 className="text-lg font-semibold mb-4" style={{ color: "#1a1a2e" }}>
-            ✓ Test Results
+            ✓ Test Results (Relative Activity Leaderboard)
           </h2>
           <ul className="space-y-2 text-sm">
-            <li>✓ 0 hours renders empty bar</li>
-            <li>✓ Partial hours (25%, 50%, 75%) display correct bar width</li>
-            <li>✓ Full/exceeds target (100%+) fills bar</li>
+            <li>✓ Empty state (0 subjects) displays gracefully</li>
+            <li>✓ Single subject renders at 100% width</li>
+            <li>✓ Multiple subjects scale proportionally (max = 100%, others relative)</li>
+            <li>✓ Subjects sorted by hours descending (highest at top)</li>
             <li>✓ Icons render correctly (Calculator, Beaker, Book, Globe, Palette, Activity, Music2, etc.)</li>
             <li>✓ Colors match subject mapping (Blue, Green, Purple, Orange, Pink, Red, Indigo)</li>
-            <li>✓ Hours format correctly (0.8h for fractional, 1h for whole)</li>
-            <li>✓ Responsive layout: icon → name → bar → hours (right-aligned)</li>
+            <li>✓ Fractional hours format correctly (0.1h, 0.2h, 8.5h, etc.)</li>
+            <li>✓ Layout: icon → name → bar → hours (right-aligned)</li>
             <li>✓ Bar height is thin (8px) with rounded corners</li>
-            <li>✓ Empty state handled gracefully</li>
-            <li>✓ All subject types tested</li>
+            <li>✓ All subject types tested with relative scaling</li>
+            <li>✓ No gray background tracks (just colored bars)</li>
+            <li>✓ No target/goal logic (pure relative leaderboard)</li>
           </ul>
         </div>
       </div>
