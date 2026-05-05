@@ -88,7 +88,14 @@ export default function SubjectProgressBars({
   subjects,
   colorOverride,
 }: SubjectProgressBarsProps) {
+  console.log("🔍 SubjectProgressBars: Rendering with data:", {
+    subjectsLength: subjects?.length || 0,
+    subjects: subjects,
+    colorOverride: colorOverride,
+  });
+
   if (!subjects || subjects.length === 0) {
+    console.log("⚠️ SubjectProgressBars: No subjects provided, showing empty state");
     return (
       <p style={{ color: "#555" }} className="text-sm">
         No subjects logged yet
@@ -112,7 +119,7 @@ export default function SubjectProgressBars({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {subjects.map((item, idx) => {
         const IconComponent = getIcon(item.subject);
         const barColor = getColor(item.subject);
