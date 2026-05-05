@@ -27,15 +27,24 @@ interface ConfirmCardProps {
 }
 
 const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
-  const [student, setStudent] = useState(data.student || '');
-  const [subject, setSubject] = useState(data.subject || '');
-  const [minutes, setMinutes] = useState(data.minutes ? data.minutes.toString() : '');
-  const [notes, setNotes] = useState(data.note || '');
-  const [platform, setPlatform] = useState(data.platform || '');
-  const [date, setDate] = useState(data.date || new Date().toISOString().split('T')[0]);
+  const [student, setStudent] = useState(data?.student || '');
+  const [subject, setSubject] = useState(data?.subject || '');
+  const [minutes, setMinutes] = useState(data?.minutes ? data.minutes.toString() : '');
+  const [notes, setNotes] = useState(data?.note || '');
+  const [platform, setPlatform] = useState(data?.platform || '');
+  const [date, setDate] = useState(data?.date || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  // Initialize date on client only (after hydration) to prevent mismatch
+  React.useEffect(() => {
+    if (!date) {
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      setDate(dateStr);
+    }
+  }, [date]);
 
   // Determine if NLP parse is complete or incomplete
   const missingFields = useMemo(() => {
