@@ -67,12 +67,14 @@ const useVoiceRecognition = ({
      * Handle incoming transcript
      */
     recognition.onresult = (event: SpeechRecognitionEvent) => {
+      console.log('🎤 onresult event:', event);
       let interimTranscript = '';
       let finalTranscript = '';
 
       // Collect all results
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
+        console.log('📝 Transcript:', transcript, 'isFinal:', event.results[i].isFinal);
 
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
@@ -83,10 +85,12 @@ const useVoiceRecognition = ({
 
       // Combine: final + interim
       const fullTranscript = finalTranscript + interimTranscript;
+      console.log('📝 Full transcript:', fullTranscript);
 
       // Pass to parent
       if (fullTranscript) {
         lastTranscriptRef.current = fullTranscript.trim();
+        console.log('📤 Calling onTranscript with:', lastTranscriptRef.current);
         onTranscript(lastTranscriptRef.current);
       }
 
