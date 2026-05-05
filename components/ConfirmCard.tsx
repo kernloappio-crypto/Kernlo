@@ -27,6 +27,18 @@ interface ConfirmCardProps {
 }
 
 const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
+  // Safety guard: if data is invalid, show error
+  if (!data || typeof data !== 'object') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+          <p className="text-red-600 font-semibold">Error: Invalid activity data</p>
+          <button onClick={onCancel} className="mt-4 px-4 py-2 bg-gray-300 rounded">Close</button>
+        </div>
+      </div>
+    );
+  }
+
   // Safely initialize state from potentially null data
   const [student, setStudent] = useState<string>(() => {
     try {
