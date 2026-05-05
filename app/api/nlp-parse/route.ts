@@ -78,6 +78,12 @@ Parse this: "${text}"
 
 IMPORTANT: Check if input mentions multiple kids or multiple separate activities.
 
+⚠️ CRITICAL RULES (NO DEFAULTS):
+- Do NOT default duration to 30 minutes. If no duration is mentioned, set minutes to null.
+- Do NOT use 'Extracurricular' as a fallback. If subject is not in available subjects list, set confidence to 0.3 (treat as uncertain).
+- If ANY required field is missing (student/students, minutes, subject), set confidence < 0.9 (0.3 or lower if critical fields missing).
+- confidence MUST be < 0.9 if: students array is EMPTY, minutes is null/0, or subject is missing.
+
 Return ONLY valid JSON (no markdown, no code blocks):
 
 **CASE 1: Single activity (possibly with multiple kids doing the same thing)**
@@ -173,10 +179,13 @@ Rules:
 - Extract notes/topic (e.g., "fractions", "US History", "Chapter 5")
 - Extract DATE if mentioned in format like "May 5", "today", "yesterday", etc. Otherwise set to null
 - If any student name is not in available_students, set confidence to 0.5 and return the best guess
-- If subject is not in available subjects, use "Extracurricular" (unless "Field Trip")
+- If subject is not in available subjects:
+  * Do NOT default to "Extracurricular"
+  * Instead: set confidence to 0.3 (very low) to force review
+  * Return the best-guess subject name, but mark it as uncertain
 - confidence should be 0.0-1.0 based on how clear the input is
-  * Full clarity (all fields found, known students) = 0.95+
-  * Missing duration (minutes=null) = 0.3 or lower (required field missing)
+  * Full clarity (all 3 required fields: student/students, minutes, subject) = 0.95+
+  * Missing ANY required field (students empty, minutes null/0, subject missing/invalid) = 0.3 or lower
   * Missing platform/notes = 0.6-0.8
   * Ambiguous = 0.3-0.5
   * Empty/unclear = 0.1`;
@@ -233,11 +242,16 @@ Rules:
       };
 
       // Check confidence and required fields
+      // REQUIRED: all three must be present and valid
+      // - students: array with at least 1 name
+      // - minutes: must be > 0 (not null, not 0, not defaulted)
+      // - subject: must be present (not null, not "Extracurricular" as fallback)
       const isHighConfidence = normalizedData.confidence >= 0.9;
       const hasRequiredFields =
         (normalizedData.students?.length || 0) > 0 &&
-        normalizedData.subject &&
-        normalizedData.minutes;
+        Boolean(normalizedData.subject) &&
+        normalizedData.minutes !== null &&
+        normalizedData.minutes > 0;
 
       if (isHighConfidence && hasRequiredFields) {
         return NextResponse.json({
@@ -271,7 +285,11 @@ Rules:
     };
 
     const isHighConfidence = fallbackData.confidence >= 0.9;
-    const hasRequiredFields = (fallbackData.students?.length || 0) > 0 && fallbackData.subject && fallbackData.minutes;
+    const hasRequiredFields =
+      (fallbackData.students?.length || 0) > 0 &&
+      Boolean(fallbackData.subject) &&
+      fallbackData.minutes !== null &&
+      fallbackData.minutes > 0;
 
     if (isHighConfidence && hasRequiredFields) {
       return NextResponse.json({
