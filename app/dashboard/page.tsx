@@ -1187,7 +1187,6 @@ Format as professional homeschool compliance documentation.`;
               📅 Calendar
             </Link>
             <button
-            <button
               onClick={() => {
                 setReportKid(reportKid || kids[0]);
                 setShowReportGen(true);
