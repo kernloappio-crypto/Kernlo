@@ -111,9 +111,10 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
     onMouseLeave: () => void
   ) => {
     const isComplete = current >= target;
-    const ringColor = isComplete ? color : '#e5e7eb';
+    const ringColor = color; // Always show colored stroke (not gray)
     const textColor = isComplete ? color : '#999';
-    const strokeDashoffset = circumference - (current / target) * circumference;
+    const progress = Math.min(current / target, 1); // Cap at 100%
+    const strokeDashoffset = circumference * (1 - progress);
 
     return (
       <div
