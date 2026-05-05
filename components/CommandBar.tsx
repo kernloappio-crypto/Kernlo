@@ -55,17 +55,31 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
       const result = await response.json();
 
       console.log('📥 NLP response:', result);
+      console.log('📥 NLP response.data:', result.data);
+      console.log('📥 NLP response.data?.student:', result.data?.student);
+      console.log('📥 NLP response.data?.minutes:', result.data?.minutes);
 
-      if (result.success) {
-        setParsedData(result.data);
-      } else if (result.data) {
-        // Low confidence but return data for user review
-        setError(`Low confidence. Please review and edit if needed.`);
-        setParsedData(result.data);
-      } else {
+      if (!result.data) {
         setError(result.error || 'Could not parse. Try: "Ella did 30m of Math"');
+        return;
+      }
+
+      // Validate data structure - ensure critical fields are the right type
+      const data = result.data;
+      if (typeof data.confidence !== 'number') {
+        console.error('❌ Invalid NLP response: confidence is not a number', data);
+        setError('Invalid response from parser. Please try again.');
+        return;
+      }
+
+      // Data is valid, set it for display
+      setParsedData(data);
+      
+      if (!result.success) {
+        setError(`Low confidence. Please review and edit if needed.`);
       }
     } catch (err: any) {
+      console.error('❌ Parse error:', err);
       setError(err.message || 'Parsing failed');
     } finally {
       setIsLoading(false);
@@ -84,12 +98,18 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   };
 
   // Check if we have required fields for auto-save
-  // Required: student, subject, minutes (minutes MUST NOT be null)
+  // Required: student, subject, minutes (all must be non-null and valid types)
   // Platform is optional (user can fill in confirm card)
-  const hasRequiredFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes !== null && parsedData.minutes !== undefined;
+  const hasRequiredFields = parsedData
+    && parsedData.student
+    && parsedData.subject
+    && parsedData.minutes !== null
+    && parsedData.minutes !== undefined
+    && typeof parsedData.minutes === 'number'
+    && parsedData.minutes > 0;
   
   // Auto-confirm if confidence >= 90%
-  const isHighConfidence = parsedData && parsedData.confidence >= 0.9;
+  const isHighConfidence = parsedData && typeof parsedData.confidence === 'number' && parsedData.confidence >= 0.9;
 
   // Show confirm card only if parsing succeeded AND (missing required fields OR low confidence)
   if (parsedData && (!hasRequiredFields || !isHighConfidence)) {

@@ -27,12 +27,58 @@ interface ConfirmCardProps {
 }
 
 const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
-  const [student, setStudent] = useState(data?.student || '');
-  const [subject, setSubject] = useState(data?.subject || '');
-  const [minutes, setMinutes] = useState(data?.minutes ? data.minutes.toString() : '');
-  const [notes, setNotes] = useState(data?.note || '');
-  const [platform, setPlatform] = useState(data?.platform || '');
-  const [date, setDate] = useState(data?.date || '');
+  // Safely initialize state from potentially null data
+  const [student, setStudent] = useState<string>(() => {
+    try {
+      return (data?.student && typeof data.student === 'string') ? data.student : '';
+    } catch {
+      return '';
+    }
+  });
+  
+  const [subject, setSubject] = useState<string>(() => {
+    try {
+      return (data?.subject && typeof data.subject === 'string') ? data.subject : '';
+    } catch {
+      return '';
+    }
+  });
+  
+  const [minutes, setMinutes] = useState<string>(() => {
+    try {
+      if (data?.minutes && typeof data.minutes === 'number' && data.minutes > 0) {
+        return data.minutes.toString();
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  });
+  
+  const [notes, setNotes] = useState<string>(() => {
+    try {
+      return (data?.note && typeof data.note === 'string') ? data.note : '';
+    } catch {
+      return '';
+    }
+  });
+  
+  const [platform, setPlatform] = useState<string>(() => {
+    try {
+      return (data?.platform && typeof data.platform === 'string') ? data.platform : '';
+    } catch {
+      return '';
+    }
+  });
+  
+  const [date, setDate] = useState<string>(() => {
+    try {
+      return (data?.date && typeof data.date === 'string') ? data.date : '';
+    } catch {
+      return '';
+    }
+  });
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
@@ -56,15 +102,15 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
   }, [student, subject, minutes]);
 
   const isComplete = missingFields.length === 0;
-  const isHighConfidence = data.confidence >= 0.8;
+  const isHighConfidence = typeof data?.confidence === 'number' && data.confidence >= 0.8;
   const shouldShowAsConfirm = isComplete && isHighConfidence;
 
   // Build detection summary
   const detectedFields = useMemo(() => {
     const detected: string[] = [];
-    if (data.subject) detected.push(data.subject);
-    if (data.minutes) detected.push(`${data.minutes} minutes`);
-    if (data.platform) detected.push(data.platform);
+    if (data?.subject && typeof data.subject === 'string') detected.push(data.subject);
+    if (data?.minutes && typeof data.minutes === 'number' && data.minutes > 0) detected.push(`${data.minutes} minutes`);
+    if (data?.platform && typeof data.platform === 'string') detected.push(data.platform);
     return detected;
   }, [data]);
 

@@ -5,9 +5,9 @@
 // NLP Parsing
 export interface ParsedActivityData {
   student: string | null;
-  subject: string;
-  minutes: number;
-  note: string;
+  subject: string | null;  // Can be null if not extracted
+  minutes: number | null;  // Can be null if duration not found
+  note: string | null;     // Can be null if no topic
   platform: string | null;
   date: string | null;
   confidence: number;
