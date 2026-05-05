@@ -84,9 +84,9 @@ const CommandBar: React.FC<CommandBarProps> = ({ userId, onActivityLogged }) => 
   };
 
   // Check if we have required fields for auto-save
-  // Required: student, subject, minutes
+  // Required: student, subject, minutes (minutes MUST NOT be null)
   // Platform is optional (user can fill in confirm card)
-  const hasRequiredFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes;
+  const hasRequiredFields = parsedData && parsedData.student && parsedData.subject && parsedData.minutes !== null && parsedData.minutes !== undefined;
   
   // Auto-confirm if confidence >= 90%
   const isHighConfidence = parsedData && parsedData.confidence >= 0.9;

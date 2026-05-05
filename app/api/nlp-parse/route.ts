@@ -80,7 +80,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
 {
   "student": "student_name or null if unclear",
   "subject": "subject or 'Extracurricular' if unrecognized",
-  "minutes": 30,
+  "minutes": null,
   "note": "lesson topic or details",
   "platform": "platform or location",
   "date": "YYYY-MM-DD or null",
@@ -98,7 +98,8 @@ Rules:
   * "1.5 hours" or "1.5h" → 90
   * "2h 30m" → 150
   * Just a number "45" → assume minutes
-  * If missing, default to 30 and mark confidence lower
+  * If duration is NOT found in input, set minutes to null
+  * CRITICAL: Do NOT default to 30. Return null if no duration is mentioned.
 - Extract PLATFORM/LOCATION:
   * For field trips: extract location name (e.g., "Bob Bullock Museum")
   * For online: match these keywords (case-insensitive):
@@ -118,8 +119,9 @@ Rules:
 - If student name is not in available_students, set confidence to 0.5 and return the best guess
 - If subject is not in available subjects, use "Extracurricular" (unless "Field Trip")
 - confidence should be 0.0-1.0 based on how clear the input is
-  * Full clarity (all fields, known student) = 0.95+
-  * Missing platform/duration = 0.6-0.8
+  * Full clarity (all fields found, known student) = 0.95+
+  * Missing duration (minutes=null) = 0.3 or lower (required field missing)
+  * Missing platform/notes = 0.6-0.8
   * Ambiguous = 0.3-0.5
   * Empty/unclear = 0.1`;
 

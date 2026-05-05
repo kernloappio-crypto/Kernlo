@@ -29,7 +29,7 @@ interface ConfirmCardProps {
 const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onConfirm }) => {
   const [student, setStudent] = useState(data.student || '');
   const [subject, setSubject] = useState(data.subject);
-  const [minutes, setMinutes] = useState(data.minutes.toString());
+  const [minutes, setMinutes] = useState(data.minutes ? data.minutes.toString() : '');
   const [notes, setNotes] = useState(data.note);
   const [platform, setPlatform] = useState(data.platform || '');
   const [date, setDate] = useState(data.date || new Date().toISOString().split('T')[0]);
@@ -105,15 +105,25 @@ const ConfirmCard: React.FC<ConfirmCardProps> = ({ data, userId, onCancel, onCon
             </select>
           </div>
 
-          {/* Minutes */}
+          {/* Minutes - REQUIRED */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Minutes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (minutes) <span className="text-red-500">*</span>
+            </label>
             <input
               type="number"
               value={minutes}
               onChange={(e) => setMinutes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Required - e.g., 30"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                !minutes
+                  ? 'border-red-400 bg-red-50 focus:ring-red-500'
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
             />
+            {!minutes && (
+              <p className="text-xs text-red-600 mt-1">Duration is required</p>
+            )}
           </div>
 
           {/* Notes */}
