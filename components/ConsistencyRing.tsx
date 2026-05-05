@@ -28,7 +28,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   const [showTooltip, setShowTooltip] = useState<'weekly' | 'monthly' | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  const WEEKLY_TARGET = 5;
+  const WEEKLY_TARGET = 7;
 
   // Track when component is mounted (client-side only)
   useEffect(() => {
