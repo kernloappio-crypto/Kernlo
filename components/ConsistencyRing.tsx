@@ -19,11 +19,19 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const TARGET_DAYS = 5;
 
+  // Track when component is mounted (client-side only)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Fetch consistency data
   useEffect(() => {
+    if (!isMounted) return; // Don't fetch until component is mounted
+
     const fetchConsistency = async () => {
       try {
         console.log(`🔄 ConsistencyRing refetching for ${childName} (childId: ${childId}, refreshCounter: ${refreshCounter})`);
@@ -32,18 +40,16 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
 
         // Get auth token from localStorage
         let token = '';
-        if (typeof window !== 'undefined') {
-          const sessionStr = localStorage.getItem('kernlo_session');
-          if (sessionStr) {
-            try {
-              const session = JSON.parse(sessionStr);
-              token = session.access_token;
-            } catch (e) {
-              token = localStorage.getItem('kernlo_access_token') || '';
-            }
-          } else {
+        const sessionStr = localStorage.getItem('kernlo_session');
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            token = session.access_token;
+          } catch (e) {
             token = localStorage.getItem('kernlo_access_token') || '';
           }
+        } else {
+          token = localStorage.getItem('kernlo_access_token') || '';
         }
 
         if (!token) {
@@ -75,7 +81,7 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
     };
 
     fetchConsistency();
-  }, [childId, refreshCounter]);
+  }, [childId, refreshCounter, isMounted]);
 
   // Determine color based on progress
   const isComplete = daysLogged >= TARGET_DAYS;
@@ -90,7 +96,8 @@ const ConsistencyRing: React.FC<ConsistencyRingProps> = ({
   const strokeDashoffset =
     circumference - (daysLogged / TARGET_DAYS) * circumference;
 
-  if (loading) {
+  // Always show loading state until component is mounted to avoid hydration mismatch
+  if (!isMounted || loading) {
     return (
       <div
         className="flex flex-col items-center justify-center"
