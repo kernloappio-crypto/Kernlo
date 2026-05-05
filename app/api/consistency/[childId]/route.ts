@@ -122,7 +122,7 @@ export async function GET(
     }
 
     const daysLogged = weekUniqueDays.size;
-    const weeklyTarget = 5;
+    const weeklyTarget = 7;
 
     // Query confirmed activities for this specific child in the current month
     const { data: monthData, error: monthError } = await supabase
