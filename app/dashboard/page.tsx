@@ -14,7 +14,7 @@ import ReviewModal from "@/components/ReviewModal";
 import MomentumGrid from "@/components/MomentumGrid";
 import ConsistencyRing from "@/components/ConsistencyRing";
 import SubjectProgressBars from "@/components/SubjectProgressBars";
-import ReportsHub from "@/components/ReportsHub";
+
 
 export const dynamic = "force-dynamic";
 
@@ -119,8 +119,7 @@ export default function DashboardPage() {
   const [logTripName, setLogTripName] = useState("");
   const [logDestination, setLogDestination] = useState("");
 
-  // Report Hub state
-  const [showReportsHub, setShowReportsHub] = useState(false);
+
   // Add kid states
   const [showAddKid, setShowAddKid] = useState(false);
   const [newKidName, setNewKidName] = useState("");
@@ -727,13 +726,13 @@ export default function DashboardPage() {
             >
               📅 Calendar
             </Link>
-            <button
-              onClick={() => setShowReportsHub(true)}
+            <Link
+              href="/dashboard/reports"
               style={{ backgroundColor: COLORS.secondary }}
               className="px-3 sm:px-4 py-2 text-white rounded-lg hover:opacity-90 font-medium text-xs sm:text-sm whitespace-nowrap inline-flex items-center justify-center"
             >
               📊 Reports
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -1180,14 +1179,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Reports Hub Modal */}
-      <ReportsHub
-        userId={userId}
-        kids={kids}
-        activities={activities}
-        isOpen={showReportsHub}
-        onClose={() => setShowReportsHub(false)}
-      />
+
 
       {/* Add Child Modal */}
       {showAddKid && (
