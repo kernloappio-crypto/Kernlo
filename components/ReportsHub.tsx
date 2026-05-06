@@ -542,223 +542,376 @@ Create a professional homeschool report document.`;
   if (!isOpen) return null;
 
   const availableSubjects = getAvailableSubjects();
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   return (
     <div
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-      className="fixed inset-0 flex items-center justify-center p-3 z-50"
+      className="fixed inset-0 flex items-center justify-center p-2 md:p-3 z-50"
       onClick={onClose}
     >
+      {/* Mobile Compact Modal */}
       <div
-        style={{ backgroundColor: "white", borderRadius: "12px" }}
-        className="p-3 sm:p-4 max-w-2xl w-full max-h-[95vh] overflow-y-auto"
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          position: "relative",
+          width: "100%",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-3">
-          📊 Reports for Your Children
-        </h2>
+        {/* HEADER with Compliance Toggle */}
+        <div
+          style={{
+            borderBottom: "1px solid #e5e7eb",
+            padding: isMobile ? "8px 12px" : "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}
+        >
+          <h2 style={{ color: "#1a1a2e", fontSize: isMobile ? "16px" : "20px", fontWeight: "bold", margin: 0 }}>
+            📊 Reports Hub
+          </h2>
+          {/* Compliance Toggle - Top Right Corner */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={complianceMode}
+              onChange={(e) => setComplianceMode(e.target.checked)}
+              style={{
+                width: "14px",
+                height: "14px",
+                cursor: "pointer",
+              }}
+            />
+            <span style={{ color: "#1a1a2e", fontSize: isMobile ? "9px" : "10px", fontWeight: "500" }} className="hidden sm:inline">
+              {parentState && STATE_NAMES[parentState] ? `${STATE_NAMES[parentState]}` : "Compliance"}
+            </span>
+            <span style={{ color: "#1a1a2e", fontSize: "9px", fontWeight: "500" }} className="sm:hidden">
+              Compliance
+            </span>
+          </label>
+        </div>
 
-        {/* Child Selection - Compact Grid */}
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-2">
-            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold">
-              Children
-            </label>
-            <div className="flex gap-1">
-              <button
-                onClick={selectAllChildren}
-                className="text-xs px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded"
-              >
-                All
-              </button>
-              <button
-                onClick={clearAllChildren}
-                className="text-xs px-2 py-0.5 text-gray-600 hover:bg-gray-100 rounded"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1">
-            {kids.length === 0 ? (
-              <p style={{ color: "#555" }} className="text-xs">
-                ⚠️ No children available
-              </p>
-            ) : (
-              kids.map((kid) => (
+        {/* SCROLLABLE CONTENT */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: isMobile ? "8px 12px" : "12px 16px",
+            paddingBottom: isMobile ? "90px" : "75px",
+          }}
+        >
+          {/* Child Selection - 3-Column Chips Row */}
+          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
+            <div className="flex items-center justify-between mb-1">
+              <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold">
+                Children
+              </label>
+              <div className="flex gap-0.5">
                 <button
-                  key={kid.id}
-                  onClick={() => toggleChildSelection(kid.id)}
-                  className={`px-2 py-1.5 rounded font-medium text-xs transition-all cursor-pointer ${
-                    selectedChildren.includes(kid.id)
-                      ? "bg-blue-500 text-white shadow-sm"
-                      : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"
-                  }`}
-                  style={
-                    selectedChildren.includes(kid.id)
-                      ? { backgroundColor: COLORS.primary, color: "white" }
-                      : { color: "#1a1a2e" }
-                  }
+                  onClick={selectAllChildren}
+                  className="text-xs px-1.5 py-0.5 text-blue-600 hover:bg-blue-50 rounded"
+                  style={{ fontSize: "10px" }}
                 >
-                  {kid.name}
+                  All
                 </button>
-              ))
+                <button
+                  onClick={clearAllChildren}
+                  className="text-xs px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 rounded"
+                  style={{ fontSize: "10px" }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            {/* 3-Column Grid for Children */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? "6px" : "8px" }}>
+              {kids.length === 0 ? (
+                <p style={{ color: "#555", fontSize: "11px" }}>⚠️ No children</p>
+              ) : (
+                kids.map((kid) => (
+                  <button
+                    key={kid.id}
+                    onClick={() => toggleChildSelection(kid.id)}
+                    style={{
+                      padding: isMobile ? "6px 8px" : "8px 10px",
+                      fontSize: isMobile ? "11px" : "12px",
+                      backgroundColor: selectedChildren.includes(kid.id)
+                        ? COLORS.primary
+                        : "white",
+                      color: selectedChildren.includes(kid.id) ? "white" : "#1a1a2e",
+                      border: selectedChildren.includes(kid.id)
+                        ? "none"
+                        : "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    className="hover:opacity-90"
+                  >
+                    {selectedChildren.includes(kid.id) ? "✓ " : ""}
+                    {kid.name}
+                  </button>
+                ))
+              )}
+            </div>
+            {selectedChildren.length > 0 && (
+              <p style={{ color: COLORS.primary, fontSize: "10px", marginTop: "4px" }} className="font-medium">
+                {selectedChildren.length} selected
+              </p>
             )}
           </div>
-          {selectedChildren.length > 0 && (
-            <p style={{ color: COLORS.primary }} className="text-xs font-medium">
-              {selectedChildren.length} selected
-            </p>
-          )}
-        </div>
 
-        {/* Date Presets & Custom Dates */}
-        <div className="mb-3">
-          <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
-            Date Range
-          </label>
-          <div className="flex gap-1 mb-2 flex-wrap">
-            {DATE_PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                onClick={() =>
-                  applyDatePreset(preset.days, preset.preset)
-                }
-                className="px-2 py-1 text-xs font-medium rounded border border-gray-300 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all bg-white"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label style={{ color: "#555" }} className="text-xs font-medium block mb-1">
-                Start
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-2 py-1.5 border rounded text-xs"
-              />
+          {/* Presets - Horizontal Scroll */}
+          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
+            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+              Presets
+            </label>
+            <div
+              style={{
+                display: "flex",
+                gap: "6px",
+                overflowX: "auto",
+                overflowY: "hidden",
+                scrollBehavior: "smooth",
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch", // smooth momentum scroll on iOS
+              }}
+            >
+              {DATE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => applyDatePreset(preset.days, preset.preset)}
+                  style={{
+                    padding: isMobile ? "6px 12px" : "8px 16px",
+                    fontSize: "11px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    backgroundColor: "white",
+                    color: "#374151",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.color = "#3b82f6";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#d1d5db";
+                    e.currentTarget.style.color = "#374151";
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label style={{ color: "#555" }} className="text-xs font-medium block mb-1">
-                End
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-2 py-1.5 border rounded text-xs"
-              />
-            </div>
           </div>
-        </div>
 
-        {/* Report Type & Compliance Toggle - Inline */}
-        <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div>
-            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
+          {/* Date Inputs - Start | End (50/50 Split) */}
+          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
+            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+              Date Range
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? "6px" : "8px" }}>
+              <div>
+                <label style={{ color: "#555", fontSize: "10px" }} className="font-medium block mb-0.5">
+                  Start
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: isMobile ? "6px 8px" : "8px 10px",
+                    fontSize: "11px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ color: "#555", fontSize: "10px" }} className="font-medium block mb-0.5">
+                  End
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: isMobile ? "6px 8px" : "8px 10px",
+                    fontSize: "11px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "4px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Report Type */}
+          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
+            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
               Report Type
             </label>
-            <div className="flex gap-1 p-1 bg-gray-100 rounded w-full">
+            <div style={{ display: "flex", gap: "4px", padding: "4px", backgroundColor: "#f3f4f6", borderRadius: "6px" }}>
               {["progress", "comprehensive", "portfolio"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setReportType(type as "progress" | "comprehensive" | "portfolio")}
-                  className={`px-2 py-1 rounded font-medium text-xs transition-all capitalize flex-1 ${
-                    reportType === type
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "bg-transparent text-gray-600 hover:text-gray-800"
-                  }`}
+                  style={{
+                    flex: 1,
+                    padding: isMobile ? "6px 4px" : "8px 8px",
+                    fontSize: "10px",
+                    fontWeight: "500",
+                    borderRadius: "4px",
+                    border: "none",
+                    cursor: "pointer",
+                    backgroundColor:
+                      reportType === type ? "white" : "transparent",
+                    color:
+                      reportType === type ? COLORS.primary : "#6b7280",
+                    transition: "all 0.2s",
+                  }}
+                  title={
+                    type === "comprehensive"
+                      ? "Comprehensive"
+                      : type === "progress"
+                      ? "Progress"
+                      : "Portfolio"
+                  }
                 >
-                  {type === "comprehensive" ? "Comp" : type === "progress" ? "Prog" : "Port"}
+                  {type === "comprehensive"
+                    ? "Comp"
+                    : type === "progress"
+                    ? "Prog"
+                    : "Port"}
                 </button>
               ))}
             </div>
           </div>
-          <div>
-            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
-              Settings
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 bg-gray-50 rounded border border-gray-200">
-              <input
-                type="checkbox"
-                checked={complianceMode}
-                onChange={(e) => setComplianceMode(e.target.checked)}
-                className="w-3.5 h-3.5 rounded cursor-pointer"
-              />
-              <span style={{ color: "#1a1a2e" }} className="text-xs font-medium">
-                {parentState ? `${STATE_NAMES[parentState]} Mode` : "Compliance"}
-              </span>
-            </label>
-          </div>
-        </div>
 
-        {/* Subject Selection Grid */}
-        <div className="mb-3">
-          <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
-            Subjects
-          </label>
-          {selectedChildren.length === 0 ? (
-            <p style={{ color: "#555" }} className="text-xs p-2 bg-gray-50 rounded">
-              👉 Select children first
-            </p>
-          ) : availableSubjects.length === 0 ? (
-            <p style={{ color: "#555" }} className="text-xs p-2 bg-gray-50 rounded">
-              ⚠️ No subjects found. Log activities first.
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-              {availableSubjects.map((subject) => (
-                <button
-                  key={subject}
-                  onClick={() => toggleSubjectSelection(subject)}
-                  className={`px-2 py-1.5 rounded font-medium text-xs transition-all gap-1 flex items-center justify-center ${
-                    selectedSubjects.includes(subject)
-                      ? "text-white shadow-sm"
-                      : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"
-                  }`}
-                  style={
-                    selectedSubjects.includes(subject)
-                      ? {
-                          backgroundColor: SUBJECT_COLORS[subject] || "#9ca3af",
-                          color: "white",
-                        }
-                      : { color: "#1a1a2e" }
-                  }
-                >
-                  <span className="text-sm">{SUBJECT_ICONS[subject] || "📝"}</span>
-                  <span className="hidden sm:inline">{subject}</span>
-                </button>
-              ))}
+          {/* Subject Selection Grid - Conditional (Only if child selected) */}
+          {selectedChildren.length > 0 && (
+            <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
+              <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+                Subjects
+              </label>
+              {availableSubjects.length === 0 ? (
+                <p style={{ color: "#555", fontSize: "11px", padding: "8px", backgroundColor: "#f9fafb", borderRadius: "4px" }}>
+                  ⚠️ No subjects found. Log activities first.
+                </p>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? "6px" : "8px" }}>
+                  {availableSubjects.map((subject) => (
+                    <button
+                      key={subject}
+                      onClick={() => toggleSubjectSelection(subject)}
+                      style={{
+                        padding: isMobile ? "6px 8px" : "8px 10px",
+                        fontSize: "10px",
+                        fontWeight: "500",
+                        borderRadius: "4px",
+                        border: selectedSubjects.includes(subject)
+                          ? "none"
+                          : "1px solid #d1d5db",
+                        backgroundColor: selectedSubjects.includes(subject)
+                          ? SUBJECT_COLORS[subject] || "#9ca3af"
+                          : "white",
+                        color: selectedSubjects.includes(subject)
+                          ? "white"
+                          : "#1a1a2e",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "4px",
+                        minHeight: isMobile ? "28px" : "32px",
+                      }}
+                    >
+                      <span>{SUBJECT_ICONS[subject] || "📝"}</span>
+                      <span className="hidden sm:inline">{subject}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Generation Status - Conditional (Only during generation) */}
+          {isGenerating && (
+            <div
+              style={{
+                marginBottom: isMobile ? "8px" : "12px",
+                padding: isMobile ? "8px" : "10px",
+                backgroundColor: "#eff6ff",
+                border: `1px solid #bfdbfe`,
+                borderRadius: "6px",
+              }}
+            >
+              <p style={{ color: "#1a1a2e", fontSize: "11px", fontWeight: "500", marginBottom: "6px" }}>
+                📊 Generating ({generationTimeLeft}s)...
+              </p>
+              <div
+                style={{
+                  width: "100%",
+                  backgroundColor: "#e5e7eb",
+                  borderRadius: "9999px",
+                  height: "6px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${((30 - generationTimeLeft) / 30) * 100}%`,
+                    backgroundColor: COLORS.primary,
+                    transition: "width 0.1s linear",
+                    height: "100%",
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
 
-        {/* Generation Status */}
-        {isGenerating && (
-          <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
-            <p style={{ color: "#1a1a2e" }} className="text-xs font-medium mb-1">
-              📊 Generating ({generationTimeLeft}s)...
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div
-                style={{
-                  width: `${((30 - generationTimeLeft) / 30) * 100}%`,
-                  backgroundColor: COLORS.primary,
-                  transition: "width 0.1s linear",
-                }}
-                className="h-1.5 rounded-full"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-2 flex-col sm:flex-row">
+        {/* FIXED FOOTER - Download & Cancel */}
+        <div
+          style={{
+            position: "sticky",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: "white",
+            borderTop: "1px solid #e5e7eb",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: isMobile ? "6px" : "8px",
+            padding: isMobile ? "8px" : "10px",
+            flexShrink: 0,
+          }}
+        >
           <button
             onClick={handleGenerateReport}
             disabled={
@@ -770,20 +923,63 @@ Create a professional homeschool report document.`;
               backgroundColor: isGenerating
                 ? "#999"
                 : selectedChildren.length === 0 || selectedSubjects.length === 0
-                ? "#ccc"
+                ? "#d1d5db"
                 : COLORS.primary,
+              color: "white",
+              padding: isMobile ? "8px 10px" : "10px 12px",
+              fontSize: isMobile ? "11px" : "12px",
+              fontWeight: "600",
+              borderRadius: "6px",
+              border: "none",
+              cursor: isGenerating || selectedChildren.length === 0 || selectedSubjects.length === 0
+                ? "not-allowed"
+                : "pointer",
+              transition: "opacity 0.2s",
+              opacity:
+                isGenerating ||
+                selectedChildren.length === 0 ||
+                selectedSubjects.length === 0
+                  ? 0.6
+                  : 1,
             }}
-            className="flex-1 px-3 py-2 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-xs sm:text-sm flex items-center justify-center"
+            onMouseEnter={(e) => {
+              if (!isGenerating && selectedChildren.length > 0 && selectedSubjects.length > 0) {
+                e.currentTarget.style.opacity = "0.9";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isGenerating && selectedChildren.length > 0 && selectedSubjects.length > 0) {
+                e.currentTarget.style.opacity = "1";
+              }
+            }}
           >
-            {isGenerating
-              ? `Generating (${generationTimeLeft}s)...`
-              : "📥 Download Reports"}
+            {isGenerating ? `Gen... ${generationTimeLeft}s` : "📥 Download"}
           </button>
           <button
             onClick={onClose}
             disabled={isGenerating}
-            style={{ color: "#1a1a2e", borderColor: "#999" }}
-            className="flex-1 px-3 py-2 border font-semibold rounded-lg hover:bg-gray-50 text-xs sm:text-sm flex items-center justify-center disabled:opacity-50"
+            style={{
+              backgroundColor: "white",
+              color: "#1a1a2e",
+              padding: isMobile ? "8px 10px" : "10px 12px",
+              fontSize: isMobile ? "11px" : "12px",
+              fontWeight: "600",
+              borderRadius: "6px",
+              border: "1px solid #d1d5db",
+              cursor: isGenerating ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              opacity: isGenerating ? 0.5 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!isGenerating) {
+                e.currentTarget.style.backgroundColor = "#f3f4f6";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isGenerating) {
+                e.currentTarget.style.backgroundColor = "white";
+              }
+            }}
           >
             Cancel
           </button>
