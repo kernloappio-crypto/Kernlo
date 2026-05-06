@@ -486,26 +486,34 @@ Create a professional homeschool report document.`;
           </div>
         </div>
 
-        {/* Children Selection */}
+        {/* Children Selection - WITH CHECKBOXES */}
         <div>
           <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
             Children
           </label>
-          <div className="flex flex-wrap gap-2">
-            {kids.map((kid) => (
-              <button
-                key={kid.id}
-                onClick={() => toggleChildSelection(kid.id)}
-                style={{
-                  backgroundColor: selectedChildren.includes(kid.id) ? COLORS.primary : "white",
-                  color: selectedChildren.includes(kid.id) ? "white" : COLORS.dark,
-                  borderColor: COLORS.primary,
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
-              >
-                {kid.name}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3">
+            {kids.map((kid) => {
+              const isSelected = selectedChildren.includes(kid.id);
+              return (
+                <div key={kid.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`child-${kid.id}`}
+                    checked={isSelected}
+                    onChange={() => toggleChildSelection(kid.id)}
+                    className="w-4 h-4 rounded cursor-pointer"
+                    style={{ accentColor: COLORS.primary }}
+                  />
+                  <label
+                    htmlFor={`child-${kid.id}`}
+                    style={{ color: COLORS.dark }}
+                    className="text-sm font-medium cursor-pointer flex-1"
+                  >
+                    {kid.name}
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -537,16 +545,16 @@ Create a professional homeschool report document.`;
           </div>
         )}
 
-        {/* Report Type Selector - Icon-only buttons */}
+        {/* Report Type Selector - TEXT BUTTONS */}
         <div>
           <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
             Report Type
           </label>
           <div className="flex gap-2">
             {[
-              { id: "progress", label: "📈 Progress", icon: "📈" },
-              { id: "comprehensive", label: "📄 Comprehensive", icon: "📄" },
-              { id: "portfolio", label: "🎯 Portfolio", icon: "🎯" },
+              { id: "progress", label: "Progress" },
+              { id: "comprehensive", label: "Comprehensive" },
+              { id: "portfolio", label: "Portfolio" },
             ].map((type) => (
               <button
                 key={type.id}
@@ -556,10 +564,9 @@ Create a professional homeschool report document.`;
                   color: reportType === type.id ? "white" : COLORS.dark,
                   borderColor: COLORS.primary,
                 }}
-                className="flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-all"
-                title={type.label}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-all whitespace-nowrap"
               >
-                {type.icon}
+                {type.label}
               </button>
             ))}
           </div>
