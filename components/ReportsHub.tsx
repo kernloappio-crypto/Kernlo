@@ -546,226 +546,219 @@ Create a professional homeschool report document.`;
   return (
     <div
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-      className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto"
+      className="fixed inset-0 flex items-center justify-center p-3 z-50"
       onClick={onClose}
     >
       <div
         style={{ backgroundColor: "white", borderRadius: "12px" }}
-        className="p-6 sm:p-8 max-w-2xl w-full my-8"
+        className="p-3 sm:p-4 max-w-2xl w-full max-h-[95vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ color: "#1a1a2e" }} className="text-lg sm:text-2xl font-bold mb-6">
-          📊 Reports Hub
+        {/* Header */}
+        <h2 style={{ color: "#1a1a2e" }} className="text-xl sm:text-2xl font-bold mb-3">
+          📊 Reports for Your Children
         </h2>
 
-        <div className="space-y-6 mb-6 max-h-96 overflow-y-auto">
-          {/* Child Selection - Checkboxes */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold">
-                Select Children
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={selectAllChildren}
-                  className="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={clearAllChildren}
-                  className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-100 rounded"
-                >
-                  Clear
-                </button>
-              </div>
+        {/* Child Selection - Compact Grid */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold">
+              Children
+            </label>
+            <div className="flex gap-1">
+              <button
+                onClick={selectAllChildren}
+                className="text-xs px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded"
+              >
+                All
+              </button>
+              <button
+                onClick={clearAllChildren}
+                className="text-xs px-2 py-0.5 text-gray-600 hover:bg-gray-100 rounded"
+              >
+                Clear
+              </button>
             </div>
-            <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
-              {kids.length === 0 ? (
-                <p style={{ color: "#555" }} className="text-sm">
-                  ⚠️ No children available. Please add a child first.
-                </p>
-              ) : (
-                kids.map((kid) => (
-                  <button
-                    key={kid.id}
-                    onClick={() => toggleChildSelection(kid.id)}
-                    className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center cursor-pointer hover:shadow-md active:scale-95 ${
-                      selectedChildren.includes(kid.id)
-                        ? "bg-blue-500 text-white shadow-md"
-                        : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
-                    }`}
-                    style={
-                      selectedChildren.includes(kid.id)
-                        ? { backgroundColor: COLORS.primary, color: "white" }
-                        : { color: "#1a1a2e" }
-                    }
-                  >
-                    {kid.name}
-                  </button>
-                ))
-              )}
-            </div>
-            {selectedChildren.length > 0 && (
-              <p style={{ color: COLORS.primary }} className="text-xs mt-2 font-medium">
-                {selectedChildren.length} child{selectedChildren.length > 1 ? "ren" : ""} selected
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1">
+            {kids.length === 0 ? (
+              <p style={{ color: "#555" }} className="text-xs">
+                ⚠️ No children available
               </p>
+            ) : (
+              kids.map((kid) => (
+                <button
+                  key={kid.id}
+                  onClick={() => toggleChildSelection(kid.id)}
+                  className={`px-2 py-1.5 rounded font-medium text-xs transition-all cursor-pointer ${
+                    selectedChildren.includes(kid.id)
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"
+                  }`}
+                  style={
+                    selectedChildren.includes(kid.id)
+                      ? { backgroundColor: COLORS.primary, color: "white" }
+                      : { color: "#1a1a2e" }
+                  }
+                >
+                  {kid.name}
+                </button>
+              ))
             )}
           </div>
+          {selectedChildren.length > 0 && (
+            <p style={{ color: COLORS.primary }} className="text-xs font-medium">
+              {selectedChildren.length} selected
+            </p>
+          )}
+        </div>
 
-          {/* Date Presets */}
-          <div>
-            <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
-              Quick Date Presets
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {DATE_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() =>
-                    applyDatePreset(preset.days, preset.preset)
-                  }
-                  className="px-4 py-2 text-sm font-medium rounded-lg border-2 border-gray-300 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all"
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
+        {/* Date Presets & Custom Dates */}
+        <div className="mb-3">
+          <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
+            Date Range
+          </label>
+          <div className="flex gap-1 mb-2 flex-wrap">
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() =>
+                  applyDatePreset(preset.days, preset.preset)
+                }
+                className="px-2 py-1 text-xs font-medium rounded border border-gray-300 text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all bg-white"
+              >
+                {preset.label}
+              </button>
+            ))}
           </div>
-
-          {/* Custom Date Range */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                Start Date
+              <label style={{ color: "#555" }} className="text-xs font-medium block mb-1">
+                Start
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
+                className="w-full px-2 py-1.5 border rounded text-xs"
               />
             </div>
             <div>
-              <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-2">
-                End Date
+              <label style={{ color: "#555" }} className="text-xs font-medium block mb-1">
+                End
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
+                className="w-full px-2 py-1.5 border rounded text-xs"
               />
             </div>
           </div>
+        </div>
 
-          {/* Subject Selection with Colors & Icons */}
+        {/* Report Type & Compliance Toggle - Inline */}
+        <div className="mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
-              Select Subjects
-            </label>
-            <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
-              {selectedChildren.length === 0 ? (
-                <p style={{ color: "#555" }} className="text-sm">
-                  👉 Select children first to see available subjects
-                </p>
-              ) : availableSubjects.length === 0 ? (
-                <p style={{ color: "#555" }} className="text-sm">
-                  ⚠️ No subjects found. Log some activities first for the selected children.
-                </p>
-              ) : (
-                availableSubjects.map((subject) => (
-                  <button
-                    key={subject}
-                    onClick={() => toggleSubjectSelection(subject)}
-                    className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 min-h-[44px] flex items-center justify-center gap-2 cursor-pointer hover:shadow-md active:scale-95 ${
-                      selectedSubjects.includes(subject)
-                        ? "text-white shadow-md"
-                        : "bg-white border-2 border-gray-300 text-gray-700 hover:border-gray-400"
-                    }`}
-                    style={
-                      selectedSubjects.includes(subject)
-                        ? {
-                            backgroundColor: SUBJECT_COLORS[subject] || "#9ca3af",
-                            color: "white",
-                          }
-                        : { color: "#1a1a2e" }
-                    }
-                  >
-                    <span>{SUBJECT_ICONS[subject] || "📝"}</span>
-                    {subject}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Report Type Segmented Control */}
-          <div>
-            <label style={{ color: "#1a1a2e" }} className="block text-sm font-semibold mb-3">
+            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
               Report Type
             </label>
-            <div className="flex gap-2 p-2 bg-gray-100 rounded-lg w-fit">
+            <div className="flex gap-1 p-1 bg-gray-100 rounded w-full">
               {["progress", "comprehensive", "portfolio"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setReportType(type as "progress" | "comprehensive" | "portfolio")}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all capitalize ${
+                  className={`px-2 py-1 rounded font-medium text-xs transition-all capitalize flex-1 ${
                     reportType === type
                       ? "bg-white text-blue-600 shadow-sm"
                       : "bg-transparent text-gray-600 hover:text-gray-800"
                   }`}
                 >
-                  {type}
+                  {type === "comprehensive" ? "Comp" : type === "progress" ? "Prog" : "Port"}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Compliance Mode Toggle */}
           <div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
+              Settings
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer px-2 py-1.5 bg-gray-50 rounded border border-gray-200">
               <input
                 type="checkbox"
                 checked={complianceMode}
                 onChange={(e) => setComplianceMode(e.target.checked)}
-                className="w-5 h-5 rounded cursor-pointer"
+                className="w-3.5 h-3.5 rounded cursor-pointer"
               />
-              <span style={{ color: "#1a1a2e" }} className="text-sm font-semibold">
-                {parentState ? `${STATE_NAMES[parentState]} Compliance Mode` : "Compliance Mode"} (Core subjects only)
+              <span style={{ color: "#1a1a2e" }} className="text-xs font-medium">
+                {parentState ? `${STATE_NAMES[parentState]} Mode` : "Compliance"}
               </span>
             </label>
           </div>
         </div>
 
-        {/* Warning & Status */}
-        <div className="mb-6">
-          {isGenerating && (
-            <div className="p-3 bg-blue-50 rounded border border-blue-200">
-              <p style={{ color: "#1a1a2e" }} className="text-sm font-medium">
-                📊 Generating Report ({generationTimeLeft}s)...
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div
-                  style={{
-                    width: `${((30 - generationTimeLeft) / 30) * 100}%`,
-                    backgroundColor: COLORS.primary,
-                    transition: "width 0.1s linear",
-                  }}
-                  className="h-2 rounded-full"
-                />
-              </div>
-            </div>
-          )}
-          {!isGenerating && (
-            <p style={{ color: "#ff6b6b" }} className="text-xs p-3 bg-red-50 rounded border border-red-200">
-              ⚠️ Report generation takes ~30 seconds. Please click once and wait.
+        {/* Subject Selection Grid */}
+        <div className="mb-3">
+          <label style={{ color: "#1a1a2e" }} className="text-xs font-semibold block mb-1.5">
+            Subjects
+          </label>
+          {selectedChildren.length === 0 ? (
+            <p style={{ color: "#555" }} className="text-xs p-2 bg-gray-50 rounded">
+              👉 Select children first
             </p>
+          ) : availableSubjects.length === 0 ? (
+            <p style={{ color: "#555" }} className="text-xs p-2 bg-gray-50 rounded">
+              ⚠️ No subjects found. Log activities first.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+              {availableSubjects.map((subject) => (
+                <button
+                  key={subject}
+                  onClick={() => toggleSubjectSelection(subject)}
+                  className={`px-2 py-1.5 rounded font-medium text-xs transition-all gap-1 flex items-center justify-center ${
+                    selectedSubjects.includes(subject)
+                      ? "text-white shadow-sm"
+                      : "bg-white border border-gray-300 text-gray-700 hover:border-gray-400"
+                  }`}
+                  style={
+                    selectedSubjects.includes(subject)
+                      ? {
+                          backgroundColor: SUBJECT_COLORS[subject] || "#9ca3af",
+                          color: "white",
+                        }
+                      : { color: "#1a1a2e" }
+                  }
+                >
+                  <span className="text-sm">{SUBJECT_ICONS[subject] || "📝"}</span>
+                  <span className="hidden sm:inline">{subject}</span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
+        {/* Generation Status */}
+        {isGenerating && (
+          <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+            <p style={{ color: "#1a1a2e" }} className="text-xs font-medium mb-1">
+              📊 Generating ({generationTimeLeft}s)...
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div
+                style={{
+                  width: `${((30 - generationTimeLeft) / 30) * 100}%`,
+                  backgroundColor: COLORS.primary,
+                  transition: "width 0.1s linear",
+                }}
+                className="h-1.5 rounded-full"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
-        <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+        <div className="flex gap-2 flex-col sm:flex-row">
           <button
             onClick={handleGenerateReport}
             disabled={
@@ -779,19 +772,18 @@ Create a professional homeschool report document.`;
                 : selectedChildren.length === 0 || selectedSubjects.length === 0
                 ? "#ccc"
                 : COLORS.primary,
-              minHeight: "44px",
             }}
-            className="flex-1 px-4 py-2.5 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center"
+            className="flex-1 px-3 py-2 text-white font-semibold rounded-lg hover:opacity-90 disabled:cursor-not-allowed text-xs sm:text-sm flex items-center justify-center"
           >
             {isGenerating
-              ? `Generating Report (${generationTimeLeft}s)...`
+              ? `Generating (${generationTimeLeft}s)...`
               : "📥 Download Reports"}
           </button>
           <button
             onClick={onClose}
             disabled={isGenerating}
-            style={{ color: "#1a1a2e", borderColor: "#333", minHeight: "44px" }}
-            className="flex-1 px-4 py-2.5 border font-semibold rounded-lg hover:bg-gray-50 text-sm sm:text-base flex items-center justify-center disabled:opacity-50"
+            style={{ color: "#1a1a2e", borderColor: "#999" }}
+            className="flex-1 px-3 py-2 border font-semibold rounded-lg hover:bg-gray-50 text-xs sm:text-sm flex items-center justify-center disabled:opacity-50"
           >
             Cancel
           </button>
