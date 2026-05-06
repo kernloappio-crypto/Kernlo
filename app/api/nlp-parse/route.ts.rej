@@ -1,0 +1,13 @@
+--- app/api/nlp-parse/route.ts
++++ app/api/nlp-parse/route.ts
+@@ -244,8 +244,8 @@
+       // - minutes: must be > 0 (not null, not 0, not defaulted)
+       // - subject: must be present (not null, not "Extracurricular" as fallback)
+       const isHighConfidence = normalizedData.confidence >= 0.9;
+       const hasRequiredFields =
+         (normalizedData.students?.length || 0) > 0 &&
+         Boolean(normalizedData.subject) &&
+-        Boolean(normalizedData.minutes) &&
+-        normalizedData.minutes > 0;
++        normalizedData.minutes !== null &&
++        normalizedData.minutes > 0;

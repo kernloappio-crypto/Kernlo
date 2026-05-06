@@ -34,16 +34,6 @@ interface Activity {
   activity_type?: string;
 }
 
-interface GeneratedReport {
-  id: string;
-  child_name: string;
-  date_range: string;
-  date_generated: string;
-  report_type: string;
-  start_date: string;
-  end_date: string;
-}
-
 interface Kid {
   id: string;
   name: string;
@@ -129,7 +119,6 @@ export default function KidDetailPage() {
   const [userId, setUserId] = useState("");
   const [kid, setKid] = useState<Kid | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
   const [fieldTrips, setFieldTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,19 +212,7 @@ export default function KidDetailPage() {
           setActivities([]);
         }
 
-        // Load generated reports
-        try {
-          const { data: generatedReportsData } = await supabase
-            .from("generated_reports")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("kid_id", kidId)
-            .order("date_generated", { ascending: false });
-          setGeneratedReports((generatedReportsData as GeneratedReport[]) || []);
-        } catch (err) {
-          console.error("Error loading generated reports:", err);
-          setGeneratedReports([]);
-        }
+
 
         // Load goals
         try {
@@ -326,18 +303,7 @@ export default function KidDetailPage() {
         const monthlyDays = await getAttendanceDaysMonthly(userId, kid.name, currentYear, currentMonth);
         setAttendanceDaysMonth(monthlyDays);
 
-        // Refresh generated reports
-        try {
-          const { data: generatedReportsData } = await supabase
-            .from("generated_reports")
-            .select("*")
-            .eq("user_id", userId)
-            .eq("kid_id", kidId)
-            .order("date_generated", { ascending: false });
-          setGeneratedReports((generatedReportsData as GeneratedReport[]) || []);
-        } catch (err) {
-          console.error("Error refreshing generated reports:", err);
-        }
+
       } catch (err) {
         console.error("Error refreshing attendance:", err);
       }
@@ -809,56 +775,7 @@ export default function KidDetailPage() {
             </div>
           </div>
 
-          {/* Field Trips Card */}
-          <div
-            onClick={() => router.push(`/dashboard/${kid.id}/field-trips`)}
-            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
-            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
-          >
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              🚌 Field Trips
-            </h3>
-            <p style={{ color: "#555" }} className="text-sm mb-3">
-              Museums, nature, educational trips
-            </p>
-            <div className="flex items-center justify-between">
-              <span style={{ color: "#999" }} className="text-xs">This month</span>
-              <span style={{ color: COLORS.accent1 }} className="text-lg font-bold">
-                {(() => {
-                  const now = new Date();
-                  const currentMonth = now.getMonth() + 1;
-                  const currentYear = now.getFullYear();
-                  return fieldTrips.filter((f: any) => {
-                    // TIMEZONE FIX: Parse date string directly without UTC conversion
-                    const parts = f.date.split('-');
-                    const fYear = parseInt(parts[0], 10);
-                    const fMonth = parseInt(parts[1], 10);
-                    return fMonth === currentMonth && fYear === currentYear;
-                  }).length;
-                })()}
-              </span>
-            </div>
-          </div>
 
-          {/* Reports Card */}
-          <div
-            onClick={() => router.push(`/dashboard/${kid.id}/reports`)}
-            style={{ backgroundColor: "white", borderRadius: "12px", cursor: "pointer" }}
-            className="p-4 sm:p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all"
-          >
-            <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
-              📊 Reports
-            </h3>
-            <p style={{ color: "#555" }} className="text-sm mb-3">
-              View all generated reports
-            </p>
-            <div className="flex items-center justify-between">
-              <span style={{ color: "#999" }} className="text-xs">Generated</span>
-              <span style={{ color: COLORS.secondary }} className="text-lg font-bold">
-                {generatedReports.length}
-              </span>
-            </div>
-          </div>
 
           {/* Transcript Card */}
           <ErrorBoundary>
