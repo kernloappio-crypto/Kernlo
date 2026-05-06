@@ -167,6 +167,11 @@ export default function ReportsHub({
       return;
     }
 
+    if (!startDate || !endDate) {
+      alert("Please set start and end dates");
+      return;
+    }
+
     setIsGenerating(true);
     setGenerationTimeLeft(30);
 
@@ -199,6 +204,8 @@ export default function ReportsHub({
       }
 
       const selectedKids = kids.filter((k) => selectedChildren.includes(k.id));
+      let successCount = 0;
+      let errorCount = 0;
 
       for (const kid of selectedKids) {
         // Get activities for this kid
@@ -251,6 +258,7 @@ export default function ReportsHub({
 
         if (totalActivities === 0) {
           console.log(`No activities for ${kid.name}`);
+          errorCount++;
           continue;
         }
 
@@ -265,6 +273,7 @@ export default function ReportsHub({
 
         if (complianceMode && relevantActivities.length === 0) {
           console.log(`No compliance subjects found for ${kid.name}`);
+          errorCount++;
           continue;
         }
 
@@ -334,14 +343,20 @@ Create a professional homeschool report document.`;
         const marginTop = 15;
         let yPosition = marginTop;
 
+        // Determine title based on report type and compliance mode
+        let reportTitle = "COMPREHENSIVE PROGRESS REPORT";
+        if (complianceMode) {
+          reportTitle = "TEXAS COMPLIANCE REPORT";
+        } else if (reportType === "progress") {
+          reportTitle = "PROGRESS SUMMARY";
+        } else if (reportType === "portfolio") {
+          reportTitle = "PORTFOLIO & ACHIEVEMENTS";
+        }
+
         // Title
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
-        doc.text(
-          complianceMode ? "COMPLIANCE REPORT" : "COMPREHENSIVE PROGRESS REPORT",
-          marginLeft,
-          yPosition
-        );
+        doc.text(reportTitle, marginLeft, yPosition);
         yPosition += 10;
 
         // Student info
@@ -420,19 +435,28 @@ Create a professional homeschool report document.`;
 
             if (error) {
               console.error("Database insert error:", error.message);
+              errorCount++;
             } else {
               console.log(`✅ Report logged for ${kid.name}`);
+              successCount++;
             }
           } catch (e) {
             console.error("Database insert exception:", e);
+            errorCount++;
           }
         }
       }
 
       clearInterval(timer);
       setIsGenerating(false);
-      onClose();
-      alert(`✅ Reports generated for ${selectedChildren.length} child${selectedChildren.length > 1 ? "ren" : ""}`);
+
+      // Show result message
+      if (successCount > 0) {
+        alert(`✅ Successfully generated ${successCount} report${successCount > 1 ? "s" : ""}!`);
+        onClose();
+      } else if (errorCount > 0) {
+        alert(`⚠️ Could not generate reports. Please check that selected children have activities logged for the date range.`);
+      }
     } catch (error) {
       console.error("Error generating reports:", error);
       clearInterval(timer);
@@ -485,7 +509,7 @@ Create a professional homeschool report document.`;
             <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
               {kids.length === 0 ? (
                 <p style={{ color: "#555" }} className="text-sm">
-                  No children available
+                  ⚠️ No children available. Please add a child first.
                 </p>
               ) : (
                 kids.map((kid) => (
@@ -567,9 +591,13 @@ Create a professional homeschool report document.`;
               Select Subjects
             </label>
             <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-gray-50">
-              {availableSubjects.length === 0 ? (
+              {selectedChildren.length === 0 ? (
                 <p style={{ color: "#555" }} className="text-sm">
-                  Select children first to see available subjects
+                  👉 Select children first to see available subjects
+                </p>
+              ) : availableSubjects.length === 0 ? (
+                <p style={{ color: "#555" }} className="text-sm">
+                  ⚠️ No subjects found. Log some activities first for the selected children.
                 </p>
               ) : (
                 availableSubjects.map((subject) => (
