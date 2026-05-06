@@ -64,9 +64,9 @@ const SUBJECT_ICONS: { [key: string]: string } = {
 };
 
 const DATE_PRESETS = [
-  { label: "Last 7 Days", days: 7 },
-  { label: "This Month", days: null, preset: "month" },
-  { label: "Current Semester", days: null, preset: "semester" },
+  { label: "7D", days: 7 },
+  { label: "MTD", days: null, preset: "month" },
+  { label: "Semester", days: null, preset: "semester" },
 ];
 
 // State-to-full name mapping for compliance reports
@@ -122,8 +122,9 @@ export default function ReportsHub({
   const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
   const [fieldTripActivities, setFieldTripActivities] = useState<any[]>([]);
   const [parentState, setParentState] = useState<string>("");
+  const [viewportWidth, setViewportWidth] = useState(0);
 
-  // Initialize dates on mount and fetch parent state
+  // Initialize dates on mount, fetch parent state, and track viewport width
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -137,6 +138,14 @@ export default function ReportsHub({
 
     // Fetch parent's state from profile
     fetchParentState();
+
+    // Track viewport width for responsive padding adjustments
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [preselectedKidId]);
 
   const fetchParentState = async () => {
@@ -542,7 +551,29 @@ Create a professional homeschool report document.`;
   if (!isOpen) return null;
 
   const availableSubjects = getAvailableSubjects();
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  
+  // Calculate responsive breakpoints
+  const isMicroPhone = viewportWidth < 380;
+  const isSmallPhone = viewportWidth < 480;
+  const isLargePhone = viewportWidth < 640;
+  const isTablet = viewportWidth >= 640;
+  
+  // Determine kids per row based on viewport
+  const kidsPerRow = isSmallPhone ? 2 : isLargePhone ? 3 : 4;
+  
+  // Calculate dynamic padding reduction when 4+ kids selected
+  const hasManyKids = selectedChildren.length >= 4;
+  const paddingReduction = hasManyKids ? 0.85 : 1;
+  const basePadding = isSmallPhone ? 8 : 12;
+  const dynamicPadding = Math.max(basePadding * paddingReduction, 4); // min 4px
+  const baseMargin = isSmallPhone ? 8 : 12;
+  const dynamicMargin = Math.max(baseMargin * paddingReduction, 6); // min 6px
+  
+  const scrollContainerPadding = hasManyKids && isSmallPhone 
+    ? `${dynamicPadding}px ${dynamicPadding}px ${100}px ${dynamicPadding}px`
+    : isSmallPhone 
+    ? `8px 12px 100px 12px`
+    : `12px 16px 80px 16px`;
 
   return (
     <div
@@ -563,47 +594,20 @@ Create a professional homeschool report document.`;
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* HEADER with Compliance Toggle */}
+        {/* HEADER */}
         <div
           style={{
             borderBottom: "1px solid #e5e7eb",
-            padding: isMobile ? "8px 12px" : "12px 16px",
+            padding: isSmallPhone ? "8px 12px" : "12px 16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexShrink: 0,
           }}
         >
-          <h2 style={{ color: "#1a1a2e", fontSize: isMobile ? "16px" : "20px", fontWeight: "bold", margin: 0 }}>
+          <h2 style={{ color: "#1a1a2e", fontSize: isSmallPhone ? "16px" : "20px", fontWeight: "bold", margin: 0 }}>
             📊 Reports Hub
           </h2>
-          {/* Compliance Toggle - Top Right Corner */}
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={complianceMode}
-              onChange={(e) => setComplianceMode(e.target.checked)}
-              style={{
-                width: "14px",
-                height: "14px",
-                cursor: "pointer",
-              }}
-            />
-            <span style={{ color: "#1a1a2e", fontSize: isMobile ? "9px" : "10px", fontWeight: "500" }} className="hidden sm:inline">
-              {parentState && STATE_NAMES[parentState] ? `${STATE_NAMES[parentState]}` : "Compliance"}
-            </span>
-            <span style={{ color: "#1a1a2e", fontSize: "9px", fontWeight: "500" }} className="sm:hidden">
-              Compliance
-            </span>
-          </label>
         </div>
 
         {/* SCROLLABLE CONTENT */}
@@ -611,35 +615,60 @@ Create a professional homeschool report document.`;
           style={{
             flex: 1,
             overflowY: "auto",
-            padding: isMobile ? "8px 12px" : "12px 16px",
-            paddingBottom: isMobile ? "90px" : "75px",
+            padding: scrollContainerPadding,
           }}
         >
-          {/* Child Selection - 3-Column Chips Row */}
-          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
-            <div className="flex items-center justify-between mb-1">
-              <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold">
+          {/* Child Selection - Wrapping Flex Grid with All/Clear Links */}
+          <div style={{ marginBottom: dynamicMargin }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <label style={{ color: "#1a1a2e", fontSize: isSmallPhone ? "11px" : "12px", fontWeight: "600" }}>
                 Children
               </label>
-              <div className="flex gap-0.5">
+              <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   onClick={selectAllChildren}
-                  className="text-xs px-1.5 py-0.5 text-blue-600 hover:bg-blue-50 rounded"
-                  style={{ fontSize: "10px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: COLORS.primary,
+                    fontSize: isSmallPhone ? "10px" : "11px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                 >
                   All
                 </button>
                 <button
                   onClick={clearAllChildren}
-                  className="text-xs px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 rounded"
-                  style={{ fontSize: "10px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#9ca3af",
+                    fontSize: isSmallPhone ? "10px" : "11px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
                 >
                   Clear
                 </button>
               </div>
             </div>
-            {/* 3-Column Grid for Children */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? "6px" : "8px" }}>
+            {/* Wrapping Flex Grid for Children - Responsive Columns */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: isSmallPhone ? "6px" : "8px",
+              }}
+            >
               {kids.length === 0 ? (
                 <p style={{ color: "#555", fontSize: "11px" }}>⚠️ No children</p>
               ) : (
@@ -648,8 +677,9 @@ Create a professional homeschool report document.`;
                     key={kid.id}
                     onClick={() => toggleChildSelection(kid.id)}
                     style={{
-                      padding: isMobile ? "6px 8px" : "8px 10px",
-                      fontSize: isMobile ? "11px" : "12px",
+                      flex: `0 1 calc(50% - ${isSmallPhone ? "3px" : "4px"})`,
+                      padding: isSmallPhone ? "6px 8px" : "8px 10px",
+                      fontSize: isSmallPhone ? "11px" : "12px",
                       backgroundColor: selectedChildren.includes(kid.id)
                         ? COLORS.primary
                         : "white",
@@ -661,8 +691,8 @@ Create a professional homeschool report document.`;
                       fontWeight: "500",
                       cursor: "pointer",
                       transition: "all 0.2s",
+                      textAlign: "center",
                     }}
-                    className="hover:opacity-90"
                   >
                     {selectedChildren.includes(kid.id) ? "✓ " : ""}
                     {kid.name}
@@ -671,26 +701,22 @@ Create a professional homeschool report document.`;
               )}
             </div>
             {selectedChildren.length > 0 && (
-              <p style={{ color: COLORS.primary, fontSize: "10px", marginTop: "4px" }} className="font-medium">
+              <p style={{ color: COLORS.primary, fontSize: "10px", marginTop: "4px", fontWeight: "500" }}>
                 {selectedChildren.length} selected
               </p>
             )}
           </div>
 
-          {/* Presets - Horizontal Scroll */}
-          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
-            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+          {/* Presets - Single Row (3-Column) */}
+          <div style={{ marginBottom: dynamicMargin }}>
+            <label style={{ color: "#1a1a2e", fontSize: isSmallPhone ? "11px" : "12px", fontWeight: "600", display: "block", marginBottom: "6px" }}>
               Presets
             </label>
             <div
               style={{
-                display: "flex",
-                gap: "6px",
-                overflowX: "auto",
-                overflowY: "hidden",
-                scrollBehavior: "smooth",
-                paddingBottom: "4px",
-                WebkitOverflowScrolling: "touch", // smooth momentum scroll on iOS
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: isSmallPhone ? "6px" : "8px",
               }}
             >
               {DATE_PRESETS.map((preset) => (
@@ -698,10 +724,9 @@ Create a professional homeschool report document.`;
                   key={preset.label}
                   onClick={() => applyDatePreset(preset.days, preset.preset)}
                   style={{
-                    padding: isMobile ? "6px 12px" : "8px 16px",
-                    fontSize: "11px",
+                    padding: isSmallPhone ? "6px 8px" : "8px 10px",
+                    fontSize: isSmallPhone ? "10px" : "11px",
                     whiteSpace: "nowrap",
-                    flexShrink: 0,
                     borderRadius: "6px",
                     border: "1px solid #d1d5db",
                     backgroundColor: "white",
@@ -709,6 +734,7 @@ Create a professional homeschool report document.`;
                     fontWeight: "500",
                     cursor: "pointer",
                     transition: "all 0.2s",
+                    textAlign: "center",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = "#3b82f6";
@@ -726,13 +752,13 @@ Create a professional homeschool report document.`;
           </div>
 
           {/* Date Inputs - Start | End (50/50 Split) */}
-          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
-            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+          <div style={{ marginBottom: dynamicMargin }}>
+            <label style={{ color: "#1a1a2e", fontSize: isSmallPhone ? "11px" : "12px", fontWeight: "600", display: "block", marginBottom: "6px" }}>
               Date Range
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isMobile ? "6px" : "8px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: isSmallPhone ? "6px" : "8px" }}>
               <div>
-                <label style={{ color: "#555", fontSize: "10px" }} className="font-medium block mb-0.5">
+                <label style={{ color: "#555", fontSize: "9px", fontWeight: "500", display: "block", marginBottom: "3px" }}>
                   Start
                 </label>
                 <input
@@ -741,7 +767,7 @@ Create a professional homeschool report document.`;
                   onChange={(e) => setStartDate(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: isMobile ? "6px 8px" : "8px 10px",
+                    padding: isSmallPhone ? "6px 8px" : "8px 10px",
                     fontSize: "11px",
                     border: "1px solid #d1d5db",
                     borderRadius: "4px",
@@ -750,7 +776,7 @@ Create a professional homeschool report document.`;
                 />
               </div>
               <div>
-                <label style={{ color: "#555", fontSize: "10px" }} className="font-medium block mb-0.5">
+                <label style={{ color: "#555", fontSize: "9px", fontWeight: "500", display: "block", marginBottom: "3px" }}>
                   End
                 </label>
                 <input
@@ -759,7 +785,7 @@ Create a professional homeschool report document.`;
                   onChange={(e) => setEndDate(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: isMobile ? "6px 8px" : "8px 10px",
+                    padding: isSmallPhone ? "6px 8px" : "8px 10px",
                     fontSize: "11px",
                     border: "1px solid #d1d5db",
                     borderRadius: "4px",
@@ -770,90 +796,158 @@ Create a professional homeschool report document.`;
             </div>
           </div>
 
-          {/* Report Type */}
-          <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
-            <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
-              Report Type
-            </label>
-            <div style={{ display: "flex", gap: "4px", padding: "4px", backgroundColor: "#f3f4f6", borderRadius: "6px" }}>
-              {["progress", "comprehensive", "portfolio"].map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setReportType(type as "progress" | "comprehensive" | "portfolio")}
+          {/* Compliance Toggle + Report Type (Merged Row) */}
+          <div style={{ marginBottom: dynamicMargin }}>
+            <div style={{ display: "flex", alignItems: "center", gap: isSmallPhone ? "8px" : "12px" }}>
+              {/* Compliance Toggle - Switch Style */}
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  flex: 0,
+                }}
+              >
+                <div
                   style={{
-                    flex: 1,
-                    padding: isMobile ? "6px 4px" : "8px 8px",
-                    fontSize: "10px",
-                    fontWeight: "500",
-                    borderRadius: "4px",
-                    border: "none",
-                    cursor: "pointer",
-                    backgroundColor:
-                      reportType === type ? "white" : "transparent",
-                    color:
-                      reportType === type ? COLORS.primary : "#6b7280",
-                    transition: "all 0.2s",
+                    width: "32px",
+                    height: "18px",
+                    backgroundColor: complianceMode ? COLORS.primary : "#d1d5db",
+                    borderRadius: "9999px",
+                    position: "relative",
+                    transition: "background-color 0.2s",
                   }}
-                  title={
-                    type === "comprehensive"
-                      ? "Comprehensive"
-                      : type === "progress"
-                      ? "Progress"
-                      : "Portfolio"
-                  }
+                  onClick={() => setComplianceMode(!complianceMode)}
                 >
-                  {type === "comprehensive"
-                    ? "Comp"
-                    : type === "progress"
-                    ? "Prog"
-                    : "Port"}
-                </button>
-              ))}
+                  <div
+                    style={{
+                      width: "14px",
+                      height: "14px",
+                      backgroundColor: "white",
+                      borderRadius: "50%",
+                      position: "absolute",
+                      top: "2px",
+                      left: complianceMode ? "16px" : "2px",
+                      transition: "left 0.2s",
+                    }}
+                  />
+                </div>
+                <span style={{ color: "#1a1a2e", fontSize: "10px", fontWeight: "500" }}>
+                  {parentState && STATE_NAMES[parentState]
+                    ? STATE_NAMES[parentState].slice(0, 2).toUpperCase()
+                    : "Compliance"}
+                </span>
+              </label>
+
+              {/* Report Type - Icon-Only Segmented Control */}
+              <div style={{ display: "flex", gap: "2px", padding: "3px", backgroundColor: "#f3f4f6", borderRadius: "6px", flex: 1 }}>
+                {[
+                  { type: "progress", icon: "📊", title: "Progress" },
+                  { type: "comprehensive", icon: "📋", title: "Comprehensive" },
+                  { type: "portfolio", icon: "🎨", title: "Portfolio" },
+                ].map(({ type, icon, title }) => (
+                  <button
+                    key={type}
+                    onClick={() => setReportType(type as "progress" | "comprehensive" | "portfolio")}
+                    style={{
+                      flex: 1,
+                      padding: isSmallPhone ? "5px 4px" : "6px 6px",
+                      fontSize: isSmallPhone ? "14px" : "16px",
+                      fontWeight: "500",
+                      borderRadius: "4px",
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor:
+                        reportType === type ? "white" : "transparent",
+                      color: "inherit",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    title={title}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Subject Selection Grid - Conditional (Only if child selected) */}
+          {/* Subject Selection Grid - Icon-Only with Conditional Display */}
+          {selectedChildren.length === 0 && (
+            <div style={{ marginBottom: dynamicMargin }}>
+              <p style={{ color: "#9ca3af", fontSize: "11px", fontWeight: "500" }}>
+                Select a child first
+              </p>
+            </div>
+          )}
           {selectedChildren.length > 0 && (
-            <div style={{ marginBottom: isMobile ? "8px" : "12px" }}>
-              <label style={{ color: "#1a1a2e", fontSize: isMobile ? "11px" : "12px" }} className="font-semibold block mb-1">
+            <div style={{ marginBottom: dynamicMargin }}>
+              <label style={{ color: "#1a1a2e", fontSize: isSmallPhone ? "11px" : "12px", fontWeight: "600", display: "block", marginBottom: "6px" }}>
                 Subjects
               </label>
               {availableSubjects.length === 0 ? (
-                <p style={{ color: "#555", fontSize: "11px", padding: "8px", backgroundColor: "#f9fafb", borderRadius: "4px" }}>
+                <p style={{ color: "#555", fontSize: "11px" }}>
                   ⚠️ No subjects found. Log activities first.
                 </p>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? "6px" : "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isSmallPhone ? "6px" : "8px" }}>
                   {availableSubjects.map((subject) => (
-                    <button
+                    <div
                       key={subject}
-                      onClick={() => toggleSubjectSelection(subject)}
-                      style={{
-                        padding: isMobile ? "6px 8px" : "8px 10px",
-                        fontSize: "10px",
-                        fontWeight: "500",
-                        borderRadius: "4px",
-                        border: selectedSubjects.includes(subject)
-                          ? "none"
-                          : "1px solid #d1d5db",
-                        backgroundColor: selectedSubjects.includes(subject)
-                          ? SUBJECT_COLORS[subject] || "#9ca3af"
-                          : "white",
-                        color: selectedSubjects.includes(subject)
-                          ? "white"
-                          : "#1a1a2e",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "4px",
-                        minHeight: isMobile ? "28px" : "32px",
-                      }}
+                      style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
                     >
-                      <span>{SUBJECT_ICONS[subject] || "📝"}</span>
-                      <span className="hidden sm:inline">{subject}</span>
-                    </button>
+                      <button
+                        onClick={() => toggleSubjectSelection(subject)}
+                        style={{
+                          padding: isSmallPhone ? "8px" : "10px",
+                          fontSize: isSmallPhone ? "18px" : "20px",
+                          fontWeight: "500",
+                          borderRadius: "6px",
+                          border: selectedSubjects.includes(subject)
+                            ? "2px solid " + (SUBJECT_COLORS[subject] || "#9ca3af")
+                            : "1px solid #d1d5db",
+                          backgroundColor: selectedSubjects.includes(subject)
+                            ? (SUBJECT_COLORS[subject] || "#9ca3af") + "20"
+                            : "white",
+                          color: "inherit",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "100%",
+                          aspectRatio: "1",
+                        }}
+                        title={subject}
+                      >
+                        {SUBJECT_ICONS[subject] || "📝"}
+                      </button>
+                      {selectedSubjects.includes(subject) && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "-8px",
+                            right: "-8px",
+                            width: "20px",
+                            height: "20px",
+                            backgroundColor: SUBJECT_COLORS[subject] || "#9ca3af",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ✓
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -864,8 +958,8 @@ Create a professional homeschool report document.`;
           {isGenerating && (
             <div
               style={{
-                marginBottom: isMobile ? "8px" : "12px",
-                padding: isMobile ? "8px" : "10px",
+                marginBottom: dynamicMargin,
+                padding: isSmallPhone ? "8px" : "10px",
                 backgroundColor: "#eff6ff",
                 border: `1px solid #bfdbfe`,
                 borderRadius: "6px",
@@ -907,8 +1001,8 @@ Create a professional homeschool report document.`;
             borderTop: "1px solid #e5e7eb",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            gap: isMobile ? "6px" : "8px",
-            padding: isMobile ? "8px" : "10px",
+            gap: isSmallPhone ? "6px" : "8px",
+            padding: isSmallPhone ? "8px 12px" : "10px 16px",
             flexShrink: 0,
           }}
         >
@@ -926,8 +1020,8 @@ Create a professional homeschool report document.`;
                 ? "#d1d5db"
                 : COLORS.primary,
               color: "white",
-              padding: isMobile ? "8px 10px" : "10px 12px",
-              fontSize: isMobile ? "11px" : "12px",
+              padding: isSmallPhone ? "8px 10px" : "10px 12px",
+              fontSize: isSmallPhone ? "11px" : "12px",
               fontWeight: "600",
               borderRadius: "6px",
               border: "none",
@@ -961,8 +1055,8 @@ Create a professional homeschool report document.`;
             style={{
               backgroundColor: "white",
               color: "#1a1a2e",
-              padding: isMobile ? "8px 10px" : "10px 12px",
-              fontSize: isMobile ? "11px" : "12px",
+              padding: isSmallPhone ? "8px 10px" : "10px 12px",
+              fontSize: isSmallPhone ? "11px" : "12px",
               fontWeight: "600",
               borderRadius: "6px",
               border: "1px solid #d1d5db",
