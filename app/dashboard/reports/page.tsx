@@ -221,13 +221,13 @@ export default function ReportsPage() {
         ) : (
           // Desktop: Two-pane layout
           <div className="flex w-full h-full overflow-hidden">
-            {/* Left Pane: Report Generator (30-40%) */}
-            <div style={{ flex: "0 0 35%", borderRight: "1px solid #e5e7eb", overflow: "y-auto" }} className="overflow-y-auto">
+            {/* Left Pane: Report Generator (40%) */}
+            <div style={{ flex: "0 0 40%", borderRight: "1px solid #e5e7eb", overflow: "y-auto" }} className="overflow-y-auto">
               <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={false} onRefresh={() => setRefreshCounter(c => c + 1)} />
             </div>
 
-            {/* Right Pane: Activity Ledger (60-70%) */}
-            <div style={{ flex: "1 1 65%", overflow: "hidden" }} className="overflow-y-auto">
+            {/* Right Pane: Activity Ledger (60%) */}
+            <div style={{ flex: "1 1 60%", overflow: "hidden" }} className="overflow-y-auto">
               <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={false} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
             </div>
           </div>

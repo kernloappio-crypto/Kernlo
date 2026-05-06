@@ -11,6 +11,7 @@ interface Kid {
 interface Activity {
   id: string;
   child_name: string;
+  child_id?: string;
   subject: string;
   duration: number;
   platform: string;
@@ -28,6 +29,30 @@ interface ActivityLedgerProps {
   isMobile: boolean;
   refreshCounter: number;
   onActivityEdited: () => void;
+}
+
+interface CombinedActivity {
+  id: string;
+  child_id: string;
+  child_name: string;
+  subject?: string;
+  activity_name?: string;
+  trip_name?: string;
+  destination?: string;
+  date: string;
+  notes?: string;
+  type: "Activity" | "Field Trip" | "Extracurricular";
+  duration: number;
+  duration_hours: string;
+}
+
+interface GroupedActivities {
+  [childId: string]: {
+    child: Kid;
+    activities: CombinedActivity[];
+    fieldTripCount: number;
+    extracurricularCount: number;
+  };
 }
 
 const COLORS = {
@@ -51,17 +76,6 @@ const SUBJECT_ICONS: { [key: string]: string } = {
   Other: "📝",
 };
 
-const SUBJECT_COLORS: { [key: string]: string } = {
-  Math: "#3b82f6",
-  English: "#8b5cf6",
-  Science: "#10b981",
-  History: "#f59e0b",
-  "Social Studies": "#ef4444",
-  Arts: "#ec4899",
-  "Physical Education": "#14b8a6",
-  Other: "#6b7280",
-};
-
 export default function ActivityLedger({
   userId,
   kids,
@@ -71,28 +85,30 @@ export default function ActivityLedger({
   onActivityEdited,
 }: ActivityLedgerProps) {
   const [ledgerTab, setLedgerTab] = useState<"all" | "field-trips" | "extracurricular">("all");
-  const [ledgerActivities, setLedgerActivities] = useState<any[]>([]);
+  const [groupedActivities, setGroupedActivities] = useState<GroupedActivities>({});
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-  const [editingActivity, setEditingActivity] = useState<any | null>(null);
+  const [expandedKids, setExpandedKids] = useState<Set<string>>(new Set(kids.map(k => k.id)));
+  const [editingActivity, setEditingActivity] = useState<CombinedActivity | null>(null);
   const [editDuration, setEditDuration] = useState("");
   const [editSubject, setEditSubject] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load all activities (core + field trips + extracurricular)
+  // Load and group all activities
   useEffect(() => {
-    loadAllActivities();
-  }, [refreshCounter, ledgerTab]);
+    loadAndGroupActivities();
+  }, [refreshCounter, ledgerTab, sortOrder]);
 
-  const loadAllActivities = async () => {
+  const loadAndGroupActivities = async () => {
     try {
-      let combined: any[] = [];
+      let combined: CombinedActivity[] = [];
 
       // Get core activities
       const coreActivities = activities.map((a) => ({
         ...a,
-        type: "Activity",
+        child_id: kids.find(k => k.name === a.child_name)?.id || "",
+        type: "Activity" as const,
         duration_hours: (a.duration / 60).toFixed(1),
       }));
 
@@ -111,12 +127,13 @@ export default function ActivityLedger({
               const kid = kids.find((k) => k.id === ft.kid_id);
               return {
                 id: ft.id,
+                child_id: ft.kid_id,
                 child_name: kid?.name || "Unknown",
                 trip_name: ft.trip_name,
                 destination: ft.destination,
                 date: ft.date,
                 notes: ft.notes,
-                type: "Field Trip",
+                type: "Field Trip" as const,
                 duration: 0,
                 duration_hours: "-",
               };
@@ -141,11 +158,12 @@ export default function ActivityLedger({
               const kid = kids.find((k) => k.id === ea.kid_id);
               return {
                 id: ea.id,
+                child_id: ea.kid_id,
                 child_name: kid?.name || "Unknown",
                 activity_name: ea.activity_name,
                 date: ea.date,
                 notes: ea.notes,
-                type: "Extracurricular",
+                type: "Extracurricular" as const,
                 duration: 0,
                 duration_hours: "-",
               };
@@ -164,13 +182,47 @@ export default function ActivityLedger({
         return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
       });
 
-      setLedgerActivities(combined);
+      // Group by child_id, preserving kid order
+      const grouped: GroupedActivities = {};
+      
+      kids.forEach((kid) => {
+        grouped[kid.id] = {
+          child: kid,
+          activities: [],
+          fieldTripCount: 0,
+          extracurricularCount: 0,
+        };
+      });
+
+      combined.forEach((activity) => {
+        if (grouped[activity.child_id]) {
+          grouped[activity.child_id].activities.push(activity);
+          
+          if (activity.type === "Field Trip") {
+            grouped[activity.child_id].fieldTripCount += 1;
+          } else if (activity.type === "Extracurricular") {
+            grouped[activity.child_id].extracurricularCount += 1;
+          }
+        }
+      });
+
+      setGroupedActivities(grouped);
     } catch (e) {
       console.error("Error loading activities:", e);
     }
   };
 
-  const handleEditClick = (activity: any) => {
+  const toggleKidExpanded = (childId: string) => {
+    const newExpanded = new Set(expandedKids);
+    if (newExpanded.has(childId)) {
+      newExpanded.delete(childId);
+    } else {
+      newExpanded.add(childId);
+    }
+    setExpandedKids(newExpanded);
+  };
+
+  const handleEditClick = (activity: CombinedActivity) => {
     setEditingActivity(activity);
     setEditDuration(activity.duration_hours || "");
     setEditSubject(activity.subject || "");
@@ -184,7 +236,6 @@ export default function ActivityLedger({
     setIsSaving(true);
     try {
       if (editingActivity.type === "Activity") {
-        // Update core activity
         const { error } = await supabase
           .from("activities")
           .update({
@@ -200,7 +251,6 @@ export default function ActivityLedger({
           return;
         }
       } else if (editingActivity.type === "Field Trip") {
-        // Update field trip
         const { error } = await supabase
           .from("field_trips")
           .update({
@@ -214,7 +264,6 @@ export default function ActivityLedger({
           return;
         }
       } else if (editingActivity.type === "Extracurricular") {
-        // Update extracurricular
         const { error } = await supabase
           .from("extracurricular_activities")
           .update({
@@ -231,7 +280,7 @@ export default function ActivityLedger({
 
       setEditingActivity(null);
       onActivityEdited();
-      loadAllActivities();
+      loadAndGroupActivities();
     } catch (e) {
       console.error("Error saving edit:", e);
       alert("Failed to save changes");
@@ -266,12 +315,16 @@ export default function ActivityLedger({
     }
   };
 
-  const filteredActivities =
-    ledgerTab === "all"
-      ? ledgerActivities
+  const filteredGroup = (activities: CombinedActivity[]) => {
+    return ledgerTab === "all"
+      ? activities
       : ledgerTab === "field-trips"
-      ? ledgerActivities.filter((a) => a.type === "Field Trip")
-      : ledgerActivities.filter((a) => a.type === "Extracurricular");
+      ? activities.filter((a) => a.type === "Field Trip")
+      : activities.filter((a) => a.type === "Extracurricular");
+  };
+
+  const orderedKids = kids;
+  const hasAnyActivities = Object.values(groupedActivities).some(g => g.activities.length > 0);
 
   return (
     <div style={{ backgroundColor: "white", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -320,154 +373,267 @@ export default function ActivityLedger({
         </div>
       </div>
 
-      {/* Content - Desktop Table or Mobile Cards */}
+      {/* Content */}
       <div style={{ flex: 1, overflow: "y-auto" }} className="px-4 sm:px-6 py-4">
-        {filteredActivities.length === 0 ? (
+        {!hasAnyActivities ? (
           <div className="text-center py-8">
             <p style={{ color: "#999" }} className="text-sm">
               No activities to display
             </p>
           </div>
         ) : !isMobile ? (
-          // Desktop: High-density table
-          <div className="overflow-x-auto">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid #e5e7eb", backgroundColor: COLORS.light }}>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600" }}>Date</th>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600" }}>Child Name</th>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600" }}>Subject/Activity</th>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600" }}>Duration</th>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600" }}>Type</th>
-                  <th style={{ color: COLORS.dark, padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: "600" }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredActivities.map((activity, idx) => (
-                  <tr
-                    key={`${activity.id}-${idx}`}
+          // Desktop: Kid-grouped table with accordions
+          <div className="space-y-4">
+            {orderedKids.map((kid) => {
+              const group = groupedActivities[kid.id];
+              if (!group) return null;
+
+              const filteredActivities = filteredGroup(group.activities);
+              const isExpanded = expandedKids.has(kid.id);
+
+              return (
+                <div key={kid.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden" }}>
+                  {/* Sticky Child Header */}
+                  <div
+                    onClick={() => toggleKidExpanded(kid.id)}
                     style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      backgroundColor: idx % 2 === 0 ? "white" : COLORS.light,
+                      backgroundColor: COLORS.light,
+                      borderBottom: isExpanded ? "1px solid #e5e7eb" : "none",
+                      padding: "16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 10,
                     }}
+                    className="hover:bg-opacity-75 transition-all"
                   >
-                    <td style={{ padding: "12px", fontSize: "12px", color: "#666" }}>
-                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "12px", color: COLORS.dark, fontWeight: "500" }}>
-                      {activity.child_name}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "12px", color: COLORS.dark }}>
-                      {activity.subject && (
-                        <span style={{ marginRight: "8px" }}>
-                          {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
-                        </span>
-                      )}
-                      {activity.activity_name && <span>{activity.activity_name}</span>}
-                      {activity.trip_name && <span>{activity.trip_name}</span>}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "12px", color: "#666" }}>
-                      {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                      <span
-                        style={{
-                          backgroundColor: getTypeColor(activity.type),
-                          color: "white",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {getTypeIcon(activity.type)} {activity.type}
+                    <div className="flex items-center gap-3 flex-1">
+                      <span style={{ fontSize: "20px", minWidth: "24px" }}>
+                        {isExpanded ? "▼" : "▶"}
                       </span>
-                    </td>
-                    <td style={{ padding: "12px", textAlign: "center" }}>
-                      <button
-                        onClick={() => handleEditClick(activity)}
-                        style={{ color: COLORS.primary }}
-                        className="text-sm font-medium hover:underline"
-                      >
-                        ✏️ Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="flex flex-col flex-1">
+                        <span style={{ color: COLORS.dark, fontSize: "16px", fontWeight: "700" }}>
+                          {kid.name}
+                        </span>
+                        <span style={{ color: "#666", fontSize: "12px", marginTop: "2px" }}>
+                          Field Trips: {group.fieldTripCount} | Extracurriculars: {group.extracurricularCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Content */}
+                  {isExpanded && (
+                    <div style={{ backgroundColor: "white" }}>
+                      {filteredActivities.length === 0 ? (
+                        <div style={{ padding: "24px", textAlign: "center" }}>
+                          <p style={{ color: "#999", fontSize: "13px" }}>
+                            No activities logged for {kid.name}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
+                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "12%" }}>Date</th>
+                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "48%" }}>Subject/Activity</th>
+                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Duration</th>
+                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Type</th>
+                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "5%" }}>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredActivities.map((activity, idx) => (
+                                <tr
+                                  key={`${activity.id}-${idx}`}
+                                  style={{
+                                    borderBottom: "1px solid #e5e7eb",
+                                    backgroundColor: idx % 2 === 0 ? "white" : "#f9fafb",
+                                  }}
+                                >
+                                  <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
+                                    {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
+                                  </td>
+                                  <td style={{ padding: "10px 12px", fontSize: "12px", color: COLORS.dark }}>
+                                    {activity.subject && (
+                                      <span>
+                                        {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
+                                      </span>
+                                    )}
+                                    {activity.activity_name && <span>{activity.activity_name}</span>}
+                                    {activity.trip_name && (
+                                      <span>
+                                        {activity.trip_name}
+                                        {activity.destination && <span> → {activity.destination}</span>}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
+                                    {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
+                                  </td>
+                                  <td style={{ padding: "10px 12px" }}>
+                                    <span
+                                      style={{
+                                        backgroundColor: getTypeColor(activity.type),
+                                        color: "white",
+                                        padding: "3px 6px",
+                                        borderRadius: "3px",
+                                        fontSize: "10px",
+                                        fontWeight: "600",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {getTypeIcon(activity.type)} {activity.type}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                    <button
+                                      onClick={() => handleEditClick(activity)}
+                                      style={{ color: COLORS.primary }}
+                                      className="text-xs font-medium hover:underline"
+                                    >
+                                      ✏️
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
-          // Mobile: Card layout
-          <div className="space-y-3">
-            {filteredActivities.map((activity) => (
-              <div
-                key={activity.id}
-                style={{
-                  backgroundColor: "white",
-                  border: `1px solid #e5e7eb`,
-                  borderRadius: "8px",
-                  padding: "12px",
-                }}
-              >
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="flex-1">
-                    <p style={{ color: "#666", fontSize: "12px" }}>
-                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
-                    <p style={{ color: COLORS.dark, fontSize: "14px", fontWeight: "600", marginTop: "4px" }}>
-                      {activity.child_name}
-                    </p>
-                  </div>
-                  <span
+          // Mobile: Kid-grouped card layout
+          <div className="space-y-4">
+            {orderedKids.map((kid) => {
+              const group = groupedActivities[kid.id];
+              if (!group) return null;
+
+              const filteredActivities = filteredGroup(group.activities);
+              const isExpanded = expandedKids.has(kid.id);
+
+              return (
+                <div key={kid.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden" }}>
+                  {/* Mobile Child Header */}
+                  <div
+                    onClick={() => toggleKidExpanded(kid.id)}
                     style={{
-                      backgroundColor: getTypeColor(activity.type),
-                      color: "white",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "10px",
-                      fontWeight: "600",
-                      whiteSpace: "nowrap",
+                      backgroundColor: COLORS.light,
+                      borderBottom: isExpanded ? "1px solid #e5e7eb" : "none",
+                      padding: "12px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    {getTypeIcon(activity.type)} {activity.type}
-                  </span>
+                    <div className="flex items-center gap-2 flex-1">
+                      <span style={{ fontSize: "16px" }}>
+                        {isExpanded ? "▼" : "▶"}
+                      </span>
+                      <div className="flex flex-col flex-1">
+                        <span style={{ color: COLORS.dark, fontSize: "14px", fontWeight: "700" }}>
+                          {kid.name}
+                        </span>
+                        <span style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}>
+                          FT: {group.fieldTripCount} | EC: {group.extracurricularCount}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Expandable Content */}
+                  {isExpanded && (
+                    <div style={{ backgroundColor: "white" }}>
+                      {filteredActivities.length === 0 ? (
+                        <div style={{ padding: "16px", textAlign: "center" }}>
+                          <p style={{ color: "#999", fontSize: "12px" }}>
+                            No activities logged for {kid.name}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 p-3">
+                          {filteredActivities.map((activity) => (
+                            <div
+                              key={activity.id}
+                              style={{
+                                backgroundColor: "#f9fafb",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "6px",
+                                padding: "12px",
+                              }}
+                            >
+                              <div className="flex items-start justify-between mb-2 gap-2">
+                                <div className="flex-1">
+                                  <p style={{ color: "#666", fontSize: "11px" }}>
+                                    {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                  </p>
+                                </div>
+                                <span
+                                  style={{
+                                    backgroundColor: getTypeColor(activity.type),
+                                    color: "white",
+                                    padding: "2px 6px",
+                                    borderRadius: "3px",
+                                    fontSize: "9px",
+                                    fontWeight: "600",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {getTypeIcon(activity.type)} {activity.type}
+                                </span>
+                              </div>
+
+                              <div className="mb-2">
+                                {activity.subject && (
+                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                                    {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
+                                  </p>
+                                )}
+                                {activity.activity_name && (
+                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                                    {activity.activity_name}
+                                  </p>
+                                )}
+                                {activity.trip_name && (
+                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                                    {activity.trip_name}
+                                    {activity.destination && <span> → {activity.destination}</span>}
+                                  </p>
+                                )}
+                              </div>
+
+                              {activity.duration_hours !== "-" && (
+                                <p style={{ color: "#666", fontSize: "11px", marginBottom: "8px" }}>
+                                  ⏱️ {activity.duration_hours}h
+                                </p>
+                              )}
+
+                              <button
+                                onClick={() => handleEditClick(activity)}
+                                style={{ backgroundColor: COLORS.primary, color: "white" }}
+                                className="w-full px-3 py-2 rounded text-xs font-medium hover:opacity-90"
+                              >
+                                ✏️ Edit
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                <div className="mb-2">
-                  {activity.subject && (
-                    <p style={{ color: COLORS.dark, fontSize: "13px" }}>
-                      {SUBJECT_ICONS[activity.subject] || "📝"} <strong>{activity.subject}</strong>
-                    </p>
-                  )}
-                  {activity.activity_name && (
-                    <p style={{ color: COLORS.dark, fontSize: "13px" }}>
-                      <strong>{activity.activity_name}</strong>
-                    </p>
-                  )}
-                  {activity.trip_name && (
-                    <p style={{ color: COLORS.dark, fontSize: "13px" }}>
-                      <strong>{activity.trip_name}</strong>
-                      {activity.destination && <span> → {activity.destination}</span>}
-                    </p>
-                  )}
-                </div>
-
-                {activity.duration_hours !== "-" && (
-                  <p style={{ color: "#666", fontSize: "12px", marginBottom: "8px" }}>
-                    ⏱️ {activity.duration_hours}h
-                  </p>
-                )}
-
-                <button
-                  onClick={() => handleEditClick(activity)}
-                  style={{ backgroundColor: COLORS.primary, color: "white" }}
-                  className="w-full px-3 py-2 rounded text-sm font-medium hover:opacity-90"
-                >
-                  ✏️ Edit
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
