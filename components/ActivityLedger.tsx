@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { useReport } from "@/context/ReportContext";
 import { useActivityActions } from "@/context/ActivityActionsContext";
@@ -106,6 +106,8 @@ export default function ActivityLedger({
   const [isSaving, setIsSaving] = useState(false);
   const [mobileActionSheetActivity, setMobileActionSheetActivity] = useState<CombinedActivity | null>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // Load and group all activities
   useEffect(() => {
@@ -313,72 +315,256 @@ export default function ActivityLedger({
 
   return (
     <div style={{ backgroundColor: "white", display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="p-4 sm:p-6">
-        <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4">
-          📋 Activity Ledger
-        </h2>
+      {/* DESKTOP HEADER */}
+      {!isMobile && (
+        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }} className="p-4 sm:p-6">
+          <h2 style={{ color: COLORS.dark }} className="text-lg sm:text-xl font-bold mb-4">
+            📋 Activity Ledger
+          </h2>
 
-        {/* Kid Filter Buttons */}
-        <div className="mb-4">
-          <label style={{ color: "#666" }} className="block text-xs font-medium mb-2">
-            Filter by Child:
-          </label>
-          <KidFilterButtons kids={kids} />
-        </div>
+          {/* Kid Filter Buttons */}
+          <div className="mb-4">
+            <label style={{ color: "#666" }} className="block text-xs font-medium mb-2">
+              Filter by Child:
+            </label>
+            <KidFilterButtons kids={kids} />
+          </div>
 
-        {/* Totals Counter - High Visibility */}
-        {selectedKid && (
-          <TotalsCounter groupedActivities={groupedActivities} ledgerTab={ledgerTab} />
-        )}
+          {/* Totals Counter - High Visibility */}
+          {selectedKid && (
+            <TotalsCounter groupedActivities={groupedActivities} ledgerTab={ledgerTab} />
+          )}
 
-        {/* Stats Bar - Only show if kid is selected */}
-        {selectedKid && currentKidActivities && (
-          <ChildStatsBar
-            childName={currentKidActivities.child.name}
-            fieldTripCount={currentKidActivities.fieldTripCount}
-            extracurricularCount={currentKidActivities.extracurricularCount}
-          />
-        )}
+          {/* Stats Bar - Only show if kid is selected */}
+          {selectedKid && currentKidActivities && (
+            <ChildStatsBar
+              childName={currentKidActivities.child.name}
+              fieldTripCount={currentKidActivities.fieldTripCount}
+              extracurricularCount={currentKidActivities.extracurricularCount}
+            />
+          )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 flex-wrap">
-          {[
-            { id: "all", label: "All Activities" },
-            { id: "field-trips", label: "Field Trips" },
-            { id: "extracurricular", label: "Extracurriculars" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setLedgerTab(tab.id as any)}
-              style={{
-                backgroundColor: ledgerTab === tab.id ? COLORS.primary : "white",
-                color: ledgerTab === tab.id ? "white" : COLORS.dark,
-                borderColor: COLORS.primary,
-              }}
-              className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition-all whitespace-nowrap"
+          {/* Tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { id: "all", label: "All Activities" },
+              { id: "field-trips", label: "Field Trips" },
+              { id: "extracurricular", label: "Extracurriculars" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setLedgerTab(tab.id as any)}
+                style={{
+                  backgroundColor: ledgerTab === tab.id ? COLORS.primary : "white",
+                  color: ledgerTab === tab.id ? "white" : COLORS.dark,
+                  borderColor: COLORS.primary,
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition-all whitespace-nowrap"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Order */}
+          <div className="flex items-center gap-2 mt-3">
+            <label style={{ color: "#666" }} className="text-xs font-medium">
+              Sort:
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+              style={{ borderColor: "#ccc" }}
+              className="px-2 py-1 border rounded text-xs"
             >
-              {tab.label}
-            </button>
-          ))}
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
         </div>
+      )}
 
-        {/* Sort Order */}
-        <div className="flex items-center gap-2 mt-3">
-          <label style={{ color: "#666" }} className="text-xs font-medium">
-            Sort:
-          </label>
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
-            style={{ borderColor: "#ccc" }}
-            className="px-2 py-1 border rounded text-xs"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
+      {/* MOBILE HEADER - COLLAPSED */}
+      {isMobile && (
+        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0, padding: "8px 12px", position: "relative" }}>
+          {/* Single row header: Title icon | Generator/Ledger toggle | Sort icon */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "36px" }}>
+            <div style={{ fontSize: "11px", fontWeight: "600", color: COLORS.dark, display: "flex", alignItems: "center", gap: "6px" }}>
+              📋 Ledger
+            </div>
+
+            {/* Sort Icon Menu */}
+            <div style={{ position: "relative" }} ref={sortMenuRef}>
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "18px",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  minHeight: "32px",
+                  minWidth: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                title="Sort options"
+              >
+                ≡
+              </button>
+
+              {/* Sort Popover Menu */}
+              {showSortMenu && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    backgroundColor: "white",
+                    border: `1px solid #e5e7eb`,
+                    borderRadius: "6px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    zIndex: 1000,
+                    minWidth: "140px",
+                    marginTop: "4px",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setSortOrder("newest");
+                      setShowSortMenu(false);
+                    }}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "10px 14px",
+                      textAlign: "left",
+                      fontSize: "13px",
+                      border: "none",
+                      background: sortOrder === "newest" ? "#f0f7ff" : "white",
+                      cursor: "pointer",
+                      color: COLORS.dark,
+                      borderBottom: "1px solid #e5e7eb",
+                      transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (sortOrder !== "newest") {
+                        (e.target as HTMLElement).style.backgroundColor = "#f5f5f5";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (sortOrder !== "newest") {
+                        (e.target as HTMLElement).style.backgroundColor = "white";
+                      }
+                    }}
+                  >
+                    {sortOrder === "newest" ? "✓ " : ""}Newest First
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortOrder("oldest");
+                      setShowSortMenu(false);
+                    }}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "10px 14px",
+                      textAlign: "left",
+                      fontSize: "13px",
+                      border: "none",
+                      background: sortOrder === "oldest" ? "#f0f7ff" : "white",
+                      cursor: "pointer",
+                      color: COLORS.dark,
+                      transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (sortOrder !== "oldest") {
+                        (e.target as HTMLElement).style.backgroundColor = "#f5f5f5";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (sortOrder !== "oldest") {
+                        (e.target as HTMLElement).style.backgroundColor = "white";
+                      }
+                    }}
+                  >
+                    {sortOrder === "oldest" ? "✓ " : ""}Oldest First
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* MOBILE: STICKY KID FILTER ROW (Sticky to top) */}
+      {isMobile && (
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            backgroundColor: "white",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "6px 12px",
+            zIndex: 20,
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ overflow: "auto", WebkitOverflowScrolling: "touch" }}>
+            <KidFilterButtons kids={kids} />
+          </div>
+
+          {/* Inline Stats - Below selected kid name */}
+          {selectedKid && currentKidActivities && (
+            <div style={{ fontSize: "12px", color: "#666", marginTop: "4px", paddingLeft: "4px" }}>
+              FT: {currentKidActivities.fieldTripCount} | EC: {currentKidActivities.extracurricularCount}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MOBILE: TYPE FILTERS - Scrolls away */}
+      {isMobile && (
+        <div
+          style={{
+            backgroundColor: "white",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "6px 12px",
+            flexShrink: 0,
+            overflow: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <div style={{ display: "flex", gap: "8px", minWidth: "max-content" }}>
+            {[
+              { id: "all", label: "All", icon: "📋" },
+              { id: "field-trips", label: "Trips", icon: "🚌" },
+              { id: "extracurricular", label: "Extras", icon: "🎭" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setLedgerTab(tab.id as any)}
+                style={{
+                  backgroundColor: ledgerTab === tab.id ? COLORS.primary : "white",
+                  color: ledgerTab === tab.id ? "white" : COLORS.dark,
+                  borderColor: COLORS.primary,
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  border: `1px solid ${ledgerTab === tab.id ? COLORS.primary : "#ddd"}`,
+                  borderRadius: "4px",
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto" }} className="px-4 sm:px-6 py-4">
@@ -542,8 +728,8 @@ export default function ActivityLedger({
             </table>
           </div>
         ) : (
-          // Mobile: Card layout for filtered kid
-          <div className="space-y-2 pb-20">
+          // Mobile: CONDENSED CARD LAYOUT - Date | Subject | Checkmark on single line
+          <div style={{ padding: "0 12px", paddingBottom: "80px" }}>
             {displayedActivities.map((activity) => {
               const isPending = activity.status === "pending" || activity.status === "incomplete" || !activity.completed;
               const opacity = isPending ? 0.6 : 1.0;
@@ -554,77 +740,110 @@ export default function ActivityLedger({
                   style={{
                     backgroundColor: "#f9fafb",
                     border: "1px solid #e5e7eb",
-                    borderRadius: "8px",
-                    padding: "14px",
+                    borderRadius: "6px",
+                    padding: "10px 12px",
+                    marginTop: "8px",
                     cursor: "pointer",
                     opacity: opacity,
+                    transition: "background 0.2s",
                   }}
                   onClick={() => handleMobileActionSheet(activity)}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "#f0f0f0";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "#f9fafb";
+                  }}
                 >
-                  <div className="flex items-start justify-between mb-2 gap-2">
-                    <div className="flex-1">
-                      <p style={{ color: "#666", fontSize: "12px" }}>
-                        {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </p>
-                    </div>
-                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                      {isPending && (
-                        <span
-                          style={{
-                            fontSize: "18px",
-                            fontWeight: "bold",
-                            color: "#10b981",
-                          }}
-                          title="Mark as Complete"
-                        >
-                          ✓
+                  {/* ROW 1: Date | Subject/Activity Name | Status Checkmark */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "6px" }}>
+                    {/* Date */}
+                    <span style={{ fontSize: "11px", color: "#666", fontWeight: "500", minWidth: "45px" }}>
+                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+
+                    {/* Subject/Activity Name */}
+                    <div style={{ flex: 1, fontSize: "13px", fontWeight: "600", color: COLORS.dark, display: "flex", alignItems: "center", gap: "4px" }}>
+                      {activity.subject && (
+                        <>
+                          <span style={{ fontSize: "14px" }}>
+                            {SUBJECT_ICONS[activity.subject] || "📝"}
+                          </span>
+                          <span>{activity.subject}</span>
+                        </>
+                      )}
+                      {activity.activity_name && <span>{activity.activity_name}</span>}
+                      {activity.trip_name && (
+                        <span>
+                          {activity.trip_name}
+                          {activity.destination && <span style={{ fontSize: "12px" }}> → {activity.destination}</span>}
                         </span>
                       )}
+                    </div>
+
+                    {/* Status Checkmark */}
+                    {isPending && (
                       <span
                         style={{
-                          backgroundColor: getTypeColor(activity.type),
-                          color: "white",
-                          padding: "3px 8px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          whiteSpace: "nowrap",
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#10b981",
+                          minWidth: "18px",
+                          textAlign: "center",
                         }}
                       >
-                        {getTypeIcon(activity.type)} {activity.type}
+                        ✓
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="mb-2">
-                    {activity.subject && (
-                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "20px" }}>{SUBJECT_ICONS[activity.subject] || "📝"}</span>
-                        {activity.subject}
-                      </p>
-                    )}
-                    {activity.activity_name && (
-                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600" }}>
-                        {activity.activity_name}
-                      </p>
-                    )}
-                    {activity.trip_name && (
-                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600" }}>
-                        {activity.trip_name}
-                        {activity.destination && <span> → {activity.destination}</span>}
-                      </p>
                     )}
                   </div>
 
-                  {activity.duration_hours !== "-" && (
-                    <p style={{ color: "#666", fontSize: "12px", marginBottom: "6px" }}>
-                      ⏱️ {activity.duration_hours}h
-                    </p>
-                  )}
+                  {/* ROW 2: Duration | Type Badge | Edit Button */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                    {/* Duration */}
+                    {activity.duration_hours !== "-" && (
+                      <span style={{ fontSize: "11px", color: "#666" }}>
+                        ⏱️ {activity.duration_hours}h
+                      </span>
+                    )}
+                    {activity.duration_hours === "-" && (
+                      <span style={{ fontSize: "11px", color: "#999" }}>-</span>
+                    )}
 
-                  <p style={{ color: COLORS.primary, fontSize: "12px", fontWeight: "600" }}>
-                    👆 Tap to view options
-                  </p>
+                    {/* Type Badge */}
+                    <span
+                      style={{
+                        backgroundColor: getTypeColor(activity.type),
+                        color: "white",
+                        padding: "2px 8px",
+                        borderRadius: "3px",
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {getTypeIcon(activity.type)} {activity.type === "Field Trip" ? "Trip" : activity.type === "Extracurricular" ? "EC" : "Act"}
+                    </span>
+
+                    {/* Edit Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(activity);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        padding: "2px 4px",
+                        minHeight: "24px",
+                        minWidth: "24px",
+                      }}
+                      title="Edit"
+                    >
+                      ✏️
+                    </button>
+                  </div>
                 </div>
               );
             })}
