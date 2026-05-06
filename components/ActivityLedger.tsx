@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-client";
+import { useReport } from "@/context/ReportContext";
+import KidFilterButtons from "@/components/KidFilterButtons";
+import ChildStatsBar from "@/components/ChildStatsBar";
 
 interface Kid {
   id: string;
@@ -84,10 +87,10 @@ export default function ActivityLedger({
   refreshCounter,
   onActivityEdited,
 }: ActivityLedgerProps) {
+  const { selectedKid, setSelectedKid } = useReport();
   const [ledgerTab, setLedgerTab] = useState<"all" | "field-trips" | "extracurricular">("all");
   const [groupedActivities, setGroupedActivities] = useState<GroupedActivities>({});
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-  const [expandedKids, setExpandedKids] = useState<Set<string>>(new Set(kids.map(k => k.id)));
   const [editingActivity, setEditingActivity] = useState<CombinedActivity | null>(null);
   const [editDuration, setEditDuration] = useState("");
   const [editSubject, setEditSubject] = useState("");
@@ -212,15 +215,7 @@ export default function ActivityLedger({
     }
   };
 
-  const toggleKidExpanded = (childId: string) => {
-    const newExpanded = new Set(expandedKids);
-    if (newExpanded.has(childId)) {
-      newExpanded.delete(childId);
-    } else {
-      newExpanded.add(childId);
-    }
-    setExpandedKids(newExpanded);
-  };
+
 
   const handleEditClick = (activity: CombinedActivity) => {
     setEditingActivity(activity);
@@ -323,8 +318,18 @@ export default function ActivityLedger({
       : activities.filter((a) => a.type === "Extracurricular");
   };
 
-  const orderedKids = kids;
-  const hasAnyActivities = Object.values(groupedActivities).some(g => g.activities.length > 0);
+  // Get current kid's activities
+  const currentKidActivities = selectedKid && groupedActivities[selectedKid] 
+    ? groupedActivities[selectedKid] 
+    : null;
+  
+  const displayedActivities = currentKidActivities 
+    ? filteredGroup(currentKidActivities.activities)
+    : [];
+
+  const hasAnyActivities = selectedKid && currentKidActivities
+    ? currentKidActivities.activities.length > 0
+    : false;
 
   return (
     <div style={{ backgroundColor: "white", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -334,8 +339,25 @@ export default function ActivityLedger({
           📋 Activity Ledger
         </h2>
 
+        {/* Kid Filter Buttons */}
+        <div className="mb-4">
+          <label style={{ color: "#666" }} className="block text-xs font-medium mb-2">
+            Filter by Child:
+          </label>
+          <KidFilterButtons kids={kids} />
+        </div>
+
+        {/* Stats Bar - Only show if kid is selected */}
+        {selectedKid && currentKidActivities && (
+          <ChildStatsBar
+            childName={currentKidActivities.child.name}
+            fieldTripCount={currentKidActivities.fieldTripCount}
+            extracurricularCount={currentKidActivities.extracurricularCount}
+          />
+        )}
+
         {/* Tabs */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {[
             { id: "all", label: "All Activities" },
             { id: "field-trips", label: "Field Trips" },
@@ -357,7 +379,7 @@ export default function ActivityLedger({
         </div>
 
         {/* Sort Order */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3">
           <label style={{ color: "#666" }} className="text-xs font-medium">
             Sort:
           </label>
@@ -375,265 +397,157 @@ export default function ActivityLedger({
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto" }} className="px-4 sm:px-6 py-4">
-        {!hasAnyActivities ? (
+        {!selectedKid ? (
           <div className="text-center py-8">
             <p style={{ color: "#999" }} className="text-sm">
-              No activities to display
+              👆 Select a child above to view their activities
+            </p>
+          </div>
+        ) : !hasAnyActivities ? (
+          <div className="text-center py-8">
+            <p style={{ color: "#999" }} className="text-sm">
+              No activities for {currentKidActivities?.child.name}
             </p>
           </div>
         ) : !isMobile ? (
-          // Desktop: Kid-grouped table with accordions
-          <div className="space-y-4">
-            {orderedKids.map((kid) => {
-              const group = groupedActivities[kid.id];
-              if (!group) return null;
-
-              const filteredActivities = filteredGroup(group.activities);
-              const isExpanded = expandedKids.has(kid.id);
-
-              return (
-                <div key={kid.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden" }}>
-                  {/* Sticky Child Header */}
-                  <div
-                    onClick={() => toggleKidExpanded(kid.id)}
+          // Desktop: Simple table for filtered kid
+          <div className="overflow-x-auto">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "12%" }}>Date</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "52%" }}>Subject/Activity</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Duration</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Type</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "5%" }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedActivities.map((activity, idx) => (
+                  <tr
+                    key={`${activity.id}-${idx}`}
                     style={{
-                      backgroundColor: COLORS.light,
-                      borderBottom: isExpanded ? "1px solid #e5e7eb" : "none",
-                      padding: "16px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 10,
+                      borderBottom: "1px solid #e5e7eb",
+                      backgroundColor: idx % 2 === 0 ? "white" : "#f9fafb",
                     }}
-                    className="hover:bg-opacity-75 transition-all"
                   >
-                    <div className="flex items-center gap-3 flex-1">
-                      <span style={{ fontSize: "20px", minWidth: "24px" }}>
-                        {isExpanded ? "▼" : "▶"}
-                      </span>
-                      <div className="flex flex-col flex-1">
-                        <span style={{ color: COLORS.dark, fontSize: "16px", fontWeight: "700" }}>
-                          {kid.name}
+                    <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
+                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: "12px", color: COLORS.dark }}>
+                      {activity.subject && (
+                        <span>
+                          {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
                         </span>
-                        <span style={{ color: "#666", fontSize: "12px", marginTop: "2px" }}>
-                          Field Trips: {group.fieldTripCount} | Extracurriculars: {group.extracurricularCount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expandable Content */}
-                  {isExpanded && (
-                    <div style={{ backgroundColor: "white", maxHeight: "300px", overflowY: "auto" }}>
-                      {filteredActivities.length === 0 ? (
-                        <div style={{ padding: "24px", textAlign: "center" }}>
-                          <p style={{ color: "#999", fontSize: "13px" }}>
-                            No activities logged for {kid.name}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                              <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
-                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "12%" }}>Date</th>
-                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "48%" }}>Subject/Activity</th>
-                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Duration</th>
-                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Type</th>
-                                <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "5%" }}>Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredActivities.map((activity, idx) => (
-                                <tr
-                                  key={`${activity.id}-${idx}`}
-                                  style={{
-                                    borderBottom: "1px solid #e5e7eb",
-                                    backgroundColor: idx % 2 === 0 ? "white" : "#f9fafb",
-                                  }}
-                                >
-                                  <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
-                                    {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
-                                  </td>
-                                  <td style={{ padding: "10px 12px", fontSize: "12px", color: COLORS.dark }}>
-                                    {activity.subject && (
-                                      <span>
-                                        {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
-                                      </span>
-                                    )}
-                                    {activity.activity_name && <span>{activity.activity_name}</span>}
-                                    {activity.trip_name && (
-                                      <span>
-                                        {activity.trip_name}
-                                        {activity.destination && <span> → {activity.destination}</span>}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
-                                    {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
-                                  </td>
-                                  <td style={{ padding: "10px 12px" }}>
-                                    <span
-                                      style={{
-                                        backgroundColor: getTypeColor(activity.type),
-                                        color: "white",
-                                        padding: "3px 6px",
-                                        borderRadius: "3px",
-                                        fontSize: "10px",
-                                        fontWeight: "600",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {getTypeIcon(activity.type)} {activity.type}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                                    <button
-                                      onClick={() => handleEditClick(activity)}
-                                      style={{ color: COLORS.primary }}
-                                      className="text-xs font-medium hover:underline"
-                                    >
-                                      ✏️
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
                       )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      {activity.activity_name && <span>{activity.activity_name}</span>}
+                      {activity.trip_name && (
+                        <span>
+                          {activity.trip_name}
+                          {activity.destination && <span> → {activity.destination}</span>}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
+                      {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <span
+                        style={{
+                          backgroundColor: getTypeColor(activity.type),
+                          color: "white",
+                          padding: "3px 6px",
+                          borderRadius: "3px",
+                          fontSize: "10px",
+                          fontWeight: "600",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {getTypeIcon(activity.type)} {activity.type}
+                      </span>
+                    </td>
+                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                      <button
+                        onClick={() => handleEditClick(activity)}
+                        style={{ color: COLORS.primary }}
+                        className="text-xs font-medium hover:underline"
+                      >
+                        ✏️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
-          // Mobile: Kid-grouped card layout
-          <div className="space-y-4">
-            {orderedKids.map((kid) => {
-              const group = groupedActivities[kid.id];
-              if (!group) return null;
-
-              const filteredActivities = filteredGroup(group.activities);
-              const isExpanded = expandedKids.has(kid.id);
-
-              return (
-                <div key={kid.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden" }}>
-                  {/* Mobile Child Header */}
-                  <div
-                    onClick={() => toggleKidExpanded(kid.id)}
+          // Mobile: Card layout for filtered kid
+          <div className="space-y-2">
+            {displayedActivities.map((activity) => (
+              <div
+                key={activity.id}
+                style={{
+                  backgroundColor: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  padding: "12px",
+                }}
+              >
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <div className="flex-1">
+                    <p style={{ color: "#666", fontSize: "11px" }}>
+                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                  <span
                     style={{
-                      backgroundColor: COLORS.light,
-                      borderBottom: isExpanded ? "1px solid #e5e7eb" : "none",
-                      padding: "12px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      backgroundColor: getTypeColor(activity.type),
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "3px",
+                      fontSize: "9px",
+                      fontWeight: "600",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <div className="flex items-center gap-2 flex-1">
-                      <span style={{ fontSize: "16px" }}>
-                        {isExpanded ? "▼" : "▶"}
-                      </span>
-                      <div className="flex flex-col flex-1">
-                        <span style={{ color: COLORS.dark, fontSize: "14px", fontWeight: "700" }}>
-                          {kid.name}
-                        </span>
-                        <span style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}>
-                          FT: {group.fieldTripCount} | EC: {group.extracurricularCount}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    {getTypeIcon(activity.type)} {activity.type}
+                  </span>
+                </div>
 
-                  {/* Mobile Expandable Content */}
-                  {isExpanded && (
-                    <div style={{ backgroundColor: "white", maxHeight: "300px", overflowY: "auto" }}>
-                      {filteredActivities.length === 0 ? (
-                        <div style={{ padding: "16px", textAlign: "center" }}>
-                          <p style={{ color: "#999", fontSize: "12px" }}>
-                            No activities logged for {kid.name}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2 p-3">
-                          {filteredActivities.map((activity) => (
-                            <div
-                              key={activity.id}
-                              style={{
-                                backgroundColor: "#f9fafb",
-                                border: "1px solid #e5e7eb",
-                                borderRadius: "6px",
-                                padding: "12px",
-                              }}
-                            >
-                              <div className="flex items-start justify-between mb-2 gap-2">
-                                <div className="flex-1">
-                                  <p style={{ color: "#666", fontSize: "11px" }}>
-                                    {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                  </p>
-                                </div>
-                                <span
-                                  style={{
-                                    backgroundColor: getTypeColor(activity.type),
-                                    color: "white",
-                                    padding: "2px 6px",
-                                    borderRadius: "3px",
-                                    fontSize: "9px",
-                                    fontWeight: "600",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {getTypeIcon(activity.type)} {activity.type}
-                                </span>
-                              </div>
-
-                              <div className="mb-2">
-                                {activity.subject && (
-                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                                    {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
-                                  </p>
-                                )}
-                                {activity.activity_name && (
-                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                                    {activity.activity_name}
-                                  </p>
-                                )}
-                                {activity.trip_name && (
-                                  <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                                    {activity.trip_name}
-                                    {activity.destination && <span> → {activity.destination}</span>}
-                                  </p>
-                                )}
-                              </div>
-
-                              {activity.duration_hours !== "-" && (
-                                <p style={{ color: "#666", fontSize: "11px", marginBottom: "8px" }}>
-                                  ⏱️ {activity.duration_hours}h
-                                </p>
-                              )}
-
-                              <button
-                                onClick={() => handleEditClick(activity)}
-                                style={{ backgroundColor: COLORS.primary, color: "white" }}
-                                className="w-full px-3 py-2 rounded text-xs font-medium hover:opacity-90"
-                              >
-                                ✏️ Edit
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                <div className="mb-2">
+                  {activity.subject && (
+                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                      {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
+                    </p>
+                  )}
+                  {activity.activity_name && (
+                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                      {activity.activity_name}
+                    </p>
+                  )}
+                  {activity.trip_name && (
+                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
+                      {activity.trip_name}
+                      {activity.destination && <span> → {activity.destination}</span>}
+                    </p>
                   )}
                 </div>
-              );
-            })}
+
+                {activity.duration_hours !== "-" && (
+                  <p style={{ color: "#666", fontSize: "11px", marginBottom: "8px" }}>
+                    ⏱️ {activity.duration_hours}h
+                  </p>
+                )}
+
+                <button
+                  onClick={() => handleEditClick(activity)}
+                  style={{ backgroundColor: COLORS.primary, color: "white" }}
+                  className="w-full px-3 py-2 rounded text-xs font-medium hover:opacity-90"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

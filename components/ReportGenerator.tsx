@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-client";
+import { useReport } from "@/context/ReportContext";
 
 interface Kid {
   id: string;
@@ -97,6 +98,7 @@ export default function ReportGenerator({
   isMobile,
   onRefresh,
 }: ReportGeneratorProps) {
+  const { selectedKid, setSelectedKid } = useReport();
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -114,6 +116,13 @@ export default function ReportGenerator({
 
     fetchParentState();
   }, []);
+
+  // Sync selectedKid from context to selectedChildren when kid is selected in ledger
+  useEffect(() => {
+    if (selectedKid && !selectedChildren.includes(selectedKid)) {
+      setSelectedChildren([selectedKid]);
+    }
+  }, [selectedKid]);
 
   const fetchParentState = async () => {
     try {
@@ -154,6 +163,12 @@ export default function ReportGenerator({
     setSelectedChildren((prev) =>
       prev.includes(kidId) ? prev.filter((id) => id !== kidId) : [...prev, kidId]
     );
+    // Also update the shared context
+    if (selectedKid === kidId) {
+      setSelectedKid(null);
+    } else {
+      setSelectedKid(kidId);
+    }
   };
 
   const toggleSubjectSelection = (subject: string) => {

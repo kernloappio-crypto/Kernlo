@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import ReportGenerator from "@/components/ReportGenerator";
 import ActivityLedger from "@/components/ActivityLedger";
+import { ReportProvider } from "@/context/ReportContext";
 
 export const dynamic = "force-dynamic";
 
@@ -162,77 +163,79 @@ export default function ReportsPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Navbar />
+    <ReportProvider>
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+        <Navbar />
 
-      {/* Header */}
-      <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between gap-4">
-          <div>
-            <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold">
-              📊 Reports & Activity Ledger
-            </h1>
-            <p style={{ color: "#666" }} className="text-xs sm:text-sm mt-1">
-              Generate reports and view all logged activities
-            </p>
+        {/* Header */}
+        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between gap-4">
+            <div>
+              <h1 style={{ color: "#1a1a2e" }} className="text-lg sm:text-xl lg:text-2xl font-bold">
+                📊 Reports & Activity Ledger
+              </h1>
+              <p style={{ color: "#666" }} className="text-xs sm:text-sm mt-1">
+                Generate reports and view all logged activities
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Toggle */}
-      {isMobile && (
-        <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", padding: "12px 16px" }} className="flex gap-2">
-          <button
-            onClick={() => setMobileView("generator")}
-            style={{
-              backgroundColor: mobileView === "generator" ? COLORS.primary : "white",
-              color: mobileView === "generator" ? "white" : COLORS.primary,
-              border: `2px solid ${COLORS.primary}`,
-            }}
-            className="flex-1 px-4 py-2 rounded-lg font-medium text-sm"
-          >
-            🛠️ Generator
-          </button>
-          <button
-            onClick={() => setMobileView("ledger")}
-            style={{
-              backgroundColor: mobileView === "ledger" ? COLORS.primary : "white",
-              color: mobileView === "ledger" ? "white" : COLORS.primary,
-              border: `2px solid ${COLORS.primary}`,
-            }}
-            className="flex-1 px-4 py-2 rounded-lg font-medium text-sm"
-          >
-            📋 Ledger
-          </button>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
-        {isMobile ? (
-          // Mobile: Single view
-          <div className="w-full overflow-y-auto">
-            {mobileView === "generator" ? (
-              <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={true} onRefresh={() => setRefreshCounter(c => c + 1)} />
-            ) : (
-              <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={true} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
-            )}
-          </div>
-        ) : (
-          // Desktop: Two-pane layout
-          <div className="flex w-full h-full overflow-hidden">
-            {/* Left Pane: Report Generator (40%) */}
-            <div style={{ flex: "0 0 40%", borderRight: "1px solid #e5e7eb", overflowY: "auto" }} className="overflow-y-auto">
-              <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={false} onRefresh={() => setRefreshCounter(c => c + 1)} />
-            </div>
-
-            {/* Right Pane: Activity Ledger (60%) */}
-            <div style={{ flex: "1 1 60%", overflowY: "auto" }} className="overflow-y-auto">
-              <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={false} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
-            </div>
+        {/* Mobile Toggle */}
+        {isMobile && (
+          <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", padding: "12px 16px" }} className="flex gap-2">
+            <button
+              onClick={() => setMobileView("generator")}
+              style={{
+                backgroundColor: mobileView === "generator" ? COLORS.primary : "white",
+                color: mobileView === "generator" ? "white" : COLORS.primary,
+                border: `2px solid ${COLORS.primary}`,
+              }}
+              className="flex-1 px-4 py-2 rounded-lg font-medium text-sm"
+            >
+              🛠️ Generator
+            </button>
+            <button
+              onClick={() => setMobileView("ledger")}
+              style={{
+                backgroundColor: mobileView === "ledger" ? COLORS.primary : "white",
+                color: mobileView === "ledger" ? "white" : COLORS.primary,
+                border: `2px solid ${COLORS.primary}`,
+              }}
+              className="flex-1 px-4 py-2 rounded-lg font-medium text-sm"
+            >
+              📋 Ledger
+            </button>
           </div>
         )}
-      </main>
-    </div>
+
+        {/* Main Content */}
+        <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
+          {isMobile ? (
+            // Mobile: Single view
+            <div className="w-full overflow-y-auto">
+              {mobileView === "generator" ? (
+                <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={true} onRefresh={() => setRefreshCounter(c => c + 1)} />
+              ) : (
+                <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={true} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
+              )}
+            </div>
+          ) : (
+            // Desktop: Two-pane layout
+            <div className="flex w-full h-full overflow-hidden">
+              {/* Left Pane: Report Generator (40%) */}
+              <div style={{ flex: "0 0 40%", borderRight: "1px solid #e5e7eb", overflowY: "auto" }} className="overflow-y-auto">
+                <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={false} onRefresh={() => setRefreshCounter(c => c + 1)} />
+              </div>
+
+              {/* Right Pane: Activity Ledger (60%) */}
+              <div style={{ flex: "1 1 60%", overflowY: "auto" }} className="overflow-y-auto">
+                <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={false} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </ReportProvider>
   );
 }
