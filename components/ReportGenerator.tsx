@@ -486,34 +486,26 @@ Create a professional homeschool report document.`;
           </div>
         </div>
 
-        {/* Children Selection - WITH CHECKBOXES */}
+        {/* Children Selection */}
         <div>
           <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
             Children
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {kids.map((kid) => {
-              const isSelected = selectedChildren.includes(kid.id);
-              return (
-                <div key={kid.id} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    id={`child-${kid.id}`}
-                    checked={isSelected}
-                    onChange={() => toggleChildSelection(kid.id)}
-                    className="w-4 h-4 rounded cursor-pointer flex-shrink-0"
-                    style={{ accentColor: COLORS.primary }}
-                  />
-                  <label
-                    htmlFor={`child-${kid.id}`}
-                    style={{ color: COLORS.dark }}
-                    className="text-sm font-medium cursor-pointer flex-1"
-                  >
-                    {kid.name}
-                  </label>
-                </div>
-              );
-            })}
+          <div className="flex flex-wrap gap-2">
+            {kids.map((kid) => (
+              <button
+                key={kid.id}
+                onClick={() => toggleChildSelection(kid.id)}
+                style={{
+                  backgroundColor: selectedChildren.includes(kid.id) ? COLORS.primary : "white",
+                  color: selectedChildren.includes(kid.id) ? "white" : COLORS.dark,
+                  borderColor: COLORS.primary,
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+              >
+                {kid.name}
+              </button>
+            ))}
           </div>
         </div>
 
