@@ -69,7 +69,39 @@ const DATE_PRESETS = [
   { label: "Current Semester", days: null, preset: "semester" },
 ];
 
-const COMPLIANCE_SUBJECTS = ["Reading", "Spelling", "Grammar", "Math", "Good Citizenship"];
+// State-to-full name mapping for compliance reports
+const STATE_NAMES: { [key: string]: string } = {
+  "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
+  "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida", "GA": "Georgia",
+  "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa",
+  "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+  "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri",
+  "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
+  "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+  "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+  "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+  "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming", "DC": "District of Columbia",
+};
+
+// State-specific core subjects for compliance reporting
+const STATE_CORE_SUBJECTS: { [key: string]: string[] } = {
+  "TX": ["Reading", "Spelling", "Grammar", "Math", "Good Citizenship"],
+  "CA": ["English", "Math", "Social Studies", "Science", "Physical Education"],
+  "FL": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "NY": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "PA": ["Reading", "Mathematics", "Science", "Social Studies"],
+  "IL": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "OH": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "MI": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "GA": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "NC": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "VA": ["English", "Mathematics", "Science", "History & Social Science"],
+  "MA": ["English Language Arts", "Mathematics", "Science and Technology", "Social Studies"],
+  "WA": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "CO": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "OR": ["English Language Arts", "Mathematics", "Science", "Social Studies"],
+  "default": ["English", "Math", "Science", "Social Studies", "Reading"],
+};
 
 export default function ReportsHub({
   userId,
@@ -89,8 +121,9 @@ export default function ReportsHub({
   const [generationTimeLeft, setGenerationTimeLeft] = useState(0);
   const [extracurricularActivities, setExtracurricularActivities] = useState<any[]>([]);
   const [fieldTripActivities, setFieldTripActivities] = useState<any[]>([]);
+  const [parentState, setParentState] = useState<string>("");
 
-  // Initialize dates on mount
+  // Initialize dates on mount and fetch parent state
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -101,7 +134,26 @@ export default function ReportsHub({
     if (preselectedKidId) {
       setSelectedChildren([preselectedKidId]);
     }
+
+    // Fetch parent's state from profile
+    fetchParentState();
   }, [preselectedKidId]);
+
+  const fetchParentState = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("parent_profiles")
+        .select("compliance_state")
+        .eq("user_id", userId)
+        .single();
+
+      if (!error && data?.compliance_state) {
+        setParentState(data.compliance_state);
+      }
+    } catch (err) {
+      console.log("Could not fetch parent state");
+    }
+  };
 
   const applyDatePreset = (days: number | null, preset?: string) => {
     const today = new Date();
@@ -143,17 +195,33 @@ export default function ReportsHub({
     setSelectedChildren([]);
   };
 
+  const getCoreSubjectsForState = (): string[] => {
+    if (!parentState) return STATE_CORE_SUBJECTS["default"];
+    return STATE_CORE_SUBJECTS[parentState] || STATE_CORE_SUBJECTS["default"];
+  };
+
   const getAvailableSubjects = (): string[] => {
-    const subjectSet = new Set<string>();
+    let subjects = new Set<string>();
     selectedChildren.forEach((childId) => {
       const child = kids.find((k) => k.id === childId);
       if (child) {
         activities
           .filter((a) => a.child_name === child.name && a.subject)
-          .forEach((a) => subjectSet.add(a.subject));
+          .forEach((a) => subjects.add(a.subject));
       }
     });
-    return Array.from(subjectSet).sort();
+
+    // If compliance mode is on, filter to only state's core subjects
+    if (complianceMode) {
+      const coreSubjects = getCoreSubjectsForState();
+      subjects = new Set(
+        Array.from(subjects).filter((s) => 
+          coreSubjects.some(cs => cs.toLowerCase() === s.toLowerCase())
+        )
+      );
+    }
+
+    return Array.from(subjects).sort();
   };
 
   const handleGenerateReport = async () => {
@@ -263,8 +331,11 @@ export default function ReportsHub({
         }
 
         // Build summary based on compliance mode
+        const coreSubjectsForReport = getCoreSubjectsForState();
         const subjectsToInclude = complianceMode
-          ? selectedSubjects.filter((s) => COMPLIANCE_SUBJECTS.includes(s))
+          ? selectedSubjects.filter((s) =>
+              coreSubjectsForReport.some(cs => cs.toLowerCase() === s.toLowerCase())
+            )
           : selectedSubjects;
 
         const relevantActivities = coreActivities.filter((a) =>
@@ -306,11 +377,13 @@ export default function ReportsHub({
         }
 
         // Generate PDF
+        const coreSubjects = getCoreSubjectsForState();
+        const coreSubjectsStr = coreSubjects.join(", ");
         const prompt = `Generate a ${complianceMode ? "minimalist, professional homeschool compliance" : "comprehensive"} progress report for ${kid.name} covering ${startDate} to ${endDate}.
 
 ${
   complianceMode
-    ? "Focus ONLY on core subjects: Reading, Spelling, Grammar, Math, Good Citizenship. Use a standardized format for Texas compliance requirements. Remove non-core subjects."
+    ? `Focus ONLY on core subjects: ${coreSubjectsStr}. Use a standardized format for ${parentState ? STATE_NAMES[parentState] : "your state"}'s compliance requirements. Remove non-core subjects.`
     : "Include Core Subjects, Extracurricular, and Field Trips. Create a narrative-style report with accomplishments and skill development."
 }
 
@@ -346,7 +419,8 @@ Create a professional homeschool report document.`;
         // Determine title based on report type and compliance mode
         let reportTitle = "COMPREHENSIVE PROGRESS REPORT";
         if (complianceMode) {
-          reportTitle = "TEXAS COMPLIANCE REPORT";
+          const stateName = parentState && STATE_NAMES[parentState] ? STATE_NAMES[parentState] : "";
+          reportTitle = stateName ? `${stateName.toUpperCase()} COMPLIANCE REPORT` : "COMPLIANCE REPORT";
         } else if (reportType === "progress") {
           reportTitle = "PROGRESS SUMMARY";
         } else if (reportType === "portfolio") {
@@ -658,7 +732,7 @@ Create a professional homeschool report document.`;
                 className="w-5 h-5 rounded cursor-pointer"
               />
               <span style={{ color: "#1a1a2e" }} className="text-sm font-semibold">
-                Texas Compliance Mode (Core subjects only)
+                {parentState ? `${STATE_NAMES[parentState]} Compliance Mode` : "Compliance Mode"} (Core subjects only)
               </span>
             </label>
           </div>
