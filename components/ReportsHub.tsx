@@ -588,6 +588,7 @@ Create a professional homeschool report document.`;
           borderRadius: "12px",
           position: "relative",
           width: "100%",
+          maxWidth: "448px",
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
