@@ -26,6 +26,7 @@ interface Activity {
   curriculum?: string;
   activity_type?: string;
   status?: string;
+  completed?: boolean;
 }
 
 interface ActivityLedgerProps {
@@ -50,6 +51,8 @@ interface CombinedActivity {
   type: "Activity" | "Field Trip" | "Extracurricular";
   duration: number;
   duration_hours: string;
+  status?: string;
+  completed?: boolean;
 }
 
 interface GroupedActivities {
@@ -119,6 +122,8 @@ export default function ActivityLedger({
         child_id: kids.find(k => k.name === a.child_name)?.id || "",
         type: "Activity" as const,
         duration_hours: (a.duration / 60).toFixed(1),
+        status: a.status || "pending",
+        completed: a.status === "completed" || a.status === "marked_complete" || a.completed === true,
       }));
 
       combined.push(...coreActivities);
@@ -395,166 +400,234 @@ export default function ActivityLedger({
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Date</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "45%" }}>Subject/Activity</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Duration</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Type</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "25%" }}>Actions</th>
+                  <th style={{ color: COLORS.dark, padding: "12px 14px", textAlign: "left", fontSize: "12px", fontWeight: "600", width: "10%" }}>Date</th>
+                  <th style={{ color: COLORS.dark, padding: "12px 14px", textAlign: "left", fontSize: "12px", fontWeight: "600", width: "40%" }}>Subject/Activity</th>
+                  <th style={{ color: COLORS.dark, padding: "12px 14px", textAlign: "left", fontSize: "12px", fontWeight: "600", width: "12%" }}>Duration</th>
+                  <th style={{ color: COLORS.dark, padding: "12px 14px", textAlign: "left", fontSize: "12px", fontWeight: "600", width: "12%" }}>Type</th>
+                  <th style={{ color: COLORS.dark, padding: "12px 14px", textAlign: "center", fontSize: "12px", fontWeight: "600", width: "26%" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {displayedActivities.map((activity, idx) => (
-                  <tr
-                    key={`${activity.id}-${idx}`}
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      backgroundColor: idx % 2 === 0 ? "white" : "#f9fafb",
-                    }}
-                  >
-                    <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
-                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
-                    </td>
-                    <td style={{ padding: "10px 12px", fontSize: "12px", color: COLORS.dark }}>
-                      {activity.subject && (
-                        <span>
-                          {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
+                {displayedActivities.map((activity, idx) => {
+                  const isPending = activity.status === "pending" || activity.status === "incomplete" || !activity.completed;
+                  const opacity = isPending ? 0.6 : 1.0;
+                  const rowBg = idx % 2 === 0 ? "white" : "#f9fafb";
+
+                  return (
+                    <tr
+                      key={`${activity.id}-${idx}`}
+                      style={{
+                        borderBottom: "1px solid #e5e7eb",
+                        backgroundColor: rowBg,
+                        opacity: opacity,
+                      }}
+                    >
+                      <td style={{ padding: "12px 14px", fontSize: "14px", color: "#666" }}>
+                        {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })}
+                      </td>
+                      <td style={{ padding: "12px 14px", fontSize: "14px", color: COLORS.dark }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {activity.subject && (
+                            <>
+                              <span style={{ fontSize: "20px" }}>
+                                {SUBJECT_ICONS[activity.subject] || "📝"}
+                              </span>
+                              <span>{activity.subject}</span>
+                            </>
+                          )}
+                          {activity.activity_name && <span>{activity.activity_name}</span>}
+                          {activity.trip_name && (
+                            <span>
+                              {activity.trip_name}
+                              {activity.destination && <span> → {activity.destination}</span>}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 14px", fontSize: "14px", color: "#666" }}>
+                        {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
+                      </td>
+                      <td style={{ padding: "12px 14px" }}>
+                        <span
+                          style={{
+                            backgroundColor: getTypeColor(activity.type),
+                            color: "white",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            whiteSpace: "nowrap",
+                            display: "inline-block",
+                          }}
+                        >
+                          {getTypeIcon(activity.type)} {activity.type}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 14px", textAlign: "center" }}>
+                        <div className="flex gap-2 justify-center items-center">
+                          <button
+                            onClick={() => handleEditClick(activity)}
+                            style={{
+                              color: COLORS.primary,
+                              minWidth: "44px",
+                              minHeight: "44px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "16px",
+                              cursor: "pointer",
+                              border: "none",
+                              background: "transparent",
+                            }}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          {isPending && (
+                            <button
+                              onClick={() => handleMobileActionSheet(activity)}
+                              style={{
+                                color: "#10b981",
+                                minWidth: "44px",
+                                minHeight: "44px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "18px",
+                                cursor: "pointer",
+                                border: "none",
+                                background: "transparent",
+                                fontWeight: "bold",
+                              }}
+                              title="Mark Complete"
+                            >
+                              ✓
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if (confirm("Delete this activity?")) {
+                                try {
+                                  await deleteActivity(activity);
+                                  onActivityEdited();
+                                  loadAndGroupActivities();
+                                } catch (e) {
+                                  alert("Failed to delete activity");
+                                }
+                              }
+                            }}
+                            style={{
+                              color: "#ef4444",
+                              minWidth: "44px",
+                              minHeight: "44px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "18px",
+                              cursor: "pointer",
+                              border: "none",
+                              background: "transparent",
+                              fontWeight: "bold",
+                            }}
+                            title="Delete"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          // Mobile: Card layout for filtered kid
+          <div className="space-y-2 pb-20">
+            {displayedActivities.map((activity) => {
+              const isPending = activity.status === "pending" || activity.status === "incomplete" || !activity.completed;
+              const opacity = isPending ? 0.6 : 1.0;
+
+              return (
+                <div
+                  key={activity.id}
+                  style={{
+                    backgroundColor: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    padding: "14px",
+                    cursor: "pointer",
+                    opacity: opacity,
+                  }}
+                  onClick={() => handleMobileActionSheet(activity)}
+                >
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <div className="flex-1">
+                      <p style={{ color: "#666", fontSize: "12px" }}>
+                        {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      {isPending && (
+                        <span
+                          style={{
+                            fontSize: "18px",
+                            fontWeight: "bold",
+                            color: "#10b981",
+                          }}
+                          title="Mark as Complete"
+                        >
+                          ✓
                         </span>
                       )}
-                      {activity.activity_name && <span>{activity.activity_name}</span>}
-                      {activity.trip_name && (
-                        <span>
-                          {activity.trip_name}
-                          {activity.destination && <span> → {activity.destination}</span>}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: "10px 12px", fontSize: "11px", color: "#666" }}>
-                      {activity.duration_hours === "-" ? "-" : `${activity.duration_hours}h`}
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
                       <span
                         style={{
                           backgroundColor: getTypeColor(activity.type),
                           color: "white",
-                          padding: "3px 6px",
-                          borderRadius: "3px",
-                          fontSize: "10px",
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          fontSize: "11px",
                           fontWeight: "600",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {getTypeIcon(activity.type)} {activity.type}
                       </span>
-                    </td>
-                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEditClick(activity)}
-                          style={{ color: COLORS.primary }}
-                          className="text-xs font-medium hover:underline"
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleMobileActionSheet(activity)}
-                          style={{ color: "#10b981" }}
-                          className="text-xs font-medium hover:underline"
-                          title="Mark Complete"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm("Delete this activity?")) {
-                              try {
-                                await deleteActivity(activity);
-                                onActivityEdited();
-                                loadAndGroupActivities();
-                              } catch (e) {
-                                alert("Failed to delete activity");
-                              }
-                            }
-                          }}
-                          style={{ color: "#ef4444" }}
-                          className="text-xs font-medium hover:underline"
-                          title="Delete"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          // Mobile: Card layout for filtered kid
-          <div className="space-y-2">
-            {displayedActivities.map((activity) => (
-              <div
-                key={activity.id}
-                style={{
-                  backgroundColor: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "6px",
-                  padding: "12px",
-                  cursor: "pointer",
-                }}
-                onClick={() => handleMobileActionSheet(activity)}
-              >
-                <div className="flex items-start justify-between mb-2 gap-2">
-                  <div className="flex-1">
-                    <p style={{ color: "#666", fontSize: "11px" }}>
-                      {new Date(activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </p>
+                    </div>
                   </div>
-                  <span
-                    style={{
-                      backgroundColor: getTypeColor(activity.type),
-                      color: "white",
-                      padding: "2px 6px",
-                      borderRadius: "3px",
-                      fontSize: "9px",
-                      fontWeight: "600",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {getTypeIcon(activity.type)} {activity.type}
-                  </span>
-                </div>
 
-                <div className="mb-2">
-                  {activity.subject && (
-                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                      {SUBJECT_ICONS[activity.subject] || "📝"} {activity.subject}
-                    </p>
-                  )}
-                  {activity.activity_name && (
-                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                      {activity.activity_name}
-                    </p>
-                  )}
-                  {activity.trip_name && (
-                    <p style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
-                      {activity.trip_name}
-                      {activity.destination && <span> → {activity.destination}</span>}
-                    </p>
-                  )}
-                </div>
+                  <div className="mb-2">
+                    {activity.subject && (
+                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "20px" }}>{SUBJECT_ICONS[activity.subject] || "📝"}</span>
+                        {activity.subject}
+                      </p>
+                    )}
+                    {activity.activity_name && (
+                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600" }}>
+                        {activity.activity_name}
+                      </p>
+                    )}
+                    {activity.trip_name && (
+                      <p style={{ color: COLORS.dark, fontSize: "15px", fontWeight: "600" }}>
+                        {activity.trip_name}
+                        {activity.destination && <span> → {activity.destination}</span>}
+                      </p>
+                    )}
+                  </div>
 
-                {activity.duration_hours !== "-" && (
-                  <p style={{ color: "#666", fontSize: "11px", marginBottom: "8px" }}>
-                    ⏱️ {activity.duration_hours}h
+                  {activity.duration_hours !== "-" && (
+                    <p style={{ color: "#666", fontSize: "12px", marginBottom: "6px" }}>
+                      ⏱️ {activity.duration_hours}h
+                    </p>
+                  )}
+
+                  <p style={{ color: COLORS.primary, fontSize: "12px", fontWeight: "600" }}>
+                    👆 Tap to view options
                   </p>
-                )}
-
-                <p style={{ color: COLORS.primary, fontSize: "11px", fontWeight: "600" }}>
-                  👆 Tap to view options
-                </p>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -4,10 +4,11 @@ interface ChildStatsBarProps {
   fieldTripCount: number;
   extracurricularCount: number;
   childName?: string;
+  completedOnly?: boolean;
 }
 
 const COLORS = {
-  light: "#f0f7ff",
+  light: "#f9fafb",
   dark: "#1a1a2e",
 };
 
@@ -15,36 +16,38 @@ export default function ChildStatsBar({
   fieldTripCount,
   extracurricularCount,
   childName,
+  completedOnly = true,
 }: ChildStatsBarProps) {
   return (
     <div
       style={{
         backgroundColor: COLORS.light,
-        padding: "12px 16px",
-        borderRadius: "8px",
-        marginBottom: "16px",
+        padding: "10px 16px",
+        borderRadius: "6px",
+        marginBottom: "12px",
         display: "flex",
         alignItems: "center",
-        gap: "24px",
+        gap: "16px",
         flexWrap: "wrap",
+        fontSize: "13px",
       }}
     >
       {childName && (
-        <span style={{ color: COLORS.dark, fontSize: "13px", fontWeight: "600" }}>
+        <span style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "600" }}>
           {childName}
         </span>
       )}
-      <div style={{ display: "flex", gap: "24px", flex: 1, minWidth: "fit-content" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "16px" }}>🚌</span>
-          <span style={{ color: COLORS.dark, fontSize: "13px", fontWeight: "500" }}>
-            Field Trips: <strong>{fieldTripCount}</strong>
+      <div style={{ display: "flex", gap: "16px", flex: 1, minWidth: "fit-content" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontSize: "13px" }}>📍</span>
+          <span style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "500" }}>
+            Field Trips: {fieldTripCount}
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "16px" }}>🎭</span>
-          <span style={{ color: COLORS.dark, fontSize: "13px", fontWeight: "500" }}>
-            Extracurriculars: <strong>{extracurricularCount}</strong>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <span style={{ fontSize: "13px" }}>🎯</span>
+          <span style={{ color: COLORS.dark, fontSize: "12px", fontWeight: "500" }}>
+            Extracurriculars: {extracurricularCount}
           </span>
         </div>
       </div>

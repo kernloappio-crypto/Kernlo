@@ -9,6 +9,7 @@ interface CombinedActivity {
   child_name: string;
   type: "Activity" | "Field Trip" | "Extracurricular";
   date: string;
+  status?: string;
   [key: string]: any;
 }
 
@@ -39,9 +40,17 @@ export default function TotalsCounter({ groupedActivities, ledgerTab }: TotalsCo
     }
 
     const group = groupedActivities[selectedKid];
+    // COMPLETED ACTIVITIES ONLY (Texas Compliance)
+    const completedActivities = group.activities.filter(
+      a => a.status === "completed" || a.status === "marked_complete"
+    );
+
+    const completedFieldTrips = completedActivities.filter(a => a.type === "Field Trip").length;
+    const completedExtracurriculars = completedActivities.filter(a => a.type === "Extracurricular").length;
+
     return {
-      fieldTrips: group.fieldTripCount || 0,
-      extracurriculars: group.extracurricularCount || 0,
+      fieldTrips: completedFieldTrips,
+      extracurriculars: completedExtracurriculars,
     };
   }, [selectedKid, groupedActivities]);
 
@@ -59,35 +68,37 @@ export default function TotalsCounter({ groupedActivities, ledgerTab }: TotalsCo
     return null;
   }
 
+  // Hide if counts are zero (no redundant counters)
+  if (totals.fieldTrips === 0 && totals.extracurriculars === 0) {
+    return null;
+  }
+
   return (
     <div
       style={{
-        backgroundColor: "#f9fafb",
-        borderBottom: "2px solid #e5e7eb",
-        padding: "16px",
-        marginBottom: "16px",
+        backgroundColor: "#f5f5f5",
+        borderBottom: "1px solid #e5e7eb",
+        padding: "12px 16px",
+        marginBottom: "12px",
+        borderRadius: "6px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "24px", flexWrap: "wrap" }}>
-        {displayTotals.showFieldTrips && (
-          <div style={{ textAlign: "center" }}>
-            <p style={{ color: "#666", fontSize: "12px", fontWeight: "500", marginBottom: "4px" }}>
-              Field Trips
-            </p>
-            <p style={{ color: COLORS.primary, fontSize: "28px", fontWeight: "700" }}>
-              {totals.fieldTrips}
-            </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: "20px", flexWrap: "wrap" }}>
+        {displayTotals.showFieldTrips && totals.fieldTrips > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "14px" }}>📍</span>
+            <span style={{ color: COLORS.dark, fontSize: "13px", fontWeight: "500" }}>
+              Field Trips: <strong>{totals.fieldTrips}</strong>
+            </span>
           </div>
         )}
 
-        {displayTotals.showExtracurriculars && (
-          <div style={{ textAlign: "center" }}>
-            <p style={{ color: "#666", fontSize: "12px", fontWeight: "500", marginBottom: "4px" }}>
-              Extracurriculars
-            </p>
-            <p style={{ color: "#ec4899", fontSize: "28px", fontWeight: "700" }}>
-              {totals.extracurriculars}
-            </p>
+        {displayTotals.showExtracurriculars && totals.extracurriculars > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "14px" }}>🎯</span>
+            <span style={{ color: COLORS.dark, fontSize: "13px", fontWeight: "500" }}>
+              Extracurriculars: <strong>{totals.extracurriculars}</strong>
+            </span>
           </div>
         )}
       </div>

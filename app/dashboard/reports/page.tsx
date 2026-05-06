@@ -212,18 +212,34 @@ export default function ReportsPage() {
         )}
 
         {/* Main Content */}
-        <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden" }} className="relative">
+        <main style={{ backgroundColor: COLORS.light, flex: 1, display: "flex", overflow: "hidden", flexDirection: "column" }} className="relative">
           {isMobile ? (
-            // Mobile: Single view
-            <div className="w-full overflow-y-auto">
-              {mobileView === "generator" ? (
-                <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={true} onRefresh={() => setRefreshCounter(c => c + 1)} />
-              ) : (
-                <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={true} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
+            // Mobile: Single view with sticky footer
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              <div className="flex-1 overflow-y-auto">
+                {mobileView === "generator" ? (
+                  <ReportGenerator userId={userId} kids={kids} activities={activities} isMobile={true} onRefresh={() => setRefreshCounter(c => c + 1)} />
+                ) : (
+                  <ActivityLedger userId={userId} kids={kids} activities={activities} isMobile={true} refreshCounter={refreshCounter} onActivityEdited={() => setRefreshCounter(c => c + 1)} />
+                )}
+              </div>
+              
+              {/* Sticky Footer for Mobile - Generator view */}
+              {mobileView === "generator" && (
+                <div style={{ 
+                  backgroundColor: "white", 
+                  borderTop: "1px solid #e5e7eb", 
+                  padding: "12px 16px",
+                  flexShrink: 0,
+                  position: "sticky",
+                  bottom: 0,
+                }}>
+                  {/* Generator footer handled by ReportGenerator button */}
+                </div>
               )}
             </div>
           ) : (
-            // Desktop: Two-pane layout
+            // Desktop: Two-pane layout (40/60 split)
             <div className="flex w-full h-full overflow-hidden">
               {/* Left Pane: Report Generator (40%) */}
               <div style={{ flex: "0 0 40%", borderRight: "1px solid #e5e7eb", overflowY: "auto" }} className="overflow-y-auto">

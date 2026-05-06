@@ -126,11 +126,11 @@ export default function ActivityActionSheet({
 
         {/* Delete Confirmation */}
         {showDeleteConfirm && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-            <p style={{ color: "#dc2626", fontSize: "12px", fontWeight: "500", marginBottom: "8px" }}>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p style={{ color: "#dc2626", fontSize: "14px", fontWeight: "600", marginBottom: "12px" }}>
               Are you sure? This cannot be undone.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={handleDeleteConfirm}
                 disabled={isLoading}
@@ -138,15 +138,19 @@ export default function ActivityActionSheet({
                   flex: 1,
                   backgroundColor: "#dc2626",
                   color: "white",
-                  padding: "8px",
+                  padding: "14px",
                   borderRadius: "6px",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   fontWeight: "600",
                   border: "none",
                   cursor: "pointer",
+                  minHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                {isLoading ? "Deleting..." : "Delete"}
+                {isLoading ? "Deleting..." : "Yes, Delete"}
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
@@ -154,12 +158,16 @@ export default function ActivityActionSheet({
                   flex: 1,
                   backgroundColor: "#f3f4f6",
                   color: COLORS.dark,
-                  padding: "8px",
+                  padding: "14px",
                   borderRadius: "6px",
-                  fontSize: "12px",
+                  fontSize: "13px",
                   fontWeight: "600",
                   border: "none",
                   cursor: "pointer",
+                  minHeight: "48px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 Cancel
@@ -170,7 +178,7 @@ export default function ActivityActionSheet({
 
         {/* Action Buttons */}
         {!showDeleteConfirm && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <button
               onClick={handleMarkComplete}
               disabled={isLoading}
@@ -178,9 +186,9 @@ export default function ActivityActionSheet({
                 width: "100%",
                 backgroundColor: COLORS.primary,
                 color: "white",
-                padding: "14px",
+                padding: "16px",
                 borderRadius: "8px",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: "600",
                 border: "none",
                 cursor: "pointer",
@@ -188,9 +196,10 @@ export default function ActivityActionSheet({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                gap: "8px",
               }}
             >
-              ✓ Mark Complete
+              <span style={{ fontSize: "18px" }}>✓</span> Mark Complete
             </button>
 
             <button
@@ -200,9 +209,9 @@ export default function ActivityActionSheet({
                 width: "100%",
                 backgroundColor: "#f3f4f6",
                 color: COLORS.dark,
-                padding: "14px",
+                padding: "16px",
                 borderRadius: "8px",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: "600",
                 border: "none",
                 cursor: "pointer",
@@ -210,9 +219,10 @@ export default function ActivityActionSheet({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                gap: "8px",
               }}
             >
-              ✏️ Edit
+              <span style={{ fontSize: "16px" }}>✏️</span> Edit
             </button>
 
             <button
@@ -222,9 +232,9 @@ export default function ActivityActionSheet({
                 width: "100%",
                 backgroundColor: "#fee2e2",
                 color: "#dc2626",
-                padding: "14px",
+                padding: "16px",
                 borderRadius: "8px",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: "600",
                 border: "none",
                 cursor: "pointer",
@@ -232,9 +242,10 @@ export default function ActivityActionSheet({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                gap: "8px",
               }}
             >
-              🗑️ Delete
+              <span style={{ fontSize: "18px", fontWeight: "bold" }}>✕</span> Delete
             </button>
 
             <button
@@ -243,13 +254,13 @@ export default function ActivityActionSheet({
                 width: "100%",
                 backgroundColor: "white",
                 color: COLORS.dark,
-                padding: "12px",
+                padding: "14px",
                 borderRadius: "8px",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: "600",
                 border: `1px solid #e5e7eb`,
                 cursor: "pointer",
-                minHeight: "44px",
+                minHeight: "48px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

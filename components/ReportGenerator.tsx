@@ -509,7 +509,7 @@ Create a professional homeschool report document.`;
           </div>
         </div>
 
-        {/* Subject Selection - Icon Pills */}
+        {/* Subject Selection - TEXT-ONLY Pills */}
         {availableSubjects.length > 0 && (
           <div>
             <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
@@ -527,10 +527,10 @@ Create a professional homeschool report document.`;
                     color: selectedSubjects.includes(subject) ? "white" : COLORS.dark,
                     borderColor: SUBJECT_COLORS[subject] || COLORS.secondary,
                   }}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all inline-flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all"
+                  title={subject}
                 >
-                  <span>{SUBJECT_ICONS[subject] || "📝"}</span>
-                  <span>{subject}</span>
+                  {subject}
                 </button>
               ))}
             </div>
@@ -574,9 +574,10 @@ Create a professional homeschool report document.`;
           backgroundColor: isGenerating ? "#ccc" : COLORS.primary,
           color: "white",
         }}
-        className="w-full px-4 py-3 rounded-lg font-semibold text-sm mt-4 hover:opacity-90 disabled:opacity-50 min-h-[44px] flex items-center justify-center"
+        className="w-full px-4 py-4 rounded-lg font-semibold text-sm mt-4 hover:opacity-90 disabled:opacity-50 min-h-[50px] flex items-center justify-center gap-2 text-base"
       >
-        {isGenerating ? "⏳ Generating..." : "⬇️ Download Reports"}
+        <span style={{ fontSize: "18px" }}>⬇️</span>
+        {isGenerating ? "Generating..." : "Download Reports"}
       </button>
     </div>
   );
