@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase-client";
 import { useReport } from "@/context/ReportContext";
+import { useActivityActions } from "@/context/ActivityActionsContext";
 import KidFilterButtons from "@/components/KidFilterButtons";
 import ChildStatsBar from "@/components/ChildStatsBar";
+import TotalsCounter from "@/components/TotalsCounter";
+import ActivityActionSheet from "@/components/ActivityActionSheet";
 
 interface Kid {
   id: string;
@@ -88,6 +91,7 @@ export default function ActivityLedger({
   onActivityEdited,
 }: ActivityLedgerProps) {
   const { selectedKid, setSelectedKid } = useReport();
+  const { editActivity, deleteActivity, isLoading: isActionLoading } = useActivityActions();
   const [ledgerTab, setLedgerTab] = useState<"all" | "field-trips" | "extracurricular">("all");
   const [groupedActivities, setGroupedActivities] = useState<GroupedActivities>({});
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -97,6 +101,8 @@ export default function ActivityLedger({
   const [editDate, setEditDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [mobileActionSheetActivity, setMobileActionSheetActivity] = useState<CombinedActivity | null>(null);
+  const [showActionSheet, setShowActionSheet] = useState(false);
 
   // Load and group all activities
   useEffect(() => {
@@ -217,6 +223,11 @@ export default function ActivityLedger({
 
 
 
+  const handleMobileActionSheet = (activity: CombinedActivity) => {
+    setMobileActionSheetActivity(activity);
+    setShowActionSheet(true);
+  };
+
   const handleEditClick = (activity: CombinedActivity) => {
     setEditingActivity(activity);
     setEditDuration(activity.duration_hours || "");
@@ -230,48 +241,12 @@ export default function ActivityLedger({
 
     setIsSaving(true);
     try {
-      if (editingActivity.type === "Activity") {
-        const { error } = await supabase
-          .from("activities")
-          .update({
-            duration: Math.round(parseFloat(editDuration) * 60),
-            subject: editSubject,
-            date: editDate,
-            notes: editNotes,
-          })
-          .eq("id", editingActivity.id);
-
-        if (error) {
-          alert("Error updating activity: " + error.message);
-          return;
-        }
-      } else if (editingActivity.type === "Field Trip") {
-        const { error } = await supabase
-          .from("field_trips")
-          .update({
-            date: editDate,
-            notes: editNotes,
-          })
-          .eq("id", editingActivity.id);
-
-        if (error) {
-          alert("Error updating field trip: " + error.message);
-          return;
-        }
-      } else if (editingActivity.type === "Extracurricular") {
-        const { error } = await supabase
-          .from("extracurricular_activities")
-          .update({
-            date: editDate,
-            notes: editNotes,
-          })
-          .eq("id", editingActivity.id);
-
-        if (error) {
-          alert("Error updating extracurricular: " + error.message);
-          return;
-        }
-      }
+      await editActivity(editingActivity, {
+        duration: parseFloat(editDuration),
+        subject: editSubject,
+        date: editDate,
+        notes: editNotes,
+      });
 
       setEditingActivity(null);
       onActivityEdited();
@@ -347,6 +322,11 @@ export default function ActivityLedger({
           <KidFilterButtons kids={kids} />
         </div>
 
+        {/* Totals Counter - High Visibility */}
+        {selectedKid && (
+          <TotalsCounter groupedActivities={groupedActivities} ledgerTab={ledgerTab} />
+        )}
+
         {/* Stats Bar - Only show if kid is selected */}
         {selectedKid && currentKidActivities && (
           <ChildStatsBar
@@ -415,11 +395,11 @@ export default function ActivityLedger({
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#f9fafb" }}>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "12%" }}>Date</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "52%" }}>Subject/Activity</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Date</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "45%" }}>Subject/Activity</th>
                   <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Duration</th>
                   <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "left", fontSize: "11px", fontWeight: "600", width: "10%" }}>Type</th>
-                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "5%" }}>Action</th>
+                  <th style={{ color: COLORS.dark, padding: "10px 12px", textAlign: "center", fontSize: "11px", fontWeight: "600", width: "25%" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -467,13 +447,42 @@ export default function ActivityLedger({
                       </span>
                     </td>
                     <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                      <button
-                        onClick={() => handleEditClick(activity)}
-                        style={{ color: COLORS.primary }}
-                        className="text-xs font-medium hover:underline"
-                      >
-                        ✏️
-                      </button>
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleEditClick(activity)}
+                          style={{ color: COLORS.primary }}
+                          className="text-xs font-medium hover:underline"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleMobileActionSheet(activity)}
+                          style={{ color: "#10b981" }}
+                          className="text-xs font-medium hover:underline"
+                          title="Mark Complete"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm("Delete this activity?")) {
+                              try {
+                                await deleteActivity(activity);
+                                onActivityEdited();
+                                loadAndGroupActivities();
+                              } catch (e) {
+                                alert("Failed to delete activity");
+                              }
+                            }
+                          }}
+                          style={{ color: "#ef4444" }}
+                          className="text-xs font-medium hover:underline"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -491,7 +500,9 @@ export default function ActivityLedger({
                   border: "1px solid #e5e7eb",
                   borderRadius: "6px",
                   padding: "12px",
+                  cursor: "pointer",
                 }}
+                onClick={() => handleMobileActionSheet(activity)}
               >
                 <div className="flex items-start justify-between mb-2 gap-2">
                   <div className="flex-1">
@@ -539,18 +550,31 @@ export default function ActivityLedger({
                   </p>
                 )}
 
-                <button
-                  onClick={() => handleEditClick(activity)}
-                  style={{ backgroundColor: COLORS.primary, color: "white" }}
-                  className="w-full px-3 py-2 rounded text-xs font-medium hover:opacity-90"
-                >
-                  ✏️ Edit
-                </button>
+                <p style={{ color: COLORS.primary, fontSize: "11px", fontWeight: "600" }}>
+                  👆 Tap to view options
+                </p>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Mobile Action Sheet */}
+      {isMobile && (
+        <ActivityActionSheet
+          activity={mobileActionSheetActivity}
+          isOpen={showActionSheet}
+          onClose={() => setShowActionSheet(false)}
+          onEdit={(activity) => {
+            handleEditClick(activity);
+            setShowActionSheet(false);
+          }}
+          onRefresh={() => {
+            loadAndGroupActivities();
+            onActivityEdited();
+          }}
+        />
+      )}
 
       {/* Edit Modal */}
       {editingActivity && (

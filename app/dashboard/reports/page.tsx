@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import ReportGenerator from "@/components/ReportGenerator";
 import ActivityLedger from "@/components/ActivityLedger";
 import { ReportProvider } from "@/context/ReportContext";
+import { ActivityActionsProvider } from "@/context/ActivityActionsContext";
 
 export const dynamic = "force-dynamic";
 
@@ -164,8 +165,9 @@ export default function ReportsPage() {
 
   return (
     <ReportProvider>
-      <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-        <Navbar />
+      <ActivityActionsProvider>
+        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+          <Navbar />
 
         {/* Header */}
         <div style={{ backgroundColor: "white", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
@@ -235,7 +237,8 @@ export default function ReportsPage() {
             </div>
           )}
         </main>
-      </div>
+        </div>
+      </ActivityActionsProvider>
     </ReportProvider>
   );
 }
