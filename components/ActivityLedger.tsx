@@ -651,7 +651,7 @@ export default function ActivityLedger({
 
       {/* Edit Modal */}
       {editingActivity && (
-        <div style={{ backgroundColor: "rgba(0,0,0,0.5)" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div style={{ backgroundColor: "transparent" }} className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", maxWidth: "400px", width: "100%", margin: "auto" }}>
             <h3 style={{ color: COLORS.dark }} className="text-lg font-bold mb-4">
               ✏️ Edit Activity
