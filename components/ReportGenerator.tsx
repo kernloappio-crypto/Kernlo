@@ -491,17 +491,17 @@ Create a professional homeschool report document.`;
           <label style={{ color: COLORS.dark }} className="block text-sm font-semibold mb-2">
             Children
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {kids.map((kid) => {
               const isSelected = selectedChildren.includes(kid.id);
               return (
-                <div key={kid.id} className="flex items-center gap-2">
+                <div key={kid.id} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50">
                   <input
                     type="checkbox"
                     id={`child-${kid.id}`}
                     checked={isSelected}
                     onChange={() => toggleChildSelection(kid.id)}
-                    className="w-4 h-4 rounded cursor-pointer"
+                    className="w-4 h-4 rounded cursor-pointer flex-shrink-0"
                     style={{ accentColor: COLORS.primary }}
                   />
                   <label
