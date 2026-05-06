@@ -374,7 +374,7 @@ export default function ActivityLedger({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: "y-auto" }} className="px-4 sm:px-6 py-4">
+      <div style={{ flex: 1, overflowY: "auto" }} className="px-4 sm:px-6 py-4">
         {!hasAnyActivities ? (
           <div className="text-center py-8">
             <p style={{ color: "#999" }} className="text-sm">
@@ -427,7 +427,7 @@ export default function ActivityLedger({
 
                   {/* Expandable Content */}
                   {isExpanded && (
-                    <div style={{ backgroundColor: "white" }}>
+                    <div style={{ backgroundColor: "white", maxHeight: "300px", overflowY: "auto" }}>
                       {filteredActivities.length === 0 ? (
                         <div style={{ padding: "24px", textAlign: "center" }}>
                           <p style={{ color: "#999", fontSize: "13px" }}>
@@ -553,7 +553,7 @@ export default function ActivityLedger({
 
                   {/* Mobile Expandable Content */}
                   {isExpanded && (
-                    <div style={{ backgroundColor: "white" }}>
+                    <div style={{ backgroundColor: "white", maxHeight: "300px", overflowY: "auto" }}>
                       {filteredActivities.length === 0 ? (
                         <div style={{ padding: "16px", textAlign: "center" }}>
                           <p style={{ color: "#999", fontSize: "12px" }}>
